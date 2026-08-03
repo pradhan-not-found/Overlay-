@@ -5,14 +5,11 @@
   font-style: normal;
 }
 
-:root {
-  --bg-color: #0b0c0f;
-  --text-main: #FFFFFF;
-  --text-muted: #8E8F94;
-  --accent: #E2E2E2;
-  --glass-bg: rgba(255, 255, 255, 0.03);
-  --glass-border: rgba(255, 255, 255, 0.08);
-  --glass-glow: rgba(255, 255, 255, 0.05);
+@font-face {
+  font-family: 'Playfair';
+  src: url('/fonts/playfair.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
 }
 
 * {
@@ -23,28 +20,16 @@
 
 body {
   font-family: 'Helvetica', -apple-system, sans-serif;
-  background-color: var(--bg-color);
-  color: var(--text-main);
+  background-color: #FAFAFA;
+  color: #111;
   height: 100vh;
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: center;
   position: relative;
   overflow: hidden;
   -webkit-font-smoothing: antialiased;
-}
-
-/* Trace-style subtle background glow */
-.bg-glow {
-  position: absolute;
-  top: -20%;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 80vw;
-  height: 80vw;
-  background: radial-gradient(circle, rgba(40,42,48,0.4) 0%, rgba(11,12,15,0) 70%);
-  z-index: -1;
-  pointer-events: none;
 }
 
 .container {
@@ -54,186 +39,134 @@ body {
   display: flex;
   flex-direction: column;
   align-items: center;
-  margin-top: 80px;
 }
 
-/* Dynamic Island Mockup */
-.overlay-mockup {
+/* Notch Mockup */
+.notch {
   position: absolute;
-  top: 24px;
+  top: 16px;
   left: 50%;
   transform: translateX(-50%);
-  background: rgba(17, 18, 21, 0.7);
-  background-image: linear-gradient(180deg, #1B1C20 0%, #111215 100%);
-  backdrop-filter: blur(24px);
-  -webkit-backdrop-filter: blur(24px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 22px;
-  height: 44px;
-  padding: 0 16px;
+  background: #1A1A1A;
+  border-radius: 30px;
+  height: 48px;
+  width: 360px;
+  padding: 0 16px 0 20px;
   display: flex;
   align-items: center;
-  gap: 12px;
-  box-shadow: 0 20px 40px rgba(0,0,0,0.5), inset 0 1px 1px rgba(255,255,255,0.1);
-  animation: float 6s ease-in-out infinite;
+  justify-content: space-between;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+  color: #fff;
 }
 
-@keyframes float {
-  0% { transform: translate(-50%, 0px); }
-  50% { transform: translate(-50%, 6px); }
-  100% { transform: translate(-50%, 0px); }
-}
-
-.mockup-time {
-  font-size: 14px;
-  font-weight: 600;
-  font-variant-numeric: tabular-nums;
-  letter-spacing: 0.5px;
-}
-
-.mockup-divider {
-  width: 1px;
-  height: 16px;
-  background: var(--glass-border);
-}
-
-.mockup-icons {
-  display: flex;
-  gap: 8px;
-}
-
-.mockup-icon {
-  width: 24px;
-  height: 24px;
-  border-radius: 6px;
+.notch-logo {
   display: flex;
   align-items: center;
-  justify-content: center;
 }
 
-.mockup-icon.yt { color: #FF0000; }
-.mockup-icon.gh { color: #FFFFFF; }
-.mockup-icon svg { width: 16px; height: 16px; }
+.notch-links {
+  display: flex;
+  gap: 16px;
+  font-size: 13px;
+  color: #E0E0E0;
+}
+
+.notch-links span {
+  cursor: pointer;
+  transition: color 0.2s;
+}
+
+.notch-links span:hover {
+  color: #fff;
+}
 
 /* Hero Section */
 .hero {
   text-align: center;
-  margin-top: 40px;
   display: flex;
   flex-direction: column;
   align-items: center;
-}
-
-.badge {
-  font-size: 13px;
-  font-weight: 600;
-  letter-spacing: 0.5px;
-  color: var(--text-muted);
-  border: 1px solid var(--glass-border);
-  padding: 6px 14px;
-  border-radius: 20px;
-  margin-bottom: 24px;
-  background: rgba(255,255,255,0.02);
-  display: inline-block;
+  margin-top: 40px;
 }
 
 .headline {
-  font-size: 42px;
+  font-family: 'Playfair', serif;
+  font-size: 64px;
   line-height: 1.1;
-  font-weight: 700;
-  letter-spacing: -1px;
-  margin-bottom: 16px;
-}
-
-.highlight {
-  background: linear-gradient(90deg, #FFFFFF, #8E8F94);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
+  font-weight: 500;
+  letter-spacing: -1.5px;
+  color: #1A1A1A;
+  margin-bottom: 24px;
 }
 
 .subheadline {
-  font-size: 15px;
-  color: var(--text-muted);
-  max-width: 480px;
-  line-height: 1.5;
+  font-size: 16px;
+  color: #666;
   margin-bottom: 32px;
 }
 
-/* Waitlist Glass Card */
-.waitlist-card {
-  background: var(--glass-bg);
-  border: 1px solid var(--glass-border);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  padding: 24px 32px;
-  border-radius: 20px;
-  width: 100%;
-  max-width: 400px;
-  box-shadow: 0 24px 48px rgba(0,0,0,0.4);
-}
-
-.card-title {
-  font-size: 18px;
-  font-weight: 600;
-  margin-bottom: 6px;
-}
-
-.card-desc {
-  font-size: 13px;
-  color: var(--text-muted);
-  margin-bottom: 20px;
-}
-
-.waitlist-form {
+/* Inline Form */
+.inline-form {
   display: flex;
-  flex-direction: column;
-  gap: 12px;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
 }
 
 .email-input {
-  width: 100%;
-  background: rgba(0,0,0,0.2);
-  border: 1px solid var(--glass-border);
-  padding: 14px 16px;
-  border-radius: 12px;
-  color: #fff;
+  width: 260px;
+  background: #FFFFFF;
+  border: 1px solid #E5E7EB;
+  padding: 12px 16px;
+  border-radius: 8px;
+  color: #111;
   font-size: 15px;
   outline: none;
-  transition: all 0.2s ease;
+  transition: border-color 0.2s ease;
   font-family: inherit;
+  box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);
 }
 
 .email-input:focus {
-  border-color: rgba(255,255,255,0.2);
-  background: rgba(0,0,0,0.4);
+  border-color: #8B5CF6;
 }
 
 .email-input::placeholder {
-  color: #555;
+  color: #9CA3AF;
 }
 
 .submit-btn {
-  width: 100%;
-  background: var(--accent);
-  color: #000;
+  background: #8B5CF6;
+  color: #fff;
   border: none;
-  padding: 14px 16px;
-  border-radius: 12px;
+  padding: 12px 20px;
+  border-radius: 8px;
   font-size: 15px;
-  font-weight: 600;
+  font-weight: 500;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: background 0.2s ease;
   font-family: inherit;
+  display: flex;
+  align-items: center;
+  gap: 4px;
 }
 
 .submit-btn:hover {
-  background: #ffffff;
-  transform: translateY(-1px);
+  background: #7C3AED;
 }
 
-.footer {
-  position: absolute;
-  bottom: 20px;
-  color: #444;
-  font-size: 12px;
+.twitter-link {
+  font-size: 13px;
+  color: #888;
+  text-decoration: none;
+}
+
+.twitter-link .underline {
+  text-decoration: underline;
+  text-decoration-color: #ccc;
+  text-underline-offset: 3px;
+}
+
+.twitter-link:hover .underline {
+  text-decoration-color: #888;
 }
