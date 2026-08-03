@@ -10,17 +10,20 @@ function createWindow() {
 
   mainWindow = new BrowserWindow({
     width: 440,
-    height: 680,
+    height: 48,
     x: Math.round((width - 440) / 2),
     y: 12,
     frame: false,
     transparent: true,
     alwaysOnTop: true,
-    skipTaskbar: true,
+    resizable: false,
+    hasShadow: false,
+    skipTaskbar: false,
+    icon: path.join(__dirname, '../build/icon.png'),
     webPreferences: {
       nodeIntegration: true,
-      contextIsolation: false,
-    },
+      contextIsolation: false
+    }
   });
 
   // Always keep on top across all workspaces (desktops)
