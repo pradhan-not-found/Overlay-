@@ -1,0 +1,150 @@
+:root {
+  --bg-color: #121316;
+  --accent-color: #79A3E0; /* ice-blue */
+  --text-main: #f0f0f0;
+  --text-muted: #a0a0a0;
+  --pill-height-idle: 40px;
+  --pill-height-expanded: 120px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  font-family: 'Inter', sans-serif;
+  overflow: hidden; /* Prevent scrollbars in the frameless window */
+  display: flex;
+  justify-content: center;
+  align-items: flex-start; /* Align top */
+  /* Ensure the body itself is transparent so only the pill shows */
+  background: transparent;
+}
+
+#app {
+  margin-top: 10px;
+  display: flex;
+  justify-content: center;
+  width: 100%;
+}
+
+.pill-container {
+  background-color: var(--bg-color);
+  border-radius: 20px;
+  width: 150px;
+  height: var(--pill-height-idle);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-main);
+  box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+  cursor: pointer;
+  -webkit-app-region: drag; /* Allow dragging */
+  transition: width 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275),
+              height 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  overflow: hidden;
+  position: relative;
+}
+
+.pill-container.expanded {
+  width: 400px;
+  height: var(--pill-height-expanded);
+  border-radius: 30px;
+}
+
+.pill-container.lock-in {
+  width: 250px;
+  height: 50px;
+  border-radius: 25px;
+  border: 2px solid var(--accent-color);
+}
+
+.content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  opacity: 1;
+  transition: opacity 0.3s;
+}
+
+.idle-content {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.expanded-content {
+  display: none;
+  flex-direction: column;
+  padding: 20px;
+  width: 100%;
+  -webkit-app-region: no-drag; /* Make interactive elements undraggable */
+}
+
+.pill-container.expanded .idle-content {
+  display: none;
+}
+
+.pill-container.expanded .expanded-content {
+  display: flex;
+}
+
+.lock-in-content {
+  display: none;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 0 20px;
+  font-variant-numeric: tabular-nums;
+  -webkit-app-region: no-drag;
+}
+
+.pill-container.lock-in .idle-content,
+.pill-container.lock-in .expanded-content {
+  display: none;
+}
+
+.pill-container.lock-in .lock-in-content {
+  display: flex;
+}
+
+button {
+  background: #2a2b2f;
+  border: 1px solid #3a3b40;
+  color: var(--text-main);
+  padding: 8px 16px;
+  border-radius: 12px;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 14px;
+  transition: background 0.2s, transform 0.1s;
+}
+
+button:hover {
+  background: #35363c;
+}
+button:active {
+  transform: scale(0.97);
+}
+button.accent {
+  background: var(--accent-color);
+  color: #000;
+  border-color: transparent;
+  font-weight: 600;
+}
+button.accent:hover {
+  background: #8ab4f0;
+}
+
+.timer {
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--accent-color);
+}

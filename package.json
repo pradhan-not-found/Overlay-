@@ -1,0 +1,22 @@
+{
+  "name": "temp-app",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "main": "electron/main.cjs",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview",
+    "electron:start": "concurrently \"vite\" \"wait-on tcp:5173 && electron .\"",
+    "electron:build": "tsc && vite build && electron-builder"
+  },
+  "devDependencies": {
+    "concurrently": "^10.0.4",
+    "electron": "^43.2.0",
+    "electron-builder": "^26.15.3",
+    "typescript": "~6.0.2",
+    "vite": "^8.2.0",
+    "wait-on": "^9.1.0"
+  }
+}
