@@ -106,4 +106,32 @@ Overlay turns the empty space at the top of a Windows display into a living, gla
 
 ---
 
+## 9. Uses of Overlay
+
+**Working through the day**
+Keep meetings visible without keeping a calendar tab open. See what's coming up, join with one tap, and go back to what you were doing — no app-switching required.
+
+**Listening to music or podcasts**
+Control playback without minimizing your work. Skip a track, pause for a call, or check what's playing without breaking focus on your main window.
+
+**Joining video calls**
+Do a quick camera check before you're live. Confirm your lighting, framing, and background look right before anyone else sees them.
+
+**Managing battery on a laptop**
+Glance at charge level and time remaining without opening Settings. Get an early warning before the battery runs low, instead of a sudden shutdown warning.
+
+**Sharing files quickly**
+Send a file to a colleague or another device without digging through folders. Drag it onto Overlay and it's on its way.
+
+**Adjusting volume or brightness**
+Use a cleaner, quieter slider instead of the default Windows pop-up, without changing your workflow.
+
+**Doing focused work (Lock In)**
+Start a Pomodoro-style session before a task that needs concentration. Notifications quiet down automatically, and Overlay tracks the cycle between focus and break so you don't have to watch the clock yourself.
+
+**Tracking daily focus habits**
+Check how many focus sessions you completed and how much total focused time you logged that day, without opening a separate productivity app.
+
+---
+
 *This document is meant as a working brief — the responsible agent should feel free to refine palette specifics, exact API choices, and copy details, provided they stay within the direction above.*

@@ -1,0 +1,232 @@
+:root {
+  --bg-color: #0b0c0f;
+  --text-main: #FFFFFF;
+  --text-muted: #8E8F94;
+  --accent: #E2E2E2;
+  --glass-bg: rgba(255, 255, 255, 0.03);
+  --glass-border: rgba(255, 255, 255, 0.08);
+  --glass-glow: rgba(255, 255, 255, 0.05);
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  background-color: var(--bg-color);
+  color: var(--text-main);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Trace-style subtle background glow */
+.bg-glow {
+  position: absolute;
+  top: -20%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 80vw;
+  height: 80vw;
+  background: radial-gradient(circle, rgba(40,42,48,0.4) 0%, rgba(11,12,15,0) 70%);
+  z-index: -1;
+  pointer-events: none;
+}
+
+.container {
+  width: 100%;
+  max-width: 800px;
+  padding: 0 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-top: 100px;
+}
+
+/* Dynamic Island Mockup */
+.overlay-mockup {
+  position: absolute;
+  top: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(17, 18, 21, 0.7);
+  background-image: linear-gradient(180deg, #1B1C20 0%, #111215 100%);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 22px;
+  height: 44px;
+  padding: 0 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  box-shadow: 0 20px 40px rgba(0,0,0,0.5), inset 0 1px 1px rgba(255,255,255,0.1);
+  animation: float 6s ease-in-out infinite;
+}
+
+@keyframes float {
+  0% { transform: translate(-50%, 0px); }
+  50% { transform: translate(-50%, 6px); }
+  100% { transform: translate(-50%, 0px); }
+}
+
+.mockup-time {
+  font-size: 14px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.5px;
+}
+
+.mockup-divider {
+  width: 1px;
+  height: 16px;
+  background: var(--glass-border);
+}
+
+.mockup-icons {
+  display: flex;
+  gap: 8px;
+}
+
+.mockup-icon {
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.mockup-icon.yt { color: #FF0000; }
+.mockup-icon.gh { color: #FFFFFF; }
+.mockup-icon svg { width: 16px; height: 16px; }
+
+/* Hero Section */
+.hero {
+  text-align: center;
+  margin-top: 40px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.badge {
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  color: var(--text-muted);
+  border: 1px solid var(--glass-border);
+  padding: 6px 14px;
+  border-radius: 20px;
+  margin-bottom: 24px;
+  background: rgba(255,255,255,0.02);
+  display: inline-block;
+}
+
+.headline {
+  font-size: 56px;
+  line-height: 1.1;
+  font-weight: 700;
+  letter-spacing: -1.5px;
+  margin-bottom: 20px;
+}
+
+.highlight {
+  background: linear-gradient(90deg, #FFFFFF, #8E8F94);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.subheadline {
+  font-size: 18px;
+  color: var(--text-muted);
+  max-width: 500px;
+  line-height: 1.5;
+  margin-bottom: 48px;
+}
+
+/* Waitlist Glass Card */
+.waitlist-card {
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  padding: 32px;
+  border-radius: 24px;
+  width: 100%;
+  max-width: 440px;
+  box-shadow: 0 24px 48px rgba(0,0,0,0.4);
+}
+
+.card-title {
+  font-size: 20px;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.card-desc {
+  font-size: 14px;
+  color: var(--text-muted);
+  margin-bottom: 24px;
+}
+
+.waitlist-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.email-input {
+  width: 100%;
+  background: rgba(0,0,0,0.2);
+  border: 1px solid var(--glass-border);
+  padding: 14px 16px;
+  border-radius: 12px;
+  color: #fff;
+  font-size: 15px;
+  outline: none;
+  transition: all 0.2s ease;
+  font-family: inherit;
+}
+
+.email-input:focus {
+  border-color: rgba(255,255,255,0.2);
+  background: rgba(0,0,0,0.4);
+}
+
+.email-input::placeholder {
+  color: #555;
+}
+
+.submit-btn {
+  width: 100%;
+  background: var(--accent);
+  color: #000;
+  border: none;
+  padding: 14px 16px;
+  border-radius: 12px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: inherit;
+}
+
+.submit-btn:hover {
+  background: #ffffff;
+  transform: translateY(-1px);
+}
+
+.footer {
+  margin-top: 80px;
+  margin-bottom: 40px;
+  color: #444;
+  font-size: 13px;
+}

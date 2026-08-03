@@ -2,13 +2,15 @@
   "name": "temp-app",
   "private": true,
   "version": "0.0.0",
+  "description": "Overlay dynamic command center",
+  "author": "Pradhan",
   "type": "module",
   "main": "electron/main.cjs",
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
     "preview": "vite preview",
-    "electron:start": "concurrently \"vite\" \"wait-on tcp:5173 && electron .\"",
+    "electron:start": "concurrently \"vite\" \"wait-on http://localhost:5173 && electron .\"",
     "electron:build": "tsc && vite build && electron-builder"
   },
   "devDependencies": {
@@ -18,5 +20,20 @@
     "typescript": "~6.0.2",
     "vite": "^8.2.0",
     "wait-on": "^9.1.0"
+  },
+  "build": {
+    "appId": "com.pradhan.overlay",
+    "productName": "Overlay",
+    "directories": {
+      "output": "C:\\Users\\SOURADEEP\\overlay-release"
+    },
+    "files": [
+      "dist/**/*",
+      "electron/**/*",
+      "package.json"
+    ],
+    "win": {
+      "target": ["nsis", "portable"]
+    }
   }
 }
