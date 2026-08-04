@@ -25,7 +25,7 @@ function App() {
         // Because of no-cors, fetch resolves opaque responses even on success
         setStatus('success');
         setEmail('');
-      } catch (err) {
+      } catch {
         setStatus('error');
       }
     }
