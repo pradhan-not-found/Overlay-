@@ -1,22 +1,11 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef } from 'react';
 import './index.css';
-
-const HERO_WORDS = ['Dynamic', 'Ultimate', 'Fast', 'Smart', 'Clean'];
 
 function App() {
   const [email, setEmail] = useState('');
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
   const [currentView, setCurrentView] = useState<'home' | 'terms' | 'privacy'>('home');
-  const [wordIndex, setWordIndex] = useState(0);
   const emailInputRef = useRef<HTMLInputElement>(null);
-
-  useEffect(() => {
-    if (currentView !== 'home') return;
-    const interval = setInterval(() => {
-      setWordIndex((prev) => (prev + 1) % HERO_WORDS.length);
-    }, 2500);
-    return () => clearInterval(interval);
-  }, [currentView]);
 
   // NOTE: Replace this with your Google Apps Script Web App URL!
   const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxi9gFwCeJt85jedXkVeGmrBgW_MRZtCU3wMlAC9mEF586H86WaV1K9w-1N5KjzfuVDew/exec';
@@ -66,7 +55,7 @@ function App() {
       {currentView === 'home' && (
         <main className="main-content">
           <h1 className="hero-heading">
-            The <span className="highlight fade-text" key={wordIndex}>{HERO_WORDS[wordIndex]}</span> command center<br />for your desktop
+            The <span className="highlight">Dynamic</span> command center<br />for your desktop
           </h1>
 
         {/* Waitlist Form Block */}

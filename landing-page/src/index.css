@@ -13,7 +13,10 @@
 
 html, body {
   width: 100vw;
-  min-height: 100vh;
+  height: 100vh;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
   font-family: "Helvetica", -apple-system, sans-serif;
   background-color: #ffffff;
   color: #000000;
@@ -23,19 +26,20 @@ html, body {
 
 #root {
   width: 100%;
-  min-height: 100vh;
+  height: 100vh;
   display: flex;
   flex-direction: column;
 }
 
 .page-wrapper {
-  flex: 1;
+  height: 100vh;
   display: flex;
   flex-direction: column;
-  padding: 24px 40px;
+  padding: 0 40px;
   max-width: 1400px;
   margin: 0 auto;
   width: 100%;
+  box-sizing: border-box;
 }
 
 /* Navbar */
@@ -108,16 +112,6 @@ html, body {
 .hero-heading .highlight {
   color: #6a7076; /* grayish-blue tint for 'One' from reference */
   display: inline-block;
-}
-
-.fade-text {
-  animation: fadeInOut 2.5s infinite;
-}
-
-@keyframes fadeInOut {
-  0%, 10% { opacity: 0; transform: translateY(5px); }
-  20%, 80% { opacity: 1; transform: translateY(0); }
-  90%, 100% { opacity: 0; transform: translateY(-5px); }
 }
 
 /* Form Container */
