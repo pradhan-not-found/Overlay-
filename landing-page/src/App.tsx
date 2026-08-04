@@ -1,9 +1,11 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import './index.css';
+import heroImg from './assets/hero.png';
 
 function App() {
   const [email, setEmail] = useState('');
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
+  const emailInputRef = useRef<HTMLInputElement>(null);
 
   // NOTE: Replace this with your Google Apps Script Web App URL!
   const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxi9gFwCeJt85jedXkVeGmrBgW_MRZtCU3wMlAC9mEF586H86WaV1K9w-1N5KjzfuVDew/exec';
@@ -22,7 +24,6 @@ function App() {
           body: JSON.stringify({ email: email.trim() }),
         });
         
-        // Because of no-cors, fetch resolves opaque responses even on success
         setStatus('success');
         setEmail('');
       } catch {
@@ -31,52 +32,74 @@ function App() {
     }
   };
 
+  const focusEmail = () => {
+    emailInputRef.current?.focus();
+  };
+
   return (
     <div className="page-wrapper">
-      {/* Top Header: Logo + Name */}
-      <header className="header">
-        <img src="/logo.png" alt="Overlay Logo" className="logo" />
-        <span className="brand-name">Overlay</span>
-      </header>
+      {/* Top Navigation */}
+      <nav className="navbar">
+        <div className="brand">
+          <img src="/logo.png" alt="Overlay Logo" className="logo" />
+          <span className="brand-name">Overlay</span>
+        </div>
+        <button className="nav-join-btn" onClick={focusEmail}>
+          Join the waitlist
+        </button>
+      </nav>
 
-      {/* Middle Content: Side-aligned Text & Form */}
+      {/* Main Hero Content */}
       <main className="main-content">
-        <div className="text-section">
-          <h1 className="bold-claim">The Dynamic Command Center for Your Desktop.</h1>
-          <p className="sub-claim">
-            Experience frictionless productivity. Overlay is a keyboard-driven workspace that puts all your essential tools just a keystroke away. Register now for early access.
-          </p>
+        <h1 className="hero-heading">
+          The <span className="highlight">Dynamic</span> command center<br />for your desktop
+        </h1>
 
+        {/* Waitlist Form Block */}
+        <div className="form-container">
           {status === 'success' ? (
             <div className="success-message">
               Thank you for registering! We'll be in touch soon.
             </div>
           ) : (
-            <form className="waitlist-form" onSubmit={handleSubmit}>
+            <form className="inline-form" onSubmit={handleSubmit}>
               <input
+                ref={emailInputRef}
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="Enter your email..."
-                className="glass-input"
+                placeholder="Enter your email"
+                className="inline-input"
                 required
                 disabled={status === 'loading'}
               />
-              <button type="submit" className="glass-button" disabled={status === 'loading'}>
-                {status === 'loading' ? 'Joining...' : 'Join Waitlist'}
+              <button type="submit" className="inline-button" disabled={status === 'loading'}>
+                {status === 'loading' ? 'Joining...' : 'Join the waitlist'}
               </button>
             </form>
           )}
+          <p className="form-subtext">Secure early access and unlock unique productivity rewards.</p>
         </div>
 
-        {/* Right side could contain an image or graphic later, left empty for minimalism for now */}
-        <div className="right-section"></div>
+        {/* Feature Highlights */}
+        <div className="feature-highlights">
+          <span>Keyboard Driven</span>
+          <span className="separator">|</span>
+          <span>Zero Friction</span>
+          <span className="separator">|</span>
+          <span>Cross-Platform</span>
+        </div>
+
+        {/* Hero Graphic */}
+        <div className="hero-graphic">
+          <img src={heroImg} alt="Overlay App Interface" onError={(e) => e.currentTarget.style.display = 'none'} />
+        </div>
       </main>
 
       {/* Bottom Footer */}
       <footer className="simple-footer">
         <div className="founder-credit">
-          &copy; {new Date().getFullYear()} Overlay • Built by <a href="https://souradeep.me" target="_blank" rel="noreferrer">Souradeep Pradhan</a>
+          &copy; {new Date().getFullYear()} Overlay &bull; Built by <a href="https://souradeep.me" target="_blank" rel="noreferrer">Souradeep Pradhan</a>
         </div>
         <div className="footer-links">
           <a href="#">Terms</a>

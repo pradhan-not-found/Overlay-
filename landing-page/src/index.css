@@ -13,18 +13,17 @@
 
 html, body {
   width: 100vw;
-  height: 100vh;
+  min-height: 100vh;
   font-family: "Helvetica", -apple-system, sans-serif;
-  background-color: #ffffff;
+  background-color: #EFEFEE; /* Light, warm off-white from the reference */
   color: #000000;
   -webkit-font-smoothing: antialiased;
   letter-spacing: -0.02em;
-  overflow: hidden;
 }
 
 #root {
   width: 100%;
-  height: 100%;
+  min-height: 100vh;
   display: flex;
   flex-direction: column;
 }
@@ -33,122 +32,167 @@ html, body {
   flex: 1;
   display: flex;
   flex-direction: column;
-  padding: 40px;
-  max-width: 1200px;
+  padding: 24px 40px;
+  max-width: 1400px;
   margin: 0 auto;
   width: 100%;
 }
 
-.header {
+/* Navbar */
+.navbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  padding-bottom: 60px;
+}
+
+.brand {
   display: flex;
   align-items: center;
   gap: 12px;
 }
 
 .logo {
-  width: 48px;
-  height: 48px;
-  border-radius: 12px;
-  box-shadow: 0 8px 24px -4px rgba(0,0,0,0.1), 0 2px 6px -1px rgba(0,0,0,0.05);
-  /* The logo is white by default in the main app, so we invert it for the white background */
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  /* Invert to black */
   filter: invert(1);
 }
 
 .brand-name {
   font-size: 20px;
-  font-weight: 700;
+  font-weight: 400;
   color: #000000;
   letter-spacing: -0.04em;
 }
 
+.nav-join-btn {
+  padding: 10px 18px;
+  background: #000000;
+  color: #ffffff;
+  border: none;
+  font-size: 13px;
+  font-weight: 500;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+/* Main Content */
 .main-content {
   flex: 1;
   display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-content: space-between;
+  text-align: center;
 }
 
-/* Left side content */
-.text-section {
-  max-width: 500px;
-}
-
-.bold-claim {
-  font-size: 48px;
-  font-weight: 800;
+.hero-heading {
+  font-size: 64px;
+  font-weight: 400;
   color: #000000;
   line-height: 1.1;
-  margin-bottom: 24px;
-  letter-spacing: -0.05em;
-}
-
-.sub-claim {
-  font-size: 18px;
-  font-weight: 400;
-  color: #555555;
   margin-bottom: 40px;
-  line-height: 1.5;
+  letter-spacing: -0.04em;
 }
 
-.waitlist-form {
+.hero-heading .highlight {
+  color: #6a7076; /* grayish-blue tint for 'One' from reference */
+}
+
+/* Form Container */
+.form-container {
   display: flex;
-  gap: 12px;
-  width: 100%;
-  max-width: 400px;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 40px;
 }
 
-.glass-input {
+.inline-form {
+  display: flex;
+  background: #ffffff;
+  padding: 4px;
+  width: 400px;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.03);
+}
+
+.inline-input {
   flex: 1;
-  padding: 14px 16px;
-  border-radius: 8px;
-  border: 1px solid rgba(0,0,0,0.1);
-  background: rgba(0,0,0,0.02);
-  font-family: inherit;
-  font-size: 14px;
-  color: #000000;
-  outline: none;
-  font-weight: 500;
-  transition: border-color 0.2s, background 0.2s;
-}
-
-.glass-input::placeholder {
-  color: rgba(0,0,0,0.4);
-}
-
-.glass-input:focus {
-  border-color: rgba(0,0,0,0.3);
-  background: transparent;
-}
-
-.glass-button {
-  padding: 14px 24px;
-  border-radius: 8px;
   border: none;
+  background: transparent;
+  padding: 14px 20px;
+  font-size: 15px;
+  font-family: inherit;
+  outline: none;
+  color: #000000;
+}
+
+.inline-input::placeholder {
+  color: #999999;
+}
+
+.inline-button {
+  padding: 0 24px;
   background: #000000;
   color: #ffffff;
-  font-family: inherit;
+  border: none;
   font-size: 14px;
-  font-weight: 600;
+  font-weight: 500;
+  font-family: inherit;
   cursor: pointer;
-  transition: transform 0.15s, box-shadow 0.15s;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  white-space: nowrap;
 }
 
-.glass-button:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 6px 16px rgba(0,0,0,0.2);
-}
-
-.glass-button:active {
-  transform: translateY(1px);
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+.form-subtext {
+  margin-top: 16px;
+  font-size: 12px;
+  color: #666666;
+  font-weight: 400;
 }
 
 .success-message {
-  font-size: 14px;
+  font-size: 15px;
+  font-weight: 500;
+  color: #2e7d32;
+  padding: 14px 0;
+}
+
+/* Feature Highlights */
+.feature-highlights {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  font-size: 13px;
   font-weight: 600;
   color: #000000;
-  padding: 14px 0;
+  margin-bottom: 60px;
+}
+
+.feature-highlights .separator {
+  color: #cccccc;
+  font-weight: 300;
+}
+
+/* Hero Graphic */
+.hero-graphic {
+  width: 100%;
+  max-width: 600px;
+  height: 380px;
+  background: #111111; /* Black card base */
+  border-radius: 20px;
+  box-shadow: 0 24px 60px rgba(0,0,0,0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  margin-bottom: 60px;
+}
+
+.hero-graphic img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 /* Simple footer */
@@ -160,6 +204,7 @@ html, body {
   font-weight: 500;
   color: #888888;
   padding-top: 24px;
+  border-top: 1px solid rgba(0,0,0,0.05);
 }
 
 .founder-credit a {
