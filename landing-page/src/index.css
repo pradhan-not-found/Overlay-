@@ -107,6 +107,17 @@ html, body {
 
 .hero-heading .highlight {
   color: #6a7076; /* grayish-blue tint for 'One' from reference */
+  display: inline-block;
+}
+
+.fade-text {
+  animation: fadeInOut 2.5s infinite;
+}
+
+@keyframes fadeInOut {
+  0%, 10% { opacity: 0; transform: translateY(5px); }
+  20%, 80% { opacity: 1; transform: translateY(0); }
+  90%, 100% { opacity: 0; transform: translateY(-5px); }
 }
 
 /* Form Container */
@@ -180,6 +191,66 @@ html, body {
 .feature-highlights .separator {
   color: #cccccc;
   font-weight: 300;
+}
+
+/* Supported Platforms */
+.supported-platforms {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  margin-top: 20px;
+  margin-bottom: 60px;
+}
+
+.platform-text {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: #999999;
+  font-weight: 600;
+}
+
+.platform-icons {
+  display: flex;
+  gap: 20px;
+  color: #555555;
+}
+
+/* Policy Content */
+.policy-content {
+  flex: 1;
+  max-width: 800px;
+  margin: 0 auto;
+  text-align: left;
+  padding: 40px 0 80px 0;
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.policy-content h1 {
+  font-size: 32px;
+  margin-bottom: 24px;
+  letter-spacing: -0.02em;
+}
+
+.policy-content h2 {
+  font-size: 20px;
+  margin-top: 32px;
+  margin-bottom: 12px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.policy-content p {
+  font-size: 15px;
+  line-height: 1.6;
+  color: #444444;
+  margin-bottom: 16px;
 }
 
 /* Simple footer */
