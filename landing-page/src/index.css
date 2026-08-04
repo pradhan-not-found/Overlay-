@@ -171,46 +171,6 @@ html, body {
   padding: 14px 0;
 }
 
-/* Feature Highlights */
-.feature-highlights {
-  display: flex;
-  align-items: center;
-  gap: 24px;
-  font-size: 13px;
-  font-weight: 600;
-  color: #000000;
-  margin-bottom: 60px;
-}
-
-.feature-highlights .separator {
-  color: #cccccc;
-  font-weight: 300;
-}
-
-/* Supported Platforms */
-.supported-platforms {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 12px;
-  margin-top: 20px;
-  margin-bottom: 60px;
-}
-
-.platform-text {
-  font-size: 11px;
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-  color: #999999;
-  font-weight: 600;
-}
-
-.platform-icons {
-  display: flex;
-  gap: 20px;
-  color: #555555;
-}
-
 /* Policy Content */
 .policy-content {
   flex: 1;
