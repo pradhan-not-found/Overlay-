@@ -10,7 +10,7 @@ function App() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (email.trim() && GOOGLE_SCRIPT_URL !== 'YOUR_GOOGLE_SCRIPT_URL_HERE') {
+    if (email.trim()) {
       setStatus('loading');
       try {
         await fetch(GOOGLE_SCRIPT_URL, {
