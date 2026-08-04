@@ -1,6 +1,5 @@
 import { useState, useRef } from 'react';
 import './index.css';
-import heroImg from './assets/hero.png';
 
 function App() {
   const [email, setEmail] = useState('');
@@ -88,11 +87,6 @@ function App() {
           <span>Zero Friction</span>
           <span className="separator">|</span>
           <span>Cross-Platform</span>
-        </div>
-
-        {/* Hero Graphic */}
-        <div className="hero-graphic">
-          <img src={heroImg} alt="Overlay App Interface" onError={(e) => e.currentTarget.style.display = 'none'} />
         </div>
       </main>
 
