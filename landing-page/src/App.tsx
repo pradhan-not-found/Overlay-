@@ -76,7 +76,7 @@ function App() {
       {/* Bottom Footer */}
       <footer className="simple-footer">
         <div className="founder-credit">
-          Built by Pradhan
+          &copy; {new Date().getFullYear()} Overlay • Built by <a href="https://souradeep.me" target="_blank" rel="noreferrer">Souradeep Pradhan</a>
         </div>
         <div className="footer-links">
           <a href="#">Terms</a>
