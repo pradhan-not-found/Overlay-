@@ -6,7 +6,7 @@ function App() {
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
 
   // NOTE: Replace this with your Google Apps Script Web App URL!
-  const GOOGLE_SCRIPT_URL = 'YOUR_GOOGLE_SCRIPT_URL_HERE';
+  const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyyGDqogobKuF3lENOAlAVhy1hCsa19kODf5_0IKPRKiO7NXn8HLiiYVoiPZBzUhU6Tyw/exec';
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -28,8 +28,6 @@ function App() {
       } catch (err) {
         setStatus('error');
       }
-    } else if (GOOGLE_SCRIPT_URL === 'YOUR_GOOGLE_SCRIPT_URL_HERE') {
-      alert('Please add your Google Script URL in App.tsx');
     }
   };
 
