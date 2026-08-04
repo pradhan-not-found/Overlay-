@@ -3,15 +3,33 @@ import './index.css';
 
 function App() {
   const [email, setEmail] = useState('');
-  const [joined, setJoined] = useState(false);
+  const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
+
+  // NOTE: Replace this with your Google Apps Script Web App URL!
+  const GOOGLE_SCRIPT_URL = 'YOUR_GOOGLE_SCRIPT_URL_HERE';
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (email.trim()) {
-      // NOTE: Replace this URL with your Formspree endpoint (e.g., https://formspree.io/f/YOUR_ENDPOINT_ID)
-      // For now, we mock the success state.
-      setJoined(true);
-      setEmail('');
+    if (email.trim() && GOOGLE_SCRIPT_URL !== 'YOUR_GOOGLE_SCRIPT_URL_HERE') {
+      setStatus('loading');
+      try {
+        await fetch(GOOGLE_SCRIPT_URL, {
+          method: 'POST',
+          mode: 'no-cors',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ email: email.trim() }),
+        });
+        
+        // Because of no-cors, fetch resolves opaque responses even on success
+        setStatus('success');
+        setEmail('');
+      } catch (err) {
+        setStatus('error');
+      }
+    } else if (GOOGLE_SCRIPT_URL === 'YOUR_GOOGLE_SCRIPT_URL_HERE') {
+      alert('Please add your Google Script URL in App.tsx');
     }
   };
 
@@ -31,7 +49,11 @@ function App() {
             Experience frictionless productivity. Overlay is a keyboard-driven workspace that puts all your essential tools just a keystroke away. Register now for early access.
           </p>
 
-          {!joined ? (
+          {status === 'success' ? (
+            <div className="success-message">
+              Thank you for registering! We'll be in touch soon.
+            </div>
+          ) : (
             <form className="waitlist-form" onSubmit={handleSubmit}>
               <input
                 type="email"
@@ -40,15 +62,12 @@ function App() {
                 placeholder="Enter your email..."
                 className="glass-input"
                 required
+                disabled={status === 'loading'}
               />
-              <button type="submit" className="glass-button">
-                Join Waitlist
+              <button type="submit" className="glass-button" disabled={status === 'loading'}>
+                {status === 'loading' ? 'Joining...' : 'Join Waitlist'}
               </button>
             </form>
-          ) : (
-            <div className="success-message">
-              Thank you for registering! We'll be in touch soon.
-            </div>
           )}
         </div>
 
