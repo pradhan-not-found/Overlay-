@@ -205,3 +205,8 @@ body::before {
 .footer-links a:hover {
   color: #000000;
 }
+
+/* Policy Content */
+.policy-content {
+  margin-top: 40px;
+}
