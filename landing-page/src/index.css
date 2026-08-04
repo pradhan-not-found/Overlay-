@@ -1,235 +1,123 @@
-* {
+@font-face {
+  font-family: "Helvetica";
+  src: url('/fonts/Helvetica.ttf') format('truetype');
+  font-weight: 100 900;
+  font-display: swap;
+}
+
+*, *::before, *::after {
+  box-sizing: border-box;
   margin: 0;
   padding: 0;
-  box-sizing: border-box;
 }
 
-body {
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  background-color: #FAFAFA; /* Matches the clean off-white */
-  color: #111;
+html, body {
+  width: 100vw;
   height: 100vh;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  position: relative;
-  overflow: hidden;
+  font-family: "Helvetica", -apple-system, sans-serif;
+  background-color: #ffffff;
+  color: #000000;
   -webkit-font-smoothing: antialiased;
+  letter-spacing: -0.02em;
+  overflow: hidden;
 }
 
-.container {
+#root {
   width: 100%;
-  max-width: 1200px;
   height: 100%;
   display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Glassy Trace UI components - Light Theme */
+.glass-container {
+  display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  position: relative;
+  gap: 24px;
 }
 
-/* 
-  Floating Decor 
-  Simulating the floating books with subtle aesthetic shapes to balance the layout
-*/
-.decor {
-  position: absolute;
-  border-radius: 20px;
-  opacity: 0.8;
-  z-index: -1;
-}
-.decor-1 {
-  width: 140px;
-  height: 200px;
-  background: linear-gradient(135deg, #FFEFD5 0%, #F5DEB3 100%);
-  top: 15%;
-  left: 10%;
-  transform: rotate(-15deg);
-  box-shadow: 0 20px 40px rgba(0,0,0,0.08);
-}
-.decor-2 {
-  width: 160px;
-  height: 220px;
-  background: linear-gradient(135deg, #E6E6FA 0%, #D8BFD8 100%);
-  bottom: 25%;
-  left: 8%;
-  transform: rotate(20deg);
-  box-shadow: 0 20px 40px rgba(0,0,0,0.08);
-}
-.decor-3 {
-  width: 150px;
-  height: 180px;
-  background: linear-gradient(135deg, #FFE4E1 0%, #F08080 100%);
-  top: 20%;
-  right: 12%;
-  transform: rotate(15deg);
-  box-shadow: 0 20px 40px rgba(0,0,0,0.08);
+.logo {
+  width: 64px;
+  height: 64px;
+  border-radius: 16px;
+  box-shadow: 0 8px 24px -4px rgba(0,0,0,0.1), 0 2px 6px -1px rgba(0,0,0,0.05);
+  margin-bottom: 12px;
 }
 
-/* The Notch Mockup */
-.notch {
-  position: absolute;
-  top: 24px;
-  left: 50%;
-  transform: translateX(-50%);
-  background: #191919;
-  border-radius: 28px;
-  height: 44px;
-  width: 320px;
-  padding: 0 16px 0 20px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  box-shadow: 0 12px 30px rgba(0,0,0,0.15);
-  color: #fff;
-  z-index: 10;
-}
-
-.notch-logo {
-  display: flex;
-  align-items: center;
-}
-
-.notch-links {
-  display: flex;
-  gap: 16px;
-  font-size: 13px;
-  color: #D1D1D1;
-}
-
-.notch-links span {
-  cursor: pointer;
-  transition: color 0.2s;
-}
-
-.notch-links span:hover {
-  color: #fff;
-}
-
-/* Hero Section */
-.hero {
+.heading {
+  font-size: 24px;
+  font-weight: 700;
+  color: #000000;
   text-align: center;
+  margin: 0;
+  letter-spacing: -0.04em;
+}
+
+.waitlist-form {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  z-index: 1;
-  margin-top: -60px; /* Slight optical adjustment upwards */
-}
-
-.headline {
-  font-family: 'Playfair Display', serif;
-  font-size: 96px; /* Massive exact match */
-  line-height: 1.05;
-  font-weight: 500;
-  letter-spacing: -3px; /* Extreme tight tracking */
-  color: #1A1A1A;
-  margin-bottom: 32px;
-}
-
-.italic-text {
-  font-style: italic;
-  font-weight: 400;
-}
-
-.subheadline {
-  font-family: 'Inter', sans-serif;
-  font-size: 18px;
-  font-weight: 400;
-  color: #555;
-  margin-bottom: 40px;
-  letter-spacing: -0.2px;
-}
-
-/* Inline Form */
-.inline-form {
-  display: flex;
   align-items: center;
   gap: 12px;
-  margin-bottom: 20px;
-}
-
-.email-input {
-  width: 300px;
-  background: #FFFFFF;
-  border: 1px solid #E5E5E5;
-  padding: 16px 20px;
-  border-radius: 8px;
-  color: #111;
-  font-size: 16px;
-  outline: none;
-  transition: all 0.2s ease;
-  font-family: inherit;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.02), inset 0 2px 4px rgba(0,0,0,0.01);
-}
-
-.email-input:focus {
-  border-color: #8B5CF6;
-  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.15);
-}
-
-.email-input::placeholder {
-  color: #A3A3A3;
-}
-
-.submit-btn {
-  background: #8B5CF6;
-  color: #fff;
-  border: none;
-  padding: 16px 24px;
-  border-radius: 8px;
-  font-size: 16px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: background 0.2s ease;
-  font-family: inherit;
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  box-shadow: 0 4px 10px rgba(139, 92, 246, 0.2);
-}
-
-.submit-btn:hover {
-  background: #7C3AED;
-}
-
-.twitter-link {
-  font-family: 'Inter', sans-serif;
-  font-size: 14px;
-  color: #888;
-  text-decoration: none;
-}
-
-.twitter-link .underline {
-  text-decoration: underline;
-  text-decoration-color: #ccc;
-  text-underline-offset: 4px;
-}
-
-.twitter-link:hover .underline {
-  text-decoration-color: #888;
-}
-
-/* Bottom Grid (Cut off at the bottom of the screen) */
-.bottom-grid {
-  position: absolute;
-  bottom: -40px;
-  left: 0;
   width: 100%;
-  display: flex;
-  justify-content: center;
-  gap: 16px;
-  padding: 0 40px;
-  opacity: 0.8;
+  max-width: 280px;
 }
 
-.grid-item {
-  width: 280px;
-  height: 200px;
-  background: #fff;
-  border-radius: 16px;
-  box-shadow: 0 10px 40px rgba(0,0,0,0.08);
+.glass-input {
+  width: 100%;
+  padding: 12px 16px;
+  border-radius: 12px;
+  border: 1px solid rgba(0,0,0,0.08);
+  background: rgba(255,255,255,0.8);
+  backdrop-filter: blur(12px);
+  font-family: inherit;
+  font-size: 14px;
+  color: #000000;
+  outline: none;
+  font-weight: 500;
+  box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);
+  transition: border-color 0.2s, box-shadow 0.2s;
 }
-.item-1 { background: linear-gradient(135deg, #FDFBFB 0%, #EBEDEE 100%); }
-.item-2 { background: linear-gradient(135deg, #E0C3FC 0%, #8EC5FC 100%); }
-.item-3 { background: #fff; border: 1px solid #eee; }
-.item-4 { background: linear-gradient(135deg, #f6d365 0%, #fda085 100%); }
+
+.glass-input::placeholder {
+  color: rgba(0,0,0,0.4);
+}
+
+.glass-input:focus {
+  border-color: rgba(0,0,0,0.2);
+  box-shadow: 0 0 0 4px rgba(0,0,0,0.05), inset 0 2px 4px rgba(0,0,0,0.02);
+}
+
+.glass-button {
+  width: 100%;
+  padding: 12px 16px;
+  border-radius: 12px;
+  border: none;
+  background: #000000;
+  color: #ffffff;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.15s, box-shadow 0.15s;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+.glass-button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(0,0,0,0.2);
+}
+
+.glass-button:active {
+  transform: translateY(1px);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.success-message {
+  font-size: 13px;
+  font-weight: 500;
+  color: #2e7d32;
+  text-align: center;
+}
