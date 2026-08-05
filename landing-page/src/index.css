@@ -465,6 +465,124 @@ body::before {
   color: #444;
 }
 
+/* Download Page & Cutting Mat Background */
+.cutting-mat-bg {
+  background-color: #2e4a36; /* Dark green cutting mat */
+  background-image: 
+    linear-gradient(rgba(255, 255, 255, 0.2) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.2) 1px, transparent 1px),
+    linear-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+  background-size: 100px 100px, 100px 100px, 20px 20px, 20px 20px;
+  background-position: center center;
+}
+
+.download-container {
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  padding: 40px;
+  border-radius: 12px;
+  text-align: center;
+  box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+  max-width: 800px;
+  width: 100%;
+}
+
+.download-buttons {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 16px;
+  justify-content: center;
+  margin-bottom: 32px;
+}
+
+.dl-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-family: 'Inter', sans-serif;
+  font-weight: 600;
+  font-size: 16px;
+  text-decoration: none;
+  transition: transform 0.2s, opacity 0.2s;
+}
+
+.dl-btn:hover {
+  transform: translateY(-2px);
+  opacity: 0.9;
+}
+
+.ph-btn {
+  background: #1a1a1a;
+  color: #fff;
+  padding: 8px 16px;
+  gap: 12px;
+}
+
+.ph-logo {
+  background: #fff;
+  color: #1a1a1a;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: 18px;
+}
+
+.ph-text {
+  display: flex;
+  flex-direction: column;
+  text-align: left;
+}
+
+.ph-sub {
+  font-size: 9px;
+  font-weight: 700;
+  color: #aaa;
+  letter-spacing: 0.5px;
+}
+
+.ph-main {
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.ph-votes {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-left: 12px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #aaa;
+}
+
+.mac-btn {
+  background: #111;
+  color: #fff;
+  border: 1px solid #111;
+}
+
+.win-btn {
+  background: #fff;
+  color: #111;
+  border: 1px solid #ddd;
+}
+
+.download-footer-text {
+  font-size: 15px;
+  color: #444;
+  margin: 0;
+  font-weight: 500;
+}
+
 .tier-bullets {
   list-style: none;
   padding: 0;

@@ -1,10 +1,12 @@
 import { useState } from 'react';
 import './index.css';
 
+export type ViewState = 'home' | 'features' | 'pricing' | 'access' | 'privacy' | 'terms' | 'contact' | 'now';
+
 function App() {
   const [email, setEmail] = useState('');
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
-  const [currentView, setCurrentView] = useState<'home' | 'privacy' | 'terms' | 'contact' | 'features' | 'pricing' | 'access'>('home');
+  const [currentView, setCurrentView] = useState<ViewState>('home');
   const [password, setPassword] = useState('');
   const [isUnlocked, setIsUnlocked] = useState(false);
 
@@ -48,6 +50,7 @@ function App() {
         <div className="header-right">
           <a href="#" className="nav-link hidden-mobile" onClick={(e) => { e.preventDefault(); setCurrentView('features'); }}>Features</a>
           <a href="#" className="nav-link hidden-mobile" onClick={(e) => { e.preventDefault(); setCurrentView('pricing'); }}>Pricing</a>
+          <a href="#" className="nav-link hidden-mobile" onClick={(e) => { e.preventDefault(); setCurrentView('now'); }}>Now</a>
           <a href="#" className="nav-button" onClick={(e) => { e.preventDefault(); setCurrentView('access'); }}>Get Access</a>
         </div>
       </header>
@@ -149,58 +152,78 @@ function App() {
           )}
 
           {currentView === 'access' && (
-            <div className="access-view fade-in">
-              <div className="header-left" style={{ marginBottom: '32px', cursor: 'default' }}>
-                <img src="/logo.png" alt="Overlay Logo" className="logo" />
-                <div className="brand-group">
-                  <span className="brand-name">Overlay</span>
-                  <span className="beta-tag">beta</span>
-                </div>
-              </div>
-              <h1 className="bold-claim" style={{fontSize: '32px', marginBottom: '16px'}}>Private Beta Access</h1>
-              <p className="sub-claim" style={{marginBottom: '40px'}}>Overlay is currently operating in a closed beta environment. Please authenticate with your invitation code to proceed.</p>
-              
+            <div className="access-view fade-in" style={isUnlocked ? { maxWidth: '100%", padding: 0 } : {}}>
               {!isUnlocked ? (
-                <form className="waitlist-form" onSubmit={(e) => {
-                  e.preventDefault();
-                  if (password.toLowerCase() === 'overlay') setIsUnlocked(true);
-                  else alert('Incorrect access code (Hint: overlay)');
-                }}>
-                  <input
-                    type="password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="Enter access code..."
-                    className="glass-input"
-                    required
-                  />
-                  <button type="submit" className="glass-button">
-                    Unlock
-                  </button>
-                </form>
-              ) : (
-                <div className="unlocked-section fade-in">
-                  <div className="success-message" style={{marginBottom: '24px'}}>Access granted. You may now join the waitlist.</div>
-                  {status === 'success' ? (
-                    <div className="success-message">
-                      Thank you for registering! We'll be in touch soon.
+                <>
+                  <div className="header-left" style={{ marginBottom: '32px', cursor: 'default' }}>
+                    <img src="/logo.png" alt="Overlay Logo" className="logo" />
+                    <div className="brand-group">
+                      <span className="brand-name">Overlay</span>
+                      <span className="beta-tag">beta</span>
                     </div>
-                  ) : (
-                    <form className="waitlist-form" onSubmit={handleSubmit}>
-                      <input
-                        type="email"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        placeholder="Enter your email..."
-                        className="glass-input"
-                        required
-                        disabled={status === 'loading'}
-                      />
-                      <button type="submit" className="glass-button" disabled={status === 'loading'}>
-                        {status === 'loading' ? 'Joining...' : 'Join Waitlist'}
-                      </button>
-                    </form>
-                  )}
+                  </div>
+                  <h1 className="bold-claim" style={{fontSize: '32px', marginBottom: '16px'}}>Private Beta Access</h1>
+                  <p className="sub-claim" style={{marginBottom: '40px'}}>Overlay is currently operating in a closed beta environment. Please authenticate with your invitation code to proceed.</p>
+                  <form className="waitlist-form" onSubmit={(e) => {
+                    e.preventDefault();
+                    if (password.toUpperCase() === 'OVERLAY404') setIsUnlocked(true);
+                    else alert('Incorrect access code.');
+                  }}>
+                    <input
+                      type="password"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      placeholder="Enter access code..."
+                      className="glass-input"
+                      required
+                    />
+                    <button type="submit" className="glass-button">
+                      Unlock
+                    </button>
+                  </form>
+                </>
+              ) : (
+                <div className="unlocked-section fade-in cutting-mat-bg" style={{
+                  padding: '60px 20px',
+                  borderRadius: '16px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  minHeight: '400px',
+                  justifyContent: 'center',
+                  boxShadow: '0 10px 30px rgba(0,0,0,0.1)'
+                }}>
+                  <div className="download-container">
+                    <div className="download-buttons">
+                      {/* Product Hunt */}
+                      <a href="#" className="dl-btn ph-btn">
+                        <div className="ph-logo">P</div>
+                        <div className="ph-text">
+                          <span className="ph-sub">FIND US ON</span>
+                          <span className="ph-main">Product Hunt</span>
+                        </div>
+                        <div className="ph-votes">
+                          <span>▲</span>
+                          <span>4</span>
+                        </div>
+                      </a>
+
+                      {/* Mac */}
+                      <a href="#" className="dl-btn mac-btn">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.04c-.06 0-.12.01-.18.01a6.97 6.97 0 0 1 1.76-4.59 7.15 7.15 0 0 1 4.54-1.89c.06 0 .12-.01.18-.01a6.97 6.97 0 0 1-1.76 4.59 7.15 7.15 0 0 1-4.54 1.89z" transform="translate(-4, 4)"/><path d="M19.16 11.23c-.02-3.14 2.56-4.66 2.68-4.73-1.46-2.14-3.73-2.43-4.54-2.48-1.92-.19-3.76 1.13-4.74 1.13-.99 0-2.5-1.1-4.08-1.07-2.07.03-3.98 1.2-5.04 3.05-2.14 3.73-.55 9.24 1.54 12.27 1.02 1.48 2.22 3.12 3.82 3.06 1.53-.06 2.12-1 3.97-1 1.84 0 2.38 1 3.99.97 1.65-.03 2.7-1.49 3.7-2.97 1.16-1.7 1.64-3.34 1.66-3.43-.03-.01-3.21-1.23-3.23-4.81z" transform="translate(-1, 0)"/></svg>
+                        Download for Mac
+                      </a>
+
+                      {/* Windows */}
+                      <a href="#" className="dl-btn win-btn">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M0 3.449L9.75 2.1v9.451H0m10.949-9.602L24 0v11.4H10.949M0 12.6h9.75v9.451L0 20.699M10.949 12.6H24V24l-12.951-1.801"/></svg>
+                        Download for Windows
+                      </a>
+                    </div>
+                    <p className="download-footer-text">
+                      Overlay is now on Product Hunt and is available on Mac and Windows. Linux support coming soon.
+                    </p>
+                  </div>
                 </div>
               )}
             </div>
@@ -224,6 +247,21 @@ function App() {
             <div className="policy-content">
               <h1 className="bold-claim" style={{fontSize: '32px'}}>Contact Us</h1>
               <p className="sub-claim">For any inquiries, please email us at support@overlay.app.</p>
+            </div>
+          )}
+
+          {currentView === 'now' && (
+            <div className="policy-content fade-in">
+              <h1 className="bold-claim" style={{fontSize: '32px'}}>Now</h1>
+              <p className="sub-claim" style={{marginBottom: '32px'}}>What we're focused on right now.</p>
+              
+              <ul className="clean-list">
+                <li><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#000" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg> Raising our seed round to scale the team.</li>
+                <li><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#000" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg> Preparing the Windows and Mac betas for a wider release.</li>
+                <li><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#000" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg> Gathering user feedback from our early access cohort.</li>
+              </ul>
+              
+              <p style={{marginTop: '40px', fontSize: '13px', color: '#888'}}>Last updated: August 2026</p>
             </div>
           )}
         </div>
