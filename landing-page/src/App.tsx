@@ -1,5 +1,8 @@
 import { useState } from 'react';
 import './index.css';
+import appleLogo from './assets/logo/apple.png';
+import windowsLogo from './assets/logo/windows.png';
+import phLogo from './assets/logo/producthunt.png';
 
 export type ViewState = 'home' | 'features' | 'pricing' | 'access' | 'privacy' | 'terms' | 'contact' | 'now';
 
@@ -58,15 +61,15 @@ function App() {
           </p>
           <div className="download-buttons" style={{ display: 'flex', flexWrap: 'wrap', gap: '16px', width: '100%' }}>
             <a href="#" className="dl-btn">
-              <img src="/logo/producthunt.png" alt="Product Hunt" style={{ width: '20px', height: '20px', objectFit: 'contain', filter: 'brightness(0) invert(1)' }} />
+              <img src={phLogo} alt="Product Hunt" style={{ width: '20px', height: '20px', objectFit: 'contain', filter: 'brightness(0) invert(1)' }} />
               Product Hunt
             </a>
             <a href="#" className="dl-btn">
-              <img src="/logo/apple.png" alt="Mac" style={{ width: '20px', height: '20px', objectFit: 'contain', filter: 'brightness(0) invert(1)' }} />
+              <img src={appleLogo} alt="Mac" style={{ width: '20px', height: '20px', objectFit: 'contain', filter: 'brightness(0) invert(1)' }} />
               Download for Mac
             </a>
             <a href="#" className="dl-btn">
-              <img src="/logo/windows.png" alt="Windows" style={{ width: '20px', height: '20px', objectFit: 'contain', filter: 'brightness(0) invert(1)' }} />
+              <img src={windowsLogo} alt="Windows" style={{ width: '20px', height: '20px', objectFit: 'contain', filter: 'brightness(0) invert(1)' }} />
               Download for Windows
             </a>
           </div>
