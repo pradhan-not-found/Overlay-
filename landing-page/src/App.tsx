@@ -38,12 +38,10 @@ function App() {
     <div className="page-wrapper">
       {/* Top Header: Logo + Name */}
       <header className="header">
-        <div className="header-left" onClick={() => setCurrentView('home')} style={{ cursor: 'pointer' }}>
-          <img src="/logo.png" alt="Overlay Logo" className="logo" />
-          <div className="brand-group">
-            <span className="brand-name">Overlay</span>
-            <span className="beta-tag">beta</span>
-          </div>
+        <div className="header-left" onClick={() => setCurrentView('home')} style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#000" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 17 12 22 22 17"></polyline><polyline points="2 12 12 17 22 12"></polyline></svg>
+          <span style={{fontWeight: '800', fontSize: '20px', letterSpacing: '-0.02em'}}>Overlay</span>
+          <span style={{background: '#000', color: '#fff', fontSize: '10px', padding: '2px 8px', borderRadius: '12px', fontWeight: '700', letterSpacing: '0.05em', textTransform: 'uppercase'}}>Beta</span>
         </div>
         <div className="header-right">
           <a href="#" className="nav-link hidden-mobile" onClick={(e) => { e.preventDefault(); setCurrentView('features'); }}>Features</a>
