@@ -150,8 +150,13 @@ function App() {
 
           {currentView === 'access' && (
             <div className="access-view fade-in">
-              <h1 className="bold-claim">Early Access Gateway.</h1>
-              <p className="sub-claim">Overlay is currently in a closed beta. Enter your access code to join the waitlist.</p>
+              <div style={{display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '32px'}}>
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#000" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 17 12 22 22 17"></polyline><polyline points="2 12 12 17 22 12"></polyline></svg>
+                <span style={{fontWeight: '800', fontSize: '24px', letterSpacing: '-0.02em'}}>Overlay</span>
+                <span style={{background: '#000', color: '#fff', fontSize: '11px', padding: '3px 8px', borderRadius: '12px', fontWeight: '700', letterSpacing: '0.05em', textTransform: 'uppercase'}}>Beta</span>
+              </div>
+              <h1 className="bold-claim" style={{fontSize: '32px', marginBottom: '16px'}}>Private Beta Access</h1>
+              <p className="sub-claim" style={{marginBottom: '40px'}}>Overlay is currently operating in a closed beta environment. Please authenticate with your invitation code to proceed.</p>
               
               {!isUnlocked ? (
                 <form className="waitlist-form" onSubmit={(e) => {
