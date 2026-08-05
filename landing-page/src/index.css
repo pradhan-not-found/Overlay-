@@ -467,6 +467,12 @@ body::before {
 
 /* Download Page & Cutting Mat Background */
 .cutting-mat-bg {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: -1;
   background-color: #2e4a36; /* Dark green cutting mat */
   background-image: 
     linear-gradient(rgba(255, 255, 255, 0.2) 1px, transparent 1px),
@@ -475,6 +481,49 @@ body::before {
     linear-gradient(90deg, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
   background-size: 100px 100px, 100px 100px, 20px 20px, 20px 20px;
   background-position: center center;
+}
+
+/* Download Mode Overrides for full-page professional look */
+.download-mode {
+  padding: 0;
+  max-width: 100%;
+}
+.download-mode .header {
+  background: transparent;
+  border: none;
+}
+.download-mode .brand-name {
+  color: #fff;
+}
+.download-mode .beta-tag {
+  background: rgba(255, 255, 255, 0.2);
+  color: #fff;
+}
+.download-mode .nav-link {
+  color: #ddd;
+}
+.download-mode .nav-link:hover {
+  color: #fff;
+}
+.download-mode .nav-button {
+  background: #fff;
+  color: #000;
+}
+.download-mode .logo {
+  filter: none; /* Logo is naturally white, remove inversion */
+}
+.download-mode .simple-footer {
+  display: none;
+}
+.download-mode .unlocked-section {
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: absolute;
+  top: 0;
+  left: 0;
 }
 
 .download-container {

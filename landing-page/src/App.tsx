@@ -37,7 +37,7 @@ function App() {
   };
 
   return (
-    <div className="page-wrapper">
+    <div className={`page-wrapper ${currentView === 'access' && isUnlocked ? 'download-mode' : ''}`}>
       {/* Top Header: Logo + Name */}
       <header className="header">
         <div className="header-left" onClick={() => setCurrentView('home')} style={{ cursor: 'pointer' }}>
