@@ -62,9 +62,12 @@ function App() {
                 New: Focus Timer
               </a>
               <h1 className="bold-claim">
-                The Dynamic Command Center<br />for Your{' '}
-                <span className="rotating-text-wrapper">
-                  <span key={wordIndex} className="rotating-text">{words[wordIndex]}</span>
+                The Dynamic Command Center<br />
+                <span style={{ whiteSpace: 'nowrap' }}>
+                  for Your{' '}
+                  <span className="rotating-text-wrapper">
+                    <span key={wordIndex} className="rotating-text">{words[wordIndex]}</span>
+                  </span>
                 </span>
               </h1>
               <p className="sub-claim">
