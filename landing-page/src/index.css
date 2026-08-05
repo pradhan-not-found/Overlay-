@@ -438,16 +438,7 @@ body::before {
   stroke: #000;
 }
 
-/* Pricing View */
-.pricing-view {
-  max-width: 900px;
-  width: 100%;
-}
 
-.pricing-cards {
-  display: flex;
-  gap: 32px;
-  margin-top: 40px;
 .sleek-pricing-tier {
   padding: 24px 0;
   border-bottom: 1px solid #eaeaea;
