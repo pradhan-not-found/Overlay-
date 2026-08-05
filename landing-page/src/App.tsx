@@ -35,10 +35,57 @@ function App() {
         setStatus('error');
       }
     }
-  };
+  if (currentView === 'access' && isUnlocked) {
+    return (
+      <div className="download-mode fade-in" style={{ width: '100vw', height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'fixed', top: 0, left: 0, zIndex: 100 }}>
+        {/* Isolated Header just for Download Page */}
+        <header style={{ position: 'absolute', top: '32px', left: '32px', display: 'flex', alignItems: 'center', gap: '8px', zIndex: 110 }}>
+          <img src="/logo.png" alt="Overlay Logo" style={{ width: '24px', height: '24px', borderRadius: '6px' }} />
+          <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+            <span style={{ color: '#fff', fontWeight: 800, fontSize: '18px' }}>Overlay</span>
+            <span style={{ background: 'rgba(255, 255, 255, 0.2)', color: '#fff', padding: '2px 6px', borderRadius: '4px', fontSize: '10px', fontWeight: 700, textTransform: 'uppercase' }}>beta</span>
+          </div>
+        </header>
+
+        {/* Centered Download Content */}
+        <div style={{ maxWidth: '800px', width: '100%', padding: '40px', display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
+          <h2 style={{ fontSize: '48px', fontWeight: 800, marginBottom: '16px', color: '#fff', letterSpacing: '-0.03em' }}>Welcome to Overlay.</h2>
+          <p style={{ fontSize: '18px', color: 'rgba(255,255,255,0.8)', marginBottom: '32px', lineHeight: '1.6', maxWidth: '600px' }}>
+            Overlay is your native focus timer and workflow companion. 
+            By participating in the closed beta, you're helping us shape the future of deep work. 
+            Choose your platform below to download the app and get started.
+          </p>
+          <div className="download-buttons" style={{ display: 'flex', flexWrap: 'wrap', gap: '16px', width: '100%' }}>
+            <a href="#" className="dl-btn ph-btn">
+              <div className="ph-logo">P</div>
+              <div className="ph-text">
+                <span className="ph-sub">FIND US ON</span>
+                <span className="ph-main">Product Hunt</span>
+              </div>
+              <div className="ph-votes">
+                <span>▲</span>
+                <span>4</span>
+              </div>
+            </a>
+            <a href="#" className="dl-btn mac-btn">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2zm3.176 13.916c-.732.148-1.57.175-2.227.026-.693-.157-1.428-.485-2.12-.916-.763-.473-1.42-1.077-1.92-1.745-.55-.733-.873-1.455-.957-2.136-.093-.746.066-1.488.46-2.164.442-.76 1.053-1.32 1.748-1.636.78-.352 1.635-.452 2.378-.305.674.133 1.353.473 1.956.96.115.093.226.195.334.3.08-.088.163-.178.25-.27.697-.736 1.343-1.417 1.343-1.417.06-.063.14-.083.218-.052.08.03.136.096.15.178.11 1.05.02 2.073-.25 3.018-.18.636-.43 1.25-.745 1.833-.356.657-.79 1.268-1.285 1.833-.31.355-.65.69-.998.995l-.1.09z"></path></svg>
+              Download for Mac
+            </a>
+            <a href="#" className="dl-btn win-btn">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M0 0h11.4v11.4H0V0zm12.6 0H24v11.4H12.6V0zM0 12.6h11.4V24H0V12.6zm12.6 0H24V24H12.6V12.6z"></path></svg>
+              Download for Windows
+            </a>
+          </div>
+          <p className="download-footer-text" style={{ marginTop: '40px', fontSize: '15px', color: 'rgba(255, 255, 255, 0.7)', fontWeight: 500 }}>
+            Overlay is now on Product Hunt and is available on Mac and Windows. Linux support coming soon.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className={`page-wrapper ${currentView === 'access' && isUnlocked ? 'download-mode' : ''}`}>
+    <div className="page-wrapper">
       {/* Top Header: Logo + Name */}
       <header className="header">
         <div className="header-left" onClick={() => setCurrentView('home')} style={{ cursor: 'pointer' }}>
@@ -161,86 +208,42 @@ function App() {
 
           {currentView === 'access' && (
             <div className="access-view fade-in">
-              {!isUnlocked ? (
-                <>
-                  <div className="header-left" style={{ marginBottom: '32px', cursor: 'default' }}>
-                    <img src="/logo.png" alt="Overlay Logo" className="logo" />
-                    <div className="brand-group">
-                      <span className="brand-name">Overlay</span>
-                      <span className="beta-tag">beta</span>
-                    </div>
-                  </div>
-                  <h1 className="bold-claim" style={{fontSize: '32px', marginBottom: '16px'}}>Private Beta Access</h1>
-                  <p className="sub-claim" style={{marginBottom: '40px'}}>Overlay is currently operating in a closed beta environment. Please authenticate with your invitation code to proceed.</p>
-                  <form className="waitlist-form" style={{ display: 'flex', flexWrap: 'wrap', gap: '12px' }} onSubmit={(e) => {
-                    e.preventDefault();
-                    if (password.toUpperCase() === 'OVERLAY404') {
-                      setIsUnlocked(true);
-                      setAccessError('');
-                    } else {
-                      setAccessError('Incorrect access code. Please try again.');
-                    }
-                  }}>
-                    <input
-                      type="password"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      placeholder="Enter access code..."
-                      className="glass-input"
-                      required
-                    />
-                    <button type="submit" className="glass-button">
-                      Unlock
-                    </button>
-                    {accessError && (
-                      <div className="fade-in" style={{ width: '100%', color: '#ef4444', marginTop: '4px', fontSize: '14px', fontWeight: 500, display: 'flex', alignItems: 'center', gap: '6px', justifyContent: 'flex-start' }}>
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
-                        {accessError}
-                      </div>
-                    )}
-                  </form>
-                </>
-              ) : (
-                <div className="unlocked-section fade-in">
-                  <div className="download-container">
-                    <h2 style={{ fontSize: '48px', fontWeight: 800, marginBottom: '16px', color: '#fff', letterSpacing: '-0.03em' }}>Welcome to Overlay.</h2>
-                    <p style={{ fontSize: '18px', color: 'rgba(255,255,255,0.8)', marginBottom: '32px', lineHeight: '1.6', maxWidth: '600px' }}>
-                      Overlay is your native focus timer and workflow companion. 
-                      By participating in the closed beta, you're helping us shape the future of deep work. 
-                      Choose your platform below to download the app and get started.
-                    </p>
-                    <div className="download-buttons">
-                      {/* Product Hunt */}
-                      <a href="#" className="dl-btn ph-btn">
-                        <div className="ph-logo">P</div>
-                        <div className="ph-text">
-                          <span className="ph-sub">FIND US ON</span>
-                          <span className="ph-main">Product Hunt</span>
-                        </div>
-                        <div className="ph-votes">
-                          <span>▲</span>
-                          <span>4</span>
-                        </div>
-                      </a>
-
-                      {/* Mac */}
-                      <a href="#" className="dl-btn mac-btn">
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.04c-.06 0-.12.01-.18.01a6.97 6.97 0 0 1 1.76-4.59 7.15 7.15 0 0 1 4.54-1.89c.06 0 .12-.01.18-.01a6.97 6.97 0 0 1-1.76 4.59 7.15 7.15 0 0 1-4.54 1.89z" transform="translate(-4, 4)"/><path d="M19.16 11.23c-.02-3.14 2.56-4.66 2.68-4.73-1.46-2.14-3.73-2.43-4.54-2.48-1.92-.19-3.76 1.13-4.74 1.13-.99 0-2.5-1.1-4.08-1.07-2.07.03-3.98 1.2-5.04 3.05-2.14 3.73-.55 9.24 1.54 12.27 1.02 1.48 2.22 3.12 3.82 3.06 1.53-.06 2.12-1 3.97-1 1.84 0 2.38 1 3.99.97 1.65-.03 2.7-1.49 3.7-2.97 1.16-1.7 1.64-3.34 1.66-3.43-.03-.01-3.21-1.23-3.23-4.81z" transform="translate(-1, 0)"/></svg>
-                        Download for Mac
-                      </a>
-
-                      {/* Windows */}
-                      <a href="#" className="dl-btn win-btn">
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M0 3.449L9.75 2.1v9.451H0m10.949-9.602L24 0v11.4H10.949M0 12.6h9.75v9.451L0 20.699M10.949 12.6H24V24l-12.951-1.801"/></svg>
-                        Download for Windows
-                      </a>
-                    </div>
-                    <p className="download-footer-text">
-                      Overlay is now on Product Hunt and is available on Mac and Windows. Linux support coming soon.
-                    </p>
-                  </div>
+              <div className="header-left" style={{ marginBottom: '32px', cursor: 'default' }}>
+                <img src="/logo.png" alt="Overlay Logo" className="logo" />
+                <div className="brand-group">
+                  <span className="brand-name">Overlay</span>
+                  <span className="beta-tag">beta</span>
                 </div>
-              )}
+              </div>
+              <h1 className="bold-claim" style={{fontSize: '32px', marginBottom: '16px'}}>Private Beta Access</h1>
+              <p className="sub-claim" style={{marginBottom: '40px'}}>Overlay is currently operating in a closed beta environment. Please authenticate with your invitation code to proceed.</p>
+              <form className="waitlist-form" style={{ display: 'flex', flexWrap: 'wrap', gap: '12px' }} onSubmit={(e) => {
+                e.preventDefault();
+                if (password.toUpperCase() === 'OVERLAY404') {
+                  setIsUnlocked(true);
+                  setAccessError('');
+                } else {
+                  setAccessError('Incorrect access code. Please try again.');
+                }
+              }}>
+                <input
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Enter access code..."
+                  className="glass-input"
+                  required
+                />
+                <button type="submit" className="glass-button">
+                  Unlock
+                </button>
+                {accessError && (
+                  <div className="fade-in" style={{ width: '100%', color: '#ef4444', marginTop: '4px', fontSize: '14px', fontWeight: 500, display: 'flex', alignItems: 'center', gap: '6px', justifyContent: 'flex-start' }}>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+                    {accessError}
+                  </div>
+                )}
+              </form>
             </div>
           )}
 
