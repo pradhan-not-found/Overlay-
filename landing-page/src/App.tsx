@@ -69,6 +69,8 @@ function App() {
                       <span>Workflow.</span>
                       <span>Meetings.</span>
                       <span>Music.</span>
+                      <span>Focus.</span>
+                      <span>Ideas.</span>
                       <span aria-hidden="true">Desktop.</span>
                     </div>
                   </span>
