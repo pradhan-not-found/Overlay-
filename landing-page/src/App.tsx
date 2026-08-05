@@ -45,7 +45,7 @@ function App() {
         </div>
         <div className="header-right">
           <a href="#" className="nav-link hidden-mobile" onClick={(e) => e.preventDefault()}>Features</a>
-          <a href="#" className="nav-link hidden-mobile" onClick={(e) => e.preventDefault()}>Changelog</a>
+          <a href="#" className="nav-link hidden-mobile" onClick={(e) => e.preventDefault()}>Pricing</a>
           <a href="#" className="nav-button" onClick={(e) => e.preventDefault()}>Get Access</a>
         </div>
       </header>
