@@ -185,6 +185,8 @@ function App() {
               ) : (
                 <div className="unlocked-section fade-in">
                   <div className="download-container">
+                    <h2 style={{ fontSize: '32px', fontWeight: 800, marginBottom: '8px', color: '#fff', letterSpacing: '-0.02em' }}>Welcome to Overlay.</h2>
+                    <p style={{ fontSize: '16px', color: 'rgba(255,255,255,0.7)', marginBottom: '40px' }}>Download the desktop app to get started.</p>
                     <div className="download-buttons">
                       {/* Product Hunt */}
                       <a href="#" className="dl-btn ph-btn">

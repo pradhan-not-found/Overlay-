@@ -472,8 +472,8 @@ body::before {
   position: fixed;
   top: 0;
   left: 0;
-  width: 100vw;
-  height: 100vh;
+  right: 0;
+  bottom: 0;
   z-index: 100; /* Cover the regular body background completely */
   background-color: #2e4a36; /* Dark green cutting mat */
   background-image: 
@@ -512,8 +512,8 @@ body::before {
   display: none;
 }
 .download-mode .unlocked-section {
-  width: 100vw;
-  height: 100vh;
+  width: 100%;
+  height: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -522,8 +522,8 @@ body::before {
   left: 0;
 }
 .download-mode .access-view {
-  width: 100vw;
-  height: 100vh;
+  width: 100%;
+  height: 100%;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -552,12 +552,7 @@ body::before {
 }
 
 .download-container {
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(10px);
-  padding: 40px;
-  border-radius: 12px;
   text-align: center;
-  box-shadow: 0 20px 40px rgba(0,0,0,0.2);
   max-width: 800px;
   width: 100%;
 }
@@ -652,7 +647,7 @@ body::before {
 
 .download-footer-text {
   font-size: 15px;
-  color: #444;
+  color: rgba(255, 255, 255, 0.7);
   margin: 0;
   font-weight: 500;
 }
