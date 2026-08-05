@@ -35,13 +35,18 @@ function App() {
   return (
     <div className="page-wrapper">
       {/* Top Header: Logo + Name */}
-      <header className="header" onClick={() => setCurrentView('home')} style={{ cursor: 'pointer' }}>
-        <div className="header-left">
+      <header className="header">
+        <div className="header-left" onClick={() => setCurrentView('home')} style={{ cursor: 'pointer' }}>
           <img src="/logo.png" alt="Overlay Logo" className="logo" />
           <div className="brand-group">
             <span className="brand-name">Overlay</span>
             <span className="beta-tag">beta</span>
           </div>
+        </div>
+        <div className="header-right">
+          <a href="#" className="nav-link hidden-mobile" onClick={(e) => e.preventDefault()}>Features</a>
+          <a href="#" className="nav-link hidden-mobile" onClick={(e) => e.preventDefault()}>Changelog</a>
+          <a href="#" className="nav-button" onClick={(e) => e.preventDefault()}>Get Access</a>
         </div>
       </header>
 

@@ -122,6 +122,52 @@ body::before {
   line-height: 1;
 }
 
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.nav-link {
+  font-family: 'Rethink Sans', sans-serif;
+  font-weight: 600;
+  font-size: 15px;
+  color: #666666;
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+.nav-link:hover {
+  color: #000000;
+}
+
+.nav-button {
+  font-family: 'Rethink Sans', sans-serif;
+  font-weight: 700;
+  font-size: 15px;
+  background-color: #000000;
+  color: #ffffff;
+  padding: 6px 14px;
+  border-radius: 8px;
+  text-decoration: none;
+  transition: background-color 0.2s, transform 0.2s;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+}
+
+.nav-button:hover {
+  background-color: #222222;
+  transform: translateY(-1px);
+}
+
+@media (max-width: 600px) {
+  .hidden-mobile {
+    display: none;
+  }
+  .header-right {
+    gap: 12px;
+  }
+}
+
 .main-content {
   flex: 1;
   display: flex;
