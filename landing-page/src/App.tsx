@@ -53,7 +53,7 @@ function App() {
 
         {/* Centered Download Content */}
         <div style={{ maxWidth: '800px', width: '100%', padding: '40px', display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
-          <h2 style={{ fontSize: '48px', fontWeight: 800, marginBottom: '16px', color: '#fff', letterSpacing: '-0.03em' }}>Welcome to Overlay <span className="beta-tag" style={{ display: 'inline-flex', verticalAlign: 'middle', background: 'rgba(255,255,255,0.2)', color: '#fff', marginLeft: '8px' }}>beta</span></h2>
+          <h2 style={{ fontSize: '48px', fontWeight: 800, marginBottom: '16px', color: '#fff', letterSpacing: '-0.03em' }}>Welcome to Overlay <span className="beta-tag" style={{ display: 'inline-flex', verticalAlign: 'middle', background: 'rgba(255,255,255,0.2)', color: '#fff', marginLeft: '12px', fontSize: '26px', padding: '2px 14px', borderRadius: '14px', position: 'relative', top: '-4px' }}>beta</span></h2>
           <p style={{ fontSize: '18px', color: 'rgba(255,255,255,0.8)', marginBottom: '32px', lineHeight: '1.6', maxWidth: '600px' }}>
             Overlay is your native focus timer and workflow companion. 
             By participating in the closed beta, you're helping us shape the future of deep work. 
