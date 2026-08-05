@@ -199,7 +199,7 @@ body::before {
   font-size: 48px;
   font-weight: 800;
   color: #000000;
-  line-height: 1.2;
+  line-height: 1.1;
   margin-bottom: 24px;
   letter-spacing: -0.05em;
 }
@@ -208,7 +208,7 @@ body::before {
   display: inline-block;
   overflow: hidden;
   vertical-align: bottom;
-  height: 1.2em;
+  height: 1.25em;
   color: #000000;
 }
 
@@ -219,18 +219,19 @@ body::before {
 }
 
 .rotating-text-inner span {
-  height: 1.2em;
-  line-height: 1.2em;
+  height: 1.25em;
+  line-height: 1.25em;
   display: block;
+  padding-bottom: 0.1em;
 }
 
 @keyframes scrollText {
   0%, 16% { transform: translateY(0); }
-  20%, 36% { transform: translateY(-1.2em); }
-  40%, 56% { transform: translateY(-2.4em); }
-  60%, 76% { transform: translateY(-3.6em); }
-  80%, 96% { transform: translateY(-4.8em); }
-  100% { transform: translateY(-6.0em); }
+  20%, 36% { transform: translateY(-1.25em); }
+  40%, 56% { transform: translateY(-2.5em); }
+  60%, 76% { transform: translateY(-3.75em); }
+  80%, 96% { transform: translateY(-5em); }
+  100% { transform: translateY(-6.25em); }
 }
 
 .sub-claim {
@@ -509,143 +510,91 @@ body::before {
 }
 
 .pricing-cards {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  display: flex;
   gap: 32px;
   margin-top: 40px;
 }
 
 .pricing-card {
+  flex: 1;
   background: #ffffff;
   border: 1px solid #eaeaea;
   border-radius: 16px;
   padding: 32px;
   display: flex;
   flex-direction: column;
-  position: relative;
-  transition: transform 0.2s, box-shadow 0.2s;
-}
-
-.pricing-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.05);
 }
 
 .pricing-card.premium {
   background: #000000;
   color: #ffffff;
   border-color: #000000;
-  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.2);
-}
-
-.pricing-card.premium:hover {
-  box-shadow: 0 24px 48px rgba(0, 0, 0, 0.3);
-}
-
-.popular-badge {
-  position: absolute;
-  top: -14px;
-  right: 32px;
-  background: linear-gradient(135deg, #ff2a5f, #ff719a);
-  color: #ffffff;
-  font-size: 12px;
-  font-weight: 800;
-  padding: 6px 14px;
-  border-radius: 20px;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-  box-shadow: 0 4px 12px rgba(255, 42, 95, 0.3);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.1);
 }
 
 .pricing-card h2 {
   font-family: 'Rethink Sans', sans-serif;
   font-size: 24px;
+  margin-bottom: 16px;
   font-weight: 700;
-  margin-bottom: 8px;
 }
 
-.pricing-card.premium h2 {
-  color: #ffffff;
-}
-
-.price {
+.pricing-card .price {
   font-size: 48px;
   font-weight: 800;
-  font-family: 'Helvetica', sans-serif;
-  letter-spacing: -0.04em;
   margin-bottom: 32px;
+  letter-spacing: -0.05em;
+  font-family: 'Rethink Sans', sans-serif;
 }
 
-.price-term {
+.pricing-card .price span {
   font-size: 16px;
   font-weight: 500;
-  color: #888;
+  color: #666;
   letter-spacing: normal;
 }
 
-.pricing-features {
+.features-list {
   list-style: none;
   padding: 0;
   margin: 0 0 32px 0;
-  flex: 1;
 }
 
-.pricing-features li {
+.features-list li {
   font-size: 15px;
+  color: #444;
   margin-bottom: 16px;
   display: flex;
   align-items: center;
-  color: #555;
+  gap: 12px;
 }
 
-.pricing-card.premium .pricing-features li {
-  color: #ccc;
-}
-
-.pricing-features li::before {
-  content: '✓';
-  display: inline-block;
-  margin-right: 12px;
-  font-weight: 700;
+.features-list li svg {
   color: #000;
+  flex-shrink: 0;
 }
 
-.pricing-card.premium .pricing-features li::before {
-  color: #fff;
-}
-
-.pricing-btn {
-  width: 100%;
-  text-align: center;
-  padding: 14px;
-  font-size: 16px;
-  font-weight: 600;
-  border-radius: 8px;
-  display: block;
-  cursor: pointer;
-  transition: transform 0.2s, background-color 0.2s;
-  text-decoration: none;
-}
-
-.pricing-btn.outline {
-  background: transparent;
-  color: #000;
-  border: 1px solid #000;
-}
-
-.pricing-btn.outline:hover {
+.pro-badge {
+  position: absolute;
+  top: -12px;
+  left: 50%;
+  transform: translateX(-50%);
   background: #000;
   color: #fff;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
 }
 
-.pricing-btn.solid {
-  background: #fff;
-  color: #000;
+.pricing-card.pro {
+  border: 2px solid #000;
+  box-shadow: 0 12px 32px rgba(0,0,0,0.08);
+  transform: scale(1.02);
 }
 
-.pricing-btn.solid:hover {
-  background: #f0f0f0;
-}
 
 /* Access View */
 .access-view {

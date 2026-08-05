@@ -178,25 +178,35 @@ function App() {
                 <div className="pricing-card">
                   <h2>Basic</h2>
                   <div className="price">Free</div>
-                  <ul className="pricing-features">
-                    <li>Essential media controls</li>
-                    <li>Battery & Power status</li>
-                    <li>System HUD replacement</li>
+                  <ul className="features-list">
+                    <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="20 6 9 17 4 12"></polyline></svg> Core HUD functionality</li>
+                    <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="20 6 9 17 4 12"></polyline></svg> Up to 2 connected devices</li>
+                    <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="20 6 9 17 4 12"></polyline></svg> Community support</li>
                   </ul>
-                  <button className="pricing-btn outline" onClick={(e) => { e.preventDefault(); setCurrentView('access'); }}>Get Started</button>
+                  <button className="nav-button" onClick={() => setCurrentView('access')} style={{ width: '100%', marginTop: '24px' }}>Get Started</button>
                 </div>
-                <div className="pricing-card premium">
-                  <div className="popular-badge">Most Popular</div>
+                <div className="pricing-card pro">
+                  <div className="pro-badge">Most Popular</div>
                   <h2>Pro</h2>
-                  <div className="price">$29 <span className="price-term">lifetime</span></div>
-                  <ul className="pricing-features">
-                    <li>Everything in Basic</li>
-                    <li>Calendar & 1-tap Meetings</li>
-                    <li>Camera Preview check</li>
-                    <li>Lock In (Focus Timer)</li>
-                    <li>Quick File Share</li>
+                  <div className="price">$49<span>/year</span></div>
+                  <ul className="features-list">
+                    <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="20 6 9 17 4 12"></polyline></svg> Everything in Basic</li>
+                    <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="20 6 9 17 4 12"></polyline></svg> Unlimited connected devices</li>
+                    <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="20 6 9 17 4 12"></polyline></svg> Priority email support</li>
+                    <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="20 6 9 17 4 12"></polyline></svg> Custom visual themes</li>
                   </ul>
-                  <button className="pricing-btn solid" onClick={(e) => { e.preventDefault(); setCurrentView('access'); }}>Get Pro Access</button>
+                  <button className="nav-button" onClick={() => setCurrentView('access')} style={{ width: '100%', marginTop: '24px', background: '#000', color: '#fff' }}>Get Pro</button>
+                </div>
+                <div className="pricing-card">
+                  <h2>Lifetime</h2>
+                  <div className="price">$149<span>/once</span></div>
+                  <ul className="features-list">
+                    <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="20 6 9 17 4 12"></polyline></svg> Everything in Pro</li>
+                    <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="20 6 9 17 4 12"></polyline></svg> Lifetime software updates</li>
+                    <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="20 6 9 17 4 12"></polyline></svg> No recurring subscriptions</li>
+                    <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="20 6 9 17 4 12"></polyline></svg> Priority feature requests</li>
+                  </ul>
+                  <button className="nav-button" onClick={() => setCurrentView('access')} style={{ width: '100%', marginTop: '24px' }}>Get Lifetime</button>
                 </div>
               </div>
             </div>
