@@ -175,9 +175,17 @@ body::before {
   justify-content: space-between;
 }
 
-/* Left side content */
+/* Left side content for home */
 .text-section {
   max-width: 650px;
+}
+
+/* Full width content for other views */
+.full-section {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
 .bold-claim {
@@ -390,6 +398,12 @@ body::before {
 .features-view {
   max-width: 1040px;
   width: 100%;
+  margin: 0 auto;
+}
+
+.features-header {
+  text-align: center;
+  margin-bottom: 40px;
 }
 
 .features-bento {
@@ -530,6 +544,7 @@ body::before {
 .pricing-view {
   max-width: 900px;
   width: 100%;
+  margin: 0 auto;
 }
 
 .pricing-cards {
@@ -642,6 +657,9 @@ body::before {
 /* Access View */
 .access-view {
   max-width: 600px;
+  width: 100%;
+  margin: 0 auto;
+  text-align: center;
 }
 
 .unlocked-section {

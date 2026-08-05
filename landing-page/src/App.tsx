@@ -52,9 +52,9 @@ function App() {
         </div>
       </header>
 
-      {/* Middle Content: Side-aligned Text & Form */}
+      {/* Middle Content */}
       <main className="main-content">
-        <div className="text-section">
+        <div className={currentView === 'home' ? 'text-section' : 'full-section'}>
           {currentView === 'home' && (
             <>
               <a href="#" className="badge">
@@ -82,15 +82,34 @@ function App() {
                 Experience frictionless productivity. Overlay is a keyboard-driven workspace that puts all your essential tools just a keystroke away. Register now for early access.
               </p>
 
-              <div style={{ marginTop: '32px' }}>
-                <a href="#" className="nav-button" style={{ padding: '12px 24px', fontSize: '16px' }} onClick={(e) => { e.preventDefault(); setCurrentView('access'); }}>Join the Waitlist &rarr;</a>
-              </div>
+              {status === 'success' ? (
+                <div className="success-message">
+                  Thank you for registering! We'll be in touch soon.
+                </div>
+              ) : (
+                <form className="waitlist-form" onSubmit={handleSubmit}>
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="Enter your email..."
+                    className="glass-input"
+                    required
+                    disabled={status === 'loading'}
+                  />
+                  <button type="submit" className="glass-button" disabled={status === 'loading'}>
+                    {status === 'loading' ? 'Joining...' : 'Join Waitlist'}
+                  </button>
+                </form>
+              )}
             </>
           )}
 
           {currentView === 'features' && (
             <div className="features-view fade-in">
-              <h1 className="bold-claim" style={{ fontSize: '36px', marginBottom: '32px' }}>Everything You Need. <br/><span style={{color: '#888'}}>Nothing You Don't.</span></h1>
+              <div className="features-header">
+                <h1 className="bold-claim" style={{ fontSize: '48px', marginBottom: '16px' }}>Everything You Need. <br/><span style={{color: '#888'}}>Nothing You Don't.</span></h1>
+              </div>
               <div className="features-bento">
                 
                 {/* 1. Tall Card: Lock In */}
