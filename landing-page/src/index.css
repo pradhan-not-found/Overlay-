@@ -510,7 +510,8 @@ body::before {
 }
 
 .pricing-cards {
-  display: flex;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
   gap: 32px;
   margin-top: 40px;
 }
@@ -585,8 +586,9 @@ body::before {
 
 .pricing-features {
   list-style: none;
+  padding: 0;
+  margin: 0 0 32px 0;
   flex: 1;
-  margin-bottom: 32px;
 }
 
 .pricing-features li {
@@ -618,7 +620,12 @@ body::before {
   text-align: center;
   padding: 14px;
   font-size: 16px;
+  font-weight: 600;
+  border-radius: 8px;
   display: block;
+  cursor: pointer;
+  transition: transform 0.2s, background-color 0.2s;
+  text-decoration: none;
 }
 
 .pricing-btn.outline {

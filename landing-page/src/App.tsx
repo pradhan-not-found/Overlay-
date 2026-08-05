@@ -183,7 +183,7 @@ function App() {
                     <li>Battery & Power status</li>
                     <li>System HUD replacement</li>
                   </ul>
-                  <button className="nav-button pricing-btn outline" onClick={(e) => { e.preventDefault(); setCurrentView('access'); }}>Get Started</button>
+                  <button className="pricing-btn outline" onClick={(e) => { e.preventDefault(); setCurrentView('access'); }}>Get Started</button>
                 </div>
                 <div className="pricing-card premium">
                   <div className="popular-badge">Most Popular</div>
@@ -196,7 +196,7 @@ function App() {
                     <li>Lock In (Focus Timer)</li>
                     <li>Quick File Share</li>
                   </ul>
-                  <button className="nav-button pricing-btn solid" onClick={(e) => { e.preventDefault(); setCurrentView('access'); }}>Get Pro Access</button>
+                  <button className="pricing-btn solid" onClick={(e) => { e.preventDefault(); setCurrentView('access'); }}>Get Pro Access</button>
                 </div>
               </div>
             </div>
