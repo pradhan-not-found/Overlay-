@@ -37,7 +37,7 @@ function App() {
   };
 
   return (
-    <div className={`page-wrapper ${currentView === 'access' && isUnlocked ? 'download-mode' : ''}`}>
+    <div className={`page-wrapper ${currentView === 'access' ? 'download-mode' : ''}`}>
       {/* Top Header: Logo + Name */}
       <header className="header">
         <div className="header-left" onClick={() => setCurrentView('home')} style={{ cursor: 'pointer' }}>
@@ -152,7 +152,7 @@ function App() {
           )}
 
           {currentView === 'access' && (
-            <div className="access-view fade-in" style={isUnlocked ? { maxWidth: '100%', padding: 0 } : {}}>
+            <div className="access-view fade-in">
               {!isUnlocked ? (
                 <>
                   <div className="header-left" style={{ marginBottom: '32px', cursor: 'default' }}>
@@ -183,16 +183,7 @@ function App() {
                   </form>
                 </>
               ) : (
-                <div className="unlocked-section fade-in cutting-mat-bg" style={{
-                  padding: '60px 20px',
-                  borderRadius: '16px',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                  minHeight: '400px',
-                  justifyContent: 'center',
-                  boxShadow: '0 10px 30px rgba(0,0,0,0.1)'
-                }}>
+                <div className="unlocked-section fade-in">
                   <div className="download-container">
                     <div className="download-buttons">
                       {/* Product Hunt */}
