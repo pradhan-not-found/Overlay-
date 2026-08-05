@@ -59,7 +59,7 @@ function App() {
             <>
               <a href="#" className="badge">
                 <span className="badge-pill">New</span>
-                <span className="badge-label">Introducing Overlay: Join the closed beta waitlist &rarr;</span>
+                <span className="badge-label">Introducing Overlay: Join the closed beta waitlist</span>
               </a>
               <h1 className="bold-claim">
                 The Dynamic Command Center<br />
