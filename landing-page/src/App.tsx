@@ -40,18 +40,17 @@ function App() {
   if (currentView === 'access' && isUnlocked) {
     return (
       <div className="download-mode fade-in" style={{ width: '100vw', height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'fixed', top: 0, left: 0, zIndex: 100 }}>
-        {/* Isolated Header just for Download Page */}
         <header style={{ position: 'absolute', top: '32px', left: '32px', display: 'flex', alignItems: 'center', gap: '8px', zIndex: 110 }}>
           <img src="/logo.png" alt="Overlay Logo" style={{ width: '24px', height: '24px', borderRadius: '6px' }} />
           <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
             <span style={{ color: '#fff', fontWeight: 800, fontSize: '18px' }}>Overlay</span>
-            <span style={{ background: 'rgba(255, 255, 255, 0.2)', color: '#fff', padding: '2px 6px', borderRadius: '4px', fontSize: '10px', fontWeight: 700, textTransform: 'uppercase' }}>beta</span>
+            <span className="beta-tag" style={{ background: 'rgba(255, 255, 255, 0.2)', color: '#fff' }}>beta</span>
           </div>
         </header>
 
         {/* Centered Download Content */}
         <div style={{ maxWidth: '800px', width: '100%', padding: '40px', display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
-          <h2 style={{ fontSize: '48px', fontWeight: 800, marginBottom: '16px', color: '#fff', letterSpacing: '-0.03em' }}>Welcome to Overlay.</h2>
+          <h2 style={{ fontSize: '48px', fontWeight: 800, marginBottom: '16px', color: '#fff', letterSpacing: '-0.03em' }}>Welcome to Overlay <span className="beta-tag" style={{ display: 'inline-flex', verticalAlign: 'middle', fontSize: '18px', padding: '4px 12px', background: 'rgba(255,255,255,0.2)', color: '#fff', marginLeft: '8px', position: 'relative', top: '-4px' }}>beta</span>.</h2>
           <p style={{ fontSize: '18px', color: 'rgba(255,255,255,0.8)', marginBottom: '32px', lineHeight: '1.6', maxWidth: '600px' }}>
             Overlay is your native focus timer and workflow companion. 
             By participating in the closed beta, you're helping us shape the future of deep work. 
@@ -59,7 +58,7 @@ function App() {
           </p>
           <div className="download-buttons" style={{ display: 'flex', flexWrap: 'wrap', gap: '16px', width: '100%' }}>
             <a href="#" className="dl-btn ph-btn">
-              <div className="ph-logo">P</div>
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm1.832 14.76v3.48H11.02V7.44h4.944c2.196 0 3.732 1.488 3.732 3.66 0 2.184-1.536 3.66-3.732 3.66h-2.136zm0-4.992v2.688h1.992c.708 0 1.236-.456 1.236-1.344 0-.888-.528-1.344-1.236-1.344h-1.992z"/></svg>
               <div className="ph-text">
                 <span className="ph-sub">FIND US ON</span>
                 <span className="ph-main">Product Hunt</span>
