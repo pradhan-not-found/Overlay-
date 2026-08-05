@@ -424,6 +424,48 @@ body::before {
   color: #666;
 }
 
+.feature-visual {
+  height: 100px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.media-visual {
+  background: linear-gradient(135deg, #ff2a5f, #ff719a);
+}
+
+.calendar-visual {
+  background: linear-gradient(135deg, #007aff, #5ac8fa);
+}
+
+.camera-visual {
+  background: linear-gradient(135deg, #5856d6, #af52de);
+}
+
+.battery-visual {
+  background: linear-gradient(135deg, #34c759, #a8e063);
+}
+
+.file-visual {
+  background: linear-gradient(135deg, #ff9500, #ffcc00);
+}
+
+.hud-visual {
+  background: linear-gradient(135deg, #555555, #888888);
+}
+
+.visuals-visual {
+  background: linear-gradient(135deg, #ff2d55, #5856d6);
+}
+
+.focus-visual {
+  background: linear-gradient(135deg, #000000, #333333);
+}
+
 /* Pricing View */
 .pricing-view {
   max-width: 900px;
