@@ -52,28 +52,30 @@ function App() {
         </header>
 
         {/* Centered Download Content */}
-        <div style={{ maxWidth: '800px', width: '100%', padding: '40px', display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
-          <h2 style={{ fontSize: '48px', fontWeight: 800, marginBottom: '16px', color: '#fff', letterSpacing: '-0.03em' }}>Welcome to Overlay <span className="beta-tag" style={{ display: 'inline-flex', verticalAlign: 'middle', background: 'rgba(255,255,255,0.2)', color: '#fff', marginLeft: '12px', fontSize: '26px', padding: '2px 14px', borderRadius: '14px', position: 'relative', top: '-4px' }}>beta</span></h2>
-          <p style={{ fontSize: '18px', color: 'rgba(255,255,255,0.8)', marginBottom: '32px', lineHeight: '1.6', maxWidth: '600px' }}>
+        <div style={{ maxWidth: '800px', width: '100%', padding: '40px', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
+          <h2 style={{ fontSize: '56px', fontWeight: 800, marginBottom: '24px', color: '#fff', letterSpacing: '-0.04em', lineHeight: '1.1' }}>
+            Welcome to Overlay <span className="beta-tag" style={{ display: 'inline-flex', verticalAlign: 'middle', background: 'rgba(255,255,255,0.15)', color: '#fff', marginLeft: '12px', fontSize: '28px', padding: '4px 16px', borderRadius: '16px', position: 'relative', top: '-6px' }}>beta</span>
+          </h2>
+          <p style={{ fontSize: '20px', color: 'rgba(255,255,255,0.7)', marginBottom: '48px', lineHeight: '1.6', maxWidth: '640px' }}>
             Overlay is your native focus timer and workflow companion. 
             By participating in the closed beta, you're helping us shape the future of deep work. 
             Choose your platform below to download the app and get started.
           </p>
-          <div className="download-buttons" style={{ display: 'flex', flexWrap: 'wrap', gap: '16px', width: '100%' }}>
+          <div className="download-buttons" style={{ display: 'flex', flexWrap: 'wrap', gap: '20px', width: '100%', justifyContent: 'center' }}>
             <a href="#" className="dl-btn">
-              <img src={phLogo} alt="Product Hunt" style={{ width: '20px', height: '20px', objectFit: 'contain', filter: 'brightness(0) invert(1)' }} />
+              <img src={phLogo} alt="Product Hunt" style={{ width: '22px', height: '22px', objectFit: 'contain', filter: 'brightness(0) invert(1)' }} />
               Product Hunt
             </a>
             <a href="#" className="dl-btn">
-              <img src={appleLogo} alt="Mac" style={{ width: '20px', height: '20px', objectFit: 'contain', filter: 'brightness(0) invert(1)' }} />
+              <img src={appleLogo} alt="Mac" style={{ width: '22px', height: '22px', objectFit: 'contain', filter: 'brightness(0) invert(1)' }} />
               Download for Mac
             </a>
             <a href="#" className="dl-btn">
-              <img src={windowsLogo} alt="Windows" style={{ width: '20px', height: '20px', objectFit: 'contain', filter: 'brightness(0) invert(1)' }} />
+              <img src={windowsLogo} alt="Windows" style={{ width: '22px', height: '22px', objectFit: 'contain', filter: 'brightness(0) invert(1)' }} />
               Download for Windows
             </a>
           </div>
-          <p className="download-footer-text" style={{ marginTop: '40px', fontSize: '15px', color: 'rgba(255, 255, 255, 0.7)', fontWeight: 500 }}>
+          <p className="download-footer-text" style={{ marginTop: '56px', fontSize: '15px', color: 'rgba(255, 255, 255, 0.4)', fontWeight: 500 }}>
             Overlay is now on Product Hunt and is available on Mac and Windows. Linux support coming soon.
           </p>
         </div>
