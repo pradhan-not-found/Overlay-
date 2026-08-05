@@ -116,7 +116,7 @@ body::before {
 .rotating-text-inner {
   display: flex;
   flex-direction: column;
-  animation: scrollText 12s cubic-bezier(0.645, 0.045, 0.355, 1) infinite;
+  animation: scrollText 8s cubic-bezier(0.645, 0.045, 0.355, 1) infinite;
 }
 
 .rotating-text-inner span {
@@ -182,7 +182,7 @@ body::before {
 }
 
 .spin-icon {
-  animation: spin 4s linear infinite;
+  animation: spin 2.5s linear infinite;
 }
 
 @keyframes spin {
