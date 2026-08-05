@@ -106,71 +106,45 @@ function App() {
           )}
 
           {currentView === 'features' && (
-            <div className="policy-content fade-in" style={{maxWidth: '1000px', margin: '0 auto', textAlign: 'center'}}>
-              <h1 className="bold-claim" style={{fontSize: '32px', marginBottom: '40px'}}>Features</h1>
+            <div className="policy-content fade-in" style={{maxWidth: '650px'}}>
+              <h1 className="bold-claim" style={{fontSize: '32px'}}>Features</h1>
+              <p className="sub-claim" style={{marginBottom: '32px'}}>Everything you need. Nothing you don't.</p>
               
-              <div className="mindmap-container">
-                <div className="mindmap-spine"></div>
-                <div className="mindmap-center">OVERLAY</div>
-                
-                <div className="mindmap-col left-col">
-                  <div className="flow-item"><svg width="18" height="18" viewBox="0 0 24 24" fill="#000" style={{marginRight: '12px'}}><path d="M8 5v14l11-7z"/></svg> Instant Media Controls</div>
-                  <div className="flow-item"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#000" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{marginRight: '12px'}}><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg> One-Tap Meeting Links</div>
-                  <div className="flow-item"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#000" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{marginRight: '12px'}}><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path><circle cx="12" cy="13" r="4"></circle></svg> Camera Preview Check</div>
-                  <div className="flow-item"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#000" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{marginRight: '12px'}}><rect x="2" y="7" width="16" height="10" rx="2" ry="2"></rect><line x1="22" y1="11" x2="22" y2="13"></line></svg> Real-Time Battery Status</div>
-                </div>
-
-                <div className="mindmap-col right-col">
-                  <div className="flow-item"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#000" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{marginRight: '12px'}}><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"></path><polyline points="13 2 13 9 20 9"></polyline></svg> Drag & Drop File Share</div>
-                  <div className="flow-item"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#000" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{marginRight: '12px'}}><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg> Custom System HUD</div>
-                  <div className="flow-item"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#000" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{marginRight: '12px'}}><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"></path></svg> Adaptive UI Visuals</div>
-                  <div className="flow-item"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#000" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{marginRight: '12px'}}><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg> Pomodoro Focus Timer</div>
-                </div>
-              </div>
+              <ul className="clean-list">
+                <li><svg width="20" height="20" viewBox="0 0 24 24" fill="#000"><path d="M8 5v14l11-7z"/></svg> Instant Media Controls</li>
+                <li><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#000" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg> One-Tap Meeting Links</li>
+                <li><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#000" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path><circle cx="12" cy="13" r="4"></circle></svg> Camera Preview Check</li>
+                <li><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#000" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="7" width="16" height="10" rx="2" ry="2"></rect><line x1="22" y1="11" x2="22" y2="13"></line></svg> Real-Time Battery Status</li>
+                <li><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#000" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"></path><polyline points="13 2 13 9 20 9"></polyline></svg> Drag & Drop File Share</li>
+                <li><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#000" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg> Custom System HUD</li>
+                <li><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#000" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"></path></svg> Adaptive UI Visuals</li>
+                <li><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#000" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg> Pomodoro Focus Timer</li>
+              </ul>
             </div>
           )}
 
           {currentView === 'pricing' && (
-            <div className="policy-content fade-in">
+            <div className="policy-content fade-in" style={{maxWidth: '650px'}}>
               <h1 className="bold-claim" style={{fontSize: '32px'}}>Pricing</h1>
+              <p className="sub-claim" style={{marginBottom: '32px'}}>Simple, transparent pricing.</p>
               
-              <div className="sleek-lines">
-                <div className="sleek-pricing-tier">
-                  <div className="tier-header">
-                    <h2>Basic</h2>
-                    <span className="tier-price">Free</span>
-                  </div>
-                  <ul className="tier-bullets">
-                    <li>Core HUD functionality</li>
-                    <li>Up to 2 connected devices</li>
-                  </ul>
+              <div className="clean-pricing">
+                <div className="pricing-row">
+                  <h3>Basic <span className="price-tag">Free</span></h3>
+                  <p>Core HUD functionality • Up to 2 connected devices</p>
                 </div>
 
-                <div className="sleek-pricing-tier">
-                  <div className="tier-header">
-                    <h2>Pro</h2>
-                    <span className="tier-price">$49/yr</span>
-                  </div>
-                  <ul className="tier-bullets">
-                    <li>Everything in Basic</li>
-                    <li>Unlimited devices</li>
-                    <li>Custom themes</li>
-                  </ul>
+                <div className="pricing-row">
+                  <h3>Pro <span className="price-tag">$49/yr</span></h3>
+                  <p>Everything in Basic • Unlimited devices • Custom themes</p>
                 </div>
 
-                <div className="sleek-pricing-tier">
-                  <div className="tier-header">
-                    <h2>Lifetime</h2>
-                    <span className="tier-price">$149</span>
-                  </div>
-                  <ul className="tier-bullets">
-                    <li>Everything in Pro</li>
-                    <li>Lifetime updates</li>
-                    <li>Priority support</li>
-                  </ul>
+                <div className="pricing-row">
+                  <h3>Lifetime <span className="price-tag">$149</span></h3>
+                  <p>Everything in Pro • Lifetime updates • Priority support</p>
                 </div>
               </div>
-              <button className="nav-button" onClick={() => setCurrentView('access')} style={{ marginTop: '32px' }}>Get Access</button>
+              <button className="nav-button" onClick={() => setCurrentView('access')} style={{ marginTop: '40px' }}>Get Access</button>
             </div>
           )}
 
