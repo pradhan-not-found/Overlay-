@@ -46,16 +46,8 @@ function App() {
           {currentView === 'home' && (
             <>
               <a href="#" className="badge">
-                <span className="badge-pill">
-                  <svg className="spin-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"></path>
-                  </svg>
-                  New
-                </span>
-                <span className="badge-label">Introducing Focus Timer</span>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ color: '#888' }}>
-                  <path d="M5 12h14M12 5l7 7-7 7"/>
-                </svg>
+                <span className="badge-pill">New</span>
+                <span className="badge-label">Focus Timer is now live &rarr;</span>
               </a>
               <h1 className="bold-claim">
                 The Dynamic Command Center<br />

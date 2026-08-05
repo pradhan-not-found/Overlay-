@@ -181,15 +181,6 @@ body::before {
   margin-right: 4px;
 }
 
-.spin-icon {
-  animation: spin 2.5s linear infinite;
-}
-
-@keyframes spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
-}
-
 .waitlist-form {
   display: flex;
   gap: 12px;
