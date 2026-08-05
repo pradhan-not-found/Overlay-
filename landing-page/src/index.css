@@ -435,16 +435,20 @@ body::before {
 }
 
 .feature-card {
-  background: #f9f9f9;
-  border: 1px solid #eaeaea;
-  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.3);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.04);
+  border-radius: 16px;
   padding: 16px;
-  transition: transform 0.2s, box-shadow 0.2s;
+  transition: transform 0.2s, box-shadow 0.2s, background 0.2s;
 }
 
 .feature-card:hover {
   transform: translateY(-2px);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.04);
+  background: rgba(255, 255, 255, 0.5);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.08);
 }
 
 .feature-card h3 {
@@ -465,42 +469,11 @@ body::before {
   width: 32px;
   height: 32px;
   border-radius: 8px;
+  background: transparent;
   display: flex;
   align-items: center;
   justify-content: center;
   margin-bottom: 12px;
-}
-
-.media-visual {
-  background: linear-gradient(135deg, #ff2a5f, #ff719a);
-}
-
-.calendar-visual {
-  background: linear-gradient(135deg, #007aff, #5ac8fa);
-}
-
-.camera-visual {
-  background: linear-gradient(135deg, #5856d6, #af52de);
-}
-
-.battery-visual {
-  background: linear-gradient(135deg, #34c759, #a8e063);
-}
-
-.file-visual {
-  background: linear-gradient(135deg, #ff9500, #ffcc00);
-}
-
-.hud-visual {
-  background: linear-gradient(135deg, #555555, #888888);
-}
-
-.visuals-visual {
-  background: linear-gradient(135deg, #ff2d55, #5856d6);
-}
-
-.focus-visual {
-  background: linear-gradient(135deg, #000000, #333333);
 }
 
 /* Pricing View */
