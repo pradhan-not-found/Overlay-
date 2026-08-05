@@ -59,7 +59,7 @@ function App() {
             <>
               <a href="#" className="badge">
                 <span className="badge-pill">New</span>
-                <span className="badge-label">Meet Lock In: Your native focus timer &rarr;</span>
+                <span className="badge-label">Introducing Overlay: Join the closed beta waitlist &rarr;</span>
               </a>
               <h1 className="bold-claim">
                 The Dynamic Command Center<br />
