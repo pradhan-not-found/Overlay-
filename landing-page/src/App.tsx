@@ -186,6 +186,7 @@ function App() {
                   <button className="nav-button pricing-btn outline" onClick={(e) => { e.preventDefault(); setCurrentView('access'); }}>Get Started</button>
                 </div>
                 <div className="pricing-card premium">
+                  <div className="popular-badge">Most Popular</div>
                   <h2>Pro</h2>
                   <div className="price">$29 <span className="price-term">lifetime</span></div>
                   <ul className="pricing-features">

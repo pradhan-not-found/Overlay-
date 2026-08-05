@@ -516,20 +516,45 @@ body::before {
 }
 
 .pricing-card {
-  flex: 1;
   background: #ffffff;
   border: 1px solid #eaeaea;
   border-radius: 16px;
   padding: 32px;
   display: flex;
   flex-direction: column;
+  position: relative;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.pricing-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.05);
 }
 
 .pricing-card.premium {
   background: #000000;
   color: #ffffff;
   border-color: #000000;
-  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.2);
+}
+
+.pricing-card.premium:hover {
+  box-shadow: 0 24px 48px rgba(0, 0, 0, 0.3);
+}
+
+.popular-badge {
+  position: absolute;
+  top: -14px;
+  right: 32px;
+  background: linear-gradient(135deg, #ff2a5f, #ff719a);
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 800;
+  padding: 6px 14px;
+  border-radius: 20px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  box-shadow: 0 4px 12px rgba(255, 42, 95, 0.3);
 }
 
 .pricing-card h2 {
