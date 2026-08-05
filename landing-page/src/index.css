@@ -156,6 +156,15 @@ body::before {
   background: rgba(0, 0, 0, 0.08);
 }
 
+.spin-icon {
+  animation: spin 4s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
 .waitlist-form {
   display: flex;
   gap: 12px;
