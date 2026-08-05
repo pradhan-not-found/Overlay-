@@ -35,6 +35,8 @@ function App() {
         setStatus('error');
       }
     }
+  };
+
   if (currentView === 'access' && isUnlocked) {
     return (
       <div className="download-mode fade-in" style={{ width: '100vw', height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'fixed', top: 0, left: 0, zIndex: 100 }}>
@@ -107,7 +109,7 @@ function App() {
 
       {/* Middle Content */}
       <main className="main-content">
-        <div className={currentView === 'home' ? 'text-section' : 'full-section'}>
+        <div className={currentView === 'home' || currentView === 'now' ? 'text-section' : 'full-section'}>
           {currentView === 'home' && (
             <>
               <a href="#" className="badge">
