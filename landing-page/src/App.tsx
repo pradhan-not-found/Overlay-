@@ -45,10 +45,18 @@ function App() {
         <div className="text-section">
           {currentView === 'home' && (
             <>
+              <a href="#" className="badge">✨ New: Focus Timer (Lock In)</a>
               <h1 className="bold-claim">The Dynamic Command Center for Your Desktop.</h1>
               <p className="sub-claim">
                 Experience frictionless productivity. Overlay is a keyboard-driven workspace that puts all your essential tools just a keystroke away. Register now for early access.
               </p>
+
+              <ul className="feature-list">
+                <li><span>🎵</span> Media Controls</li>
+                <li><span>📅</span> One-Tap Meetings</li>
+                <li><span>⏱️</span> Focus Timer</li>
+                <li><span>🔋</span> Battery & System HUDs</li>
+              </ul>
 
               {status === 'success' ? (
                 <div className="success-message">
