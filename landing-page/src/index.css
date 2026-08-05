@@ -485,8 +485,8 @@ body::before {
   background-position: center center;
 }
 .download-mode .header {
-  background: transparent;
-  border: none;
+  background: transparent !important;
+  border: none !important;
 }
 .download-mode .brand-name {
   color: #fff;
@@ -552,7 +552,7 @@ body::before {
 }
 
 .download-container {
-  text-align: center;
+  text-align: left;
   max-width: 800px;
   width: 100%;
 }
@@ -562,7 +562,7 @@ body::before {
   flex-direction: row;
   flex-wrap: wrap;
   gap: 16px;
-  justify-content: center;
+  justify-content: flex-start;
   margin-bottom: 32px;
 }
 
@@ -577,17 +577,20 @@ body::before {
   font-weight: 600;
   font-size: 16px;
   text-decoration: none;
-  transition: transform 0.2s, opacity 0.2s;
+  transition: transform 0.2s, background 0.2s, border-color 0.2s;
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: #fff;
 }
 
 .dl-btn:hover {
   transform: translateY(-2px);
-  opacity: 0.9;
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.3);
 }
 
 .ph-btn {
-  background: #1a1a1a;
-  color: #fff;
   padding: 8px 16px;
   gap: 12px;
 }
@@ -614,7 +617,7 @@ body::before {
 .ph-sub {
   font-size: 9px;
   font-weight: 700;
-  color: #aaa;
+  color: rgba(255,255,255,0.7);
   letter-spacing: 0.5px;
 }
 
@@ -630,19 +633,7 @@ body::before {
   margin-left: 12px;
   font-size: 12px;
   font-weight: 700;
-  color: #aaa;
-}
-
-.mac-btn {
-  background: #111;
-  color: #fff;
-  border: 1px solid #111;
-}
-
-.win-btn {
-  background: #fff;
-  color: #111;
-  border: 1px solid #ddd;
+  color: rgba(255,255,255,0.7);
 }
 
 .download-footer-text {

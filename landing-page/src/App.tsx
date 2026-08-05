@@ -9,6 +9,7 @@ function App() {
   const [currentView, setCurrentView] = useState<ViewState>('home');
   const [password, setPassword] = useState('');
   const [isUnlocked, setIsUnlocked] = useState(false);
+  const [accessError, setAccessError] = useState('');
 
   // NOTE: Replace this with your Google Apps Script Web App URL!
   const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxi9gFwCeJt85jedXkVeGmrBgW_MRZtCU3wMlAC9mEF586H86WaV1K9w-1N5KjzfuVDew/exec';
@@ -47,12 +48,14 @@ function App() {
             <span className="beta-tag">beta</span>
           </div>
         </div>
-        <div className="header-right">
-          <a href="#" className="nav-link hidden-mobile" onClick={(e) => { e.preventDefault(); setCurrentView('features'); }}>Features</a>
-          <a href="#" className="nav-link hidden-mobile" onClick={(e) => { e.preventDefault(); setCurrentView('pricing'); }}>Pricing</a>
-          <a href="#" className="nav-link hidden-mobile" onClick={(e) => { e.preventDefault(); setCurrentView('now'); }}>Now</a>
-          <a href="#" className="nav-button" onClick={(e) => { e.preventDefault(); setCurrentView('access'); }}>Get Access</a>
-        </div>
+        {!(currentView === 'access' && isUnlocked) && (
+          <div className="header-right">
+            <a href="#" className="nav-link hidden-mobile" onClick={(e) => { e.preventDefault(); setCurrentView('features'); }}>Features</a>
+            <a href="#" className="nav-link hidden-mobile" onClick={(e) => { e.preventDefault(); setCurrentView('pricing'); }}>Pricing</a>
+            <a href="#" className="nav-link hidden-mobile" onClick={(e) => { e.preventDefault(); setCurrentView('now'); }}>Now</a>
+            <a href="#" className="nav-button" onClick={(e) => { e.preventDefault(); setCurrentView('access'); }}>Get Access</a>
+          </div>
+        )}
       </header>
 
       {/* Middle Content */}
@@ -86,7 +89,12 @@ function App() {
               </p>
 
               {status === 'success' ? (
-                <div className="success-message">
+                <div className="success-message fade-in" style={{ 
+                  border: '1px solid #166534', background: '#f0fdf4', color: '#166534', 
+                  padding: '16px 20px', borderRadius: '12px', display: 'flex', 
+                  alignItems: 'center', gap: '12px', marginTop: '24px', fontWeight: 600 
+                }}>
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
                   Thank you for registering! We'll be in touch soon.
                 </div>
               ) : (
@@ -166,8 +174,12 @@ function App() {
                   <p className="sub-claim" style={{marginBottom: '40px'}}>Overlay is currently operating in a closed beta environment. Please authenticate with your invitation code to proceed.</p>
                   <form className="waitlist-form" onSubmit={(e) => {
                     e.preventDefault();
-                    if (password.toUpperCase() === 'OVERLAY404') setIsUnlocked(true);
-                    else alert('Incorrect access code.');
+                    if (password.toUpperCase() === 'OVERLAY404') {
+                      setIsUnlocked(true);
+                      setAccessError('');
+                    } else {
+                      setAccessError('Incorrect access code. Please try again.');
+                    }
                   }}>
                     <input
                       type="password"
@@ -180,13 +192,23 @@ function App() {
                     <button type="submit" className="glass-button">
                       Unlock
                     </button>
+                    {accessError && (
+                      <div className="fade-in" style={{ color: '#ef4444', marginTop: '16px', fontSize: '14px', fontWeight: 500, display: 'flex', alignItems: 'center', gap: '6px', justifyContent: 'center' }}>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+                        {accessError}
+                      </div>
+                    )}
                   </form>
                 </>
               ) : (
                 <div className="unlocked-section fade-in">
                   <div className="download-container">
-                    <h2 style={{ fontSize: '32px', fontWeight: 800, marginBottom: '8px', color: '#fff', letterSpacing: '-0.02em' }}>Welcome to Overlay.</h2>
-                    <p style={{ fontSize: '16px', color: 'rgba(255,255,255,0.7)', marginBottom: '40px' }}>Download the desktop app to get started.</p>
+                    <h2 style={{ fontSize: '48px', fontWeight: 800, marginBottom: '16px', color: '#fff', letterSpacing: '-0.03em' }}>Welcome to Overlay.</h2>
+                    <p style={{ fontSize: '18px', color: 'rgba(255,255,255,0.8)', marginBottom: '32px', lineHeight: '1.6', maxWidth: '600px' }}>
+                      Overlay is your native focus timer and workflow companion. 
+                      By participating in the closed beta, you're helping us shape the future of deep work. 
+                      Choose your platform below to download the app and get started.
+                    </p>
                     <div className="download-buttons">
                       {/* Product Hunt */}
                       <a href="#" className="dl-btn ph-btn">
