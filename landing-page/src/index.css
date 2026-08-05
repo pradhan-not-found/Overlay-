@@ -58,16 +58,37 @@ body::before {
   flex: 1;
   display: flex;
   flex-direction: column;
-  padding: 40px;
+  padding: 120px 40px 40px 40px;
   max-width: 1200px;
   margin: 0 auto;
   width: 100%;
 }
 
 .header {
+  position: fixed;
+  top: 32px;
+  left: 0;
+  width: 100%;
   display: flex;
   align-items: center;
-  gap: 12px;
+  justify-content: space-between;
+  padding: 8px 32px;
+  background-color: #ffffff;
+  border-top: 2px dashed #eaeaea;
+  border-bottom: 2px dashed #eaeaea;
+  z-index: 10;
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.brand-group {
+  display: flex;
+  align-items: center;
+  gap: 4px;
 }
 
 .logo {
@@ -90,14 +111,15 @@ body::before {
 .beta-tag {
   font-family: 'Rethink Sans', sans-serif;
   font-weight: 700;
-  font-size: 10px;
-  margin-left: 4px;
-  padding: 1px 8px;
-  background-color: #d9d9d9;
+  font-size: 11px;
+  padding: 1px 6px;
+  background-color: #e5e5e5;
   color: #000000;
-  border-radius: 7px;
-  display: inline-block;
-  transform: translateY(-2px);
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
 }
 
 .main-content {

@@ -36,9 +36,13 @@ function App() {
     <div className="page-wrapper">
       {/* Top Header: Logo + Name */}
       <header className="header" onClick={() => setCurrentView('home')} style={{ cursor: 'pointer' }}>
-        <img src="/logo.png" alt="Overlay Logo" className="logo" />
-        <span className="brand-name">Overlay</span>
-        <span className="beta-tag">beta</span>
+        <div className="header-left">
+          <img src="/logo.png" alt="Overlay Logo" className="logo" />
+          <div className="brand-group">
+            <span className="brand-name">Overlay</span>
+            <span className="beta-tag">beta</span>
+          </div>
+        </div>
       </header>
 
       {/* Middle Content: Side-aligned Text & Form */}
