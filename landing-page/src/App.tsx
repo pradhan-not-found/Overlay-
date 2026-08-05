@@ -108,7 +108,7 @@ function App() {
           {currentView === 'features' && (
             <div className="features-view fade-in">
               <div className="features-header">
-                <h1 className="bold-claim" style={{ fontSize: '48px', marginBottom: '16px' }}>Everything You Need. <br/><span style={{color: '#888'}}>Nothing You Don't.</span></h1>
+                <h1 className="bold-claim">Everything You Need. Nothing You Don't.</h1>
               </div>
               <div className="features-grid">
                 <div className="feature-card">
@@ -173,7 +173,7 @@ function App() {
 
           {currentView === 'pricing' && (
             <div className="pricing-view fade-in">
-              <h1 className="bold-claim" style={{ fontSize: '36px', marginBottom: '32px' }}>Simple, transparent pricing.</h1>
+              <h1 className="bold-claim">Simple, transparent pricing.</h1>
               <div className="pricing-cards">
                 <div className="pricing-card">
                   <h2>Basic</h2>
@@ -203,7 +203,7 @@ function App() {
 
           {currentView === 'access' && (
             <div className="access-view fade-in">
-              <h1 className="bold-claim" style={{ fontSize: '36px', marginBottom: '16px' }}>Early Access Gateway.</h1>
+              <h1 className="bold-claim">Early Access Gateway.</h1>
               <p className="sub-claim">Overlay is currently in a closed beta. Enter your access code to join the waitlist.</p>
               
               {!isUnlocked ? (

@@ -201,30 +201,30 @@ body::before {
   display: inline-block;
   overflow: hidden;
   vertical-align: bottom;
-  height: 1.1em;
+  height: 1.25em;
   color: #000000;
 }
 
 .rotating-text-inner {
   display: flex;
   flex-direction: column;
-  animation: scrollText 12s cubic-bezier(0.645, 0.045, 0.355, 1) infinite;
+  animation: scrollText 10s cubic-bezier(0.645, 0.045, 0.355, 1) infinite;
 }
 
 .rotating-text-inner span {
-  height: 1.1em;
-  line-height: 1.1em;
+  height: 1.25em;
+  line-height: 1.25em;
   display: block;
+  padding-bottom: 0.1em;
 }
 
 @keyframes scrollText {
-  0%, 10% { transform: translateY(0); }
-  16%, 26% { transform: translateY(-1.1em); }
-  33%, 43% { transform: translateY(-2.2em); }
-  50%, 60% { transform: translateY(-3.3em); }
-  66%, 76% { transform: translateY(-4.4em); }
-  83%, 93% { transform: translateY(-5.5em); }
-  100% { transform: translateY(-6.6em); }
+  0%, 16% { transform: translateY(0); }
+  20%, 36% { transform: translateY(-1.25em); }
+  40%, 56% { transform: translateY(-2.5em); }
+  60%, 76% { transform: translateY(-3.75em); }
+  80%, 96% { transform: translateY(-5em); }
+  100% { transform: translateY(-6.25em); }
 }
 
 .sub-claim {
