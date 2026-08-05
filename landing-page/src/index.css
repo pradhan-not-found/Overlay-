@@ -113,20 +113,24 @@ body::before {
   color: #000000;
 }
 
-.rotating-text {
-  display: inline-block;
-  animation: slideUpFade 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+.rotating-text-inner {
+  display: flex;
+  flex-direction: column;
+  animation: scrollText 12s cubic-bezier(0.645, 0.045, 0.355, 1) infinite;
 }
 
-@keyframes slideUpFade {
-  0% {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-  100% {
-    opacity: 1;
-    transform: translateY(0);
-  }
+.rotating-text-inner span {
+  height: 1.15em;
+  display: flex;
+  align-items: center;
+}
+
+@keyframes scrollText {
+  0%, 20% { transform: translateY(0); }
+  25%, 45% { transform: translateY(-1.15em); }
+  50%, 70% { transform: translateY(-2.3em); }
+  75%, 95% { transform: translateY(-3.45em); }
+  100% { transform: translateY(-4.6em); }
 }
 
 .sub-claim {
