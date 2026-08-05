@@ -38,6 +38,7 @@ function App() {
       <header className="header" onClick={() => setCurrentView('home')} style={{ cursor: 'pointer' }}>
         <img src="/logo.png" alt="Overlay Logo" className="logo" />
         <span className="brand-name">Overlay</span>
+        <span className="beta-tag">beta</span>
       </header>
 
       {/* Middle Content: Side-aligned Text & Form */}
