@@ -204,43 +204,81 @@ function App() {
           )}
 
           {currentView === 'access' && (
-            <div className="access-view fade-in">
-              <div className="header-left" style={{ marginBottom: '32px', cursor: 'default' }}>
-                <img src="/logo.png" alt="Overlay Logo" className="logo" />
-                <div className="brand-group">
-                  <span className="brand-name">Overlay</span>
-                  <span className="beta-tag">beta</span>
-                </div>
-              </div>
-              <h1 className="bold-claim" style={{fontSize: '32px', marginBottom: '16px'}}>Private Beta Access</h1>
-              <p className="sub-claim" style={{marginBottom: '40px'}}>Overlay is currently operating in a closed beta environment. Please authenticate with your invitation code to proceed.</p>
-              <form className="waitlist-form" style={{ display: 'flex', flexWrap: 'wrap', gap: '12px' }} onSubmit={(e) => {
-                e.preventDefault();
-                if (password.toUpperCase() === 'OVERLAY404') {
-                  setIsUnlocked(true);
-                  setAccessError('');
-                } else {
-                  setAccessError('Incorrect access code. Please try again.');
-                }
+            <div className="access-view fade-in" style={{ width: '100%', minHeight: '60vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <div style={{
+                background: '#ffffff',
+                border: '1px solid rgba(0,0,0,0.06)',
+                borderRadius: '24px',
+                padding: '48px',
+                maxWidth: '480px',
+                width: '100%',
+                boxShadow: '0 24px 48px -12px rgba(0,0,0,0.08), 0 4px 16px -4px rgba(0,0,0,0.04)',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                textAlign: 'center'
               }}>
-                <input
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Enter access code..."
-                  className="glass-input"
-                  required
-                />
-                <button type="submit" className="glass-button">
-                  Unlock
-                </button>
-                {accessError && (
-                  <div className="fade-in" style={{ width: '100%', color: '#ef4444', marginTop: '4px', fontSize: '14px', fontWeight: 500, display: 'flex', alignItems: 'center', gap: '6px', justifyContent: 'flex-start' }}>
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
-                    {accessError}
-                  </div>
-                )}
-              </form>
+                <div style={{ marginBottom: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <img src="/logo.png" alt="Overlay Logo" className="logo" style={{ width: '36px', height: '36px', borderRadius: '8px' }} />
+                </div>
+                <h1 style={{ fontSize: '28px', fontWeight: 800, marginBottom: '12px', color: '#000', letterSpacing: '-0.03em' }}>Private Beta Access</h1>
+                <p style={{ fontSize: '15px', color: '#666', marginBottom: '32px', lineHeight: '1.6' }}>
+                  Overlay is currently in a closed beta. Please enter your invitation code to unlock the download.
+                </p>
+                <form style={{ display: 'flex', flexDirection: 'column', gap: '16px', width: '100%' }} onSubmit={(e) => {
+                  e.preventDefault();
+                  if (password.toUpperCase() === 'OVERLAY404') {
+                    setIsUnlocked(true);
+                    setAccessError('');
+                  } else {
+                    setAccessError('Incorrect access code. Please try again.');
+                  }
+                }}>
+                  <input
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="Enter access code..."
+                    style={{
+                      width: '100%',
+                      padding: '16px',
+                      borderRadius: '12px',
+                      border: '1px solid rgba(0,0,0,0.1)',
+                      background: 'rgba(0,0,0,0.02)',
+                      fontSize: '16px',
+                      textAlign: 'center',
+                      letterSpacing: '0.1em',
+                      outline: 'none',
+                      transition: 'border-color 0.2s, background 0.2s'
+                    }}
+                    onFocus={(e) => { e.target.style.borderColor = '#000'; e.target.style.background = '#fff'; }}
+                    onBlur={(e) => { e.target.style.borderColor = 'rgba(0,0,0,0.1)'; e.target.style.background = 'rgba(0,0,0,0.02)'; }}
+                    required
+                  />
+                  <button type="submit" style={{
+                    width: '100%',
+                    padding: '16px',
+                    borderRadius: '12px',
+                    border: 'none',
+                    background: '#000',
+                    color: '#fff',
+                    fontSize: '16px',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    transition: 'transform 0.2s'
+                  }}
+                  onMouseOver={(e) => e.currentTarget.style.transform = 'translateY(-2px)'}
+                  onMouseOut={(e) => e.currentTarget.style.transform = 'translateY(0)'}>
+                    Unlock Access
+                  </button>
+                  {accessError && (
+                    <div className="fade-in" style={{ width: '100%', color: '#ef4444', marginTop: '4px', fontSize: '14px', fontWeight: 500, display: 'flex', alignItems: 'center', gap: '6px', justifyContent: 'center' }}>
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+                      {accessError}
+                    </div>
+                  )}
+                </form>
+              </div>
             </div>
           )}
 
