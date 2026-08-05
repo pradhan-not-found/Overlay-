@@ -152,7 +152,7 @@ function App() {
           )}
 
           {currentView === 'access' && (
-            <div className="access-view fade-in" style={isUnlocked ? { maxWidth: '100%", padding: 0 } : {}}>
+            <div className="access-view fade-in" style={isUnlocked ? { maxWidth: '100%', padding: 0 } : {}}>
               {!isUnlocked ? (
                 <>
                   <div className="header-left" style={{ marginBottom: '32px', cursor: 'default' }}>
