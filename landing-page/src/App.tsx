@@ -172,7 +172,7 @@ function App() {
                   </div>
                   <h1 className="bold-claim" style={{fontSize: '32px', marginBottom: '16px'}}>Private Beta Access</h1>
                   <p className="sub-claim" style={{marginBottom: '40px'}}>Overlay is currently operating in a closed beta environment. Please authenticate with your invitation code to proceed.</p>
-                  <form className="waitlist-form" onSubmit={(e) => {
+                  <form className="waitlist-form" style={{ display: 'flex', flexWrap: 'wrap', gap: '12px' }} onSubmit={(e) => {
                     e.preventDefault();
                     if (password.toUpperCase() === 'OVERLAY404') {
                       setIsUnlocked(true);
@@ -193,7 +193,7 @@ function App() {
                       Unlock
                     </button>
                     {accessError && (
-                      <div className="fade-in" style={{ color: '#ef4444', marginTop: '16px', fontSize: '14px', fontWeight: 500, display: 'flex', alignItems: 'center', gap: '6px', justifyContent: 'center' }}>
+                      <div className="fade-in" style={{ width: '100%', color: '#ef4444', marginTop: '4px', fontSize: '14px', fontWeight: 500, display: 'flex', alignItems: 'center', gap: '6px', justifyContent: 'flex-start' }}>
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
                         {accessError}
                       </div>

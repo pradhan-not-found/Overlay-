@@ -491,6 +491,13 @@ body::before {
 .download-mode .brand-name {
   color: #fff;
 }
+.download-mode .main-content {
+  max-width: none;
+  padding: 0;
+  margin: 0;
+  overflow: hidden;
+  position: static;
+}
 .download-mode .beta-tag {
   background: rgba(255, 255, 255, 0.2);
   color: #fff;
