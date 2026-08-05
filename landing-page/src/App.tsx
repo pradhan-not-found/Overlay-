@@ -1,10 +1,20 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import './index.css';
 
 function App() {
   const [email, setEmail] = useState('');
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
   const [currentView, setCurrentView] = useState<'home' | 'privacy' | 'terms' | 'contact'>('home');
+
+  const words = ['Desktop.', 'Workflow.', 'Meetings.', 'Music.'];
+  const [wordIndex, setWordIndex] = useState(0);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setWordIndex((prev) => (prev + 1) % words.length);
+    }, 3000);
+    return () => clearInterval(interval);
+  }, []);
 
   // NOTE: Replace this with your Google Apps Script Web App URL!
   const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxi9gFwCeJt85jedXkVeGmrBgW_MRZtCU3wMlAC9mEF586H86WaV1K9w-1N5KjzfuVDew/exec';
@@ -51,7 +61,12 @@ function App() {
                 </svg>
                 New: Focus Timer
               </a>
-              <h1 className="bold-claim">The Dynamic Command Center for Your Desktop.</h1>
+              <h1 className="bold-claim">
+                The Dynamic Command Center<br />for Your{' '}
+                <span className="rotating-text-wrapper">
+                  <span key={wordIndex} className="rotating-text">{words[wordIndex]}</span>
+                </span>
+              </h1>
               <p className="sub-claim">
                 Experience frictionless productivity. Overlay is a keyboard-driven workspace that puts all your essential tools just a keystroke away. Register now for early access.
               </p>
