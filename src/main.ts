@@ -239,10 +239,7 @@ document.getElementById('app')!.innerHTML = `
         </button>
       </div>
     </div>
-      <button class="ibtn" id="btn-idle-timer-toggle" title="Pause / Resume" style="padding: 2px; display: flex; align-items: center; justify-content: center; background: transparent; border: none; color: var(--muted); cursor: pointer; transition: 0.2s;">
-        ${playSvgRaw}
-      </button>
-    </div>
+
   </div>
 
   <!-- ══ EXPANDED STATE ══ -->
