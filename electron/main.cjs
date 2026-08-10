@@ -398,7 +398,7 @@ startMediaPolling();
 
 // ─── Misc IPC ──────────────────────────────────────────────────────────────
 ipcMain.on('open-external', (_e, url) => shell.openExternal(url));
-ipcMain.on('open-dashboard', () => createDashWindow());
+ipcMain.on('open-dashboard', (_e, options) => createDashWindow(options));
 ipcMain.handle('get-config', () => {
   const cfg = readConfig();
   const shortcuts = db.getShortcuts();
@@ -450,8 +450,12 @@ ipcMain.handle('get-file-icon', async (_e, path) => {
 });
 
 // ─── Dashboard window ─────────────────────────────────────────────────────────
-function createDashWindow() {
-  if (dashWindow && !dashWindow.isDestroyed()) { dashWindow.focus(); return; }
+function createDashWindow(options) {
+  if (dashWindow && !dashWindow.isDestroyed()) { 
+    if (options && options.expand) dashWindow.webContents.executeJavaScript('window.location.search = "?expand=true";');
+    dashWindow.focus(); 
+    return; 
+  }
   dashWindow = new BrowserWindow({
     width: 720, height: 540,
     titleBarStyle: 'hidden',

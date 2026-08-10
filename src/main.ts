@@ -226,10 +226,19 @@ document.getElementById('app')!.innerHTML = `
     </div>
     
     <!-- Timer state -->
-    <div class="idle-state-timer hidden" id="idle-state-timer" style="display: none; align-items: center; justify-content: center; width: 100%;">
+        <div class="idle-state-timer hidden" id="idle-state-timer" style="display: none; align-items: center; justify-content: center; width: 100%;">
       <span style="font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.1em; margin-right: 12px;">Lock In</span>
       <span class="idle-timer-hint" id="idle-timer-hint" style="font-size: 14px; font-weight: 600; font-variant-numeric: tabular-nums; color: var(--ink); margin-right: 12px;"></span>
       <div style="width: 1px; height: 12px; background: rgba(255,255,255,0.2); margin-right: 12px;"></div>
+      <div style="display: flex; gap: 4px;">
+        <button class="ibtn" id="btn-idle-timer-toggle" title="Pause / Resume" style="padding: 2px; display: flex; align-items: center; justify-content: center; background: transparent; border: none; color: var(--muted); cursor: pointer; transition: 0.2s;">
+          ${playSvgRaw}
+        </button>
+        <button class="ibtn" id="btn-idle-notch-expand" title="Expand Lock Screen" style="padding: 2px; display: flex; align-items: center; justify-content: center; background: transparent; border: none; color: var(--muted); cursor: pointer; transition: 0.2s;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 3 21 3 21 9"></polyline><polyline points="9 21 3 21 3 15"></polyline><line x1="21" y1="3" x2="14" y2="10"></line><line x1="3" y1="21" x2="10" y2="14"></line></svg>
+        </button>
+      </div>
+    </div>
       <button class="ibtn" id="btn-idle-timer-toggle" title="Pause / Resume" style="padding: 2px; display: flex; align-items: center; justify-content: center; background: transparent; border: none; color: var(--muted); cursor: pointer; transition: 0.2s;">
         ${playSvgRaw}
       </button>
@@ -237,7 +246,9 @@ document.getElementById('app')!.innerHTML = `
   </div>
 
   <!-- ══ EXPANDED STATE ══ -->
-  <div class="view view-exp" id="view-exp">
+  <div class="view view-exp" id="view-exp" style="position: relative;">
+    
+    
 
     <!-- TIMER PANEL -->
     <section class="panel p-timer">
@@ -257,9 +268,12 @@ document.getElementById('app')!.innerHTML = `
         </div>
       </div>
 
-      <div class="t-btns" style="display:flex; gap:8px;">
+            <div class="t-btns" style="display:flex; gap:8px;">
         <button class="btn btn-p" id="btn-lockin" style="min-width: 90px;">Lock In</button>
         <button class="btn btn-g" id="btn-reset" style="min-width: 90px;">Reset</button>
+        <button class="btn btn-g" id="btn-exp-notch-expand" style="padding: 0 10px;" title="Expand Lock Screen">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 3 21 3 21 9"></polyline><polyline points="9 21 3 21 3 15"></polyline><line x1="21" y1="3" x2="14" y2="10"></line><line x1="3" y1="21" x2="10" y2="14"></line></svg>
+        </button>
       </div>
     </section>
 
@@ -690,9 +704,21 @@ document.getElementById('btn-idle-timer-toggle')?.addEventListener('click', (e) 
   btnLockin.click();
 });
 
+
+document.getElementById('btn-idle-notch-expand')?.addEventListener('click', (e) => {
+  e.stopPropagation();
+  if (ipc) ipc.send('open-dashboard', { expand: true });
+});
+document.getElementById('btn-exp-notch-expand')?.addEventListener('click', (e) => {
+  e.stopPropagation();
+  if (ipc) ipc.send('open-dashboard', { expand: true });
+});
+
 document.getElementById('btn-reset')?.addEventListener('click', () => {
   resetTimer();
 });
+
+
 
 // ─── Media controls ──────────────────────────────────────────────────────────
 function setPlaying(p: boolean) {

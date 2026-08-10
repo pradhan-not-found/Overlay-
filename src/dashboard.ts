@@ -148,18 +148,93 @@ async function render() {
   if (isExpanded) {
     root.innerHTML = `
       <style>
-        .streak-glow { text-shadow: 0 0 20px rgba(255, 149, 0, 0.6); color: #ff9500; }
-        .timer-glow { text-shadow: 0 0 30px rgba(255, 255, 255, 0.2); font-variant-numeric: tabular-nums; }
+        .streak-glow { text-shadow: 0 0 20px rgba(255, 149, 0, 0.4); }
+        .timer-glow { font-variant-numeric: tabular-nums; }
+        @font-face {
+          font-family: 'HelveticaLogo';
+          src: url('/fonts/Helvetica.ttf') format('truetype');
+        }
+        .lock-tab { padding: 8px 16px; border-radius: 20px; font-size: 14px; font-weight: 700; color: #a1a1aa; cursor: pointer; transition: 0.2s; }
+        .lock-tab.active { background: rgba(255,255,255,0.1); color: #fff; }
+        .mode-panel { display: none; flex-direction: column; align-items: center; justify-content: center; width: 100%; flex: 1; margin-top: 24px; }
+        .mode-panel.active { display: flex; }
+        .big-timer-btn { padding: 12px 32px; border-radius: 30px; font-size: 18px; font-weight: 800; cursor: pointer; border: none; color: #000; background: #fff; transition: transform 0.1s; outline: none; }
+        .big-timer-btn:active { transform: scale(0.95); }
+        .big-timer-btn.outline { background: transparent; border: 2px solid rgba(255,255,255,0.2); color: #fff; }
+        input[type="number"]::-webkit-inner-spin-button, 
+        input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
       </style>
       ${headerHTML}
-      <div class="fade-in" style="display: flex; flex-direction: column; align-items: center; justify-content: center; width: 100%; height: 100vh; background: #000;">
-        <div style="font-size: 20px; font-weight: 700; color: rgba(255,255,255,0.4); letter-spacing: 3px; text-transform: uppercase; margin-bottom: 32px;">Level ${level}</div>
-        <div class="timer-glow" id="expanded-timer" style="font-size: 130px; font-weight: 800; color: #fff; letter-spacing: -0.04em; line-height: 1; margin-bottom: 40px;">
-          ${formatTime(todaySecs)}
+      <div class="fade-in" style="display: flex; flex-direction: column; align-items: center; justify-content: center; width: 100%; height: 100vh; background: #111;">
+        
+        <div style="position: absolute; top: 24px; left: 50%; transform: translateX(-50%); display: flex; gap: 8px; background: rgba(0,0,0,0.5); padding: 4px; border-radius: 24px; border: 1px solid rgba(255,255,255,0.05); z-index: 100;">
+          <div class="lock-tab active" data-mode="clock">Clock</div>
+          <div class="lock-tab" data-mode="pomodoro">Pomodoro</div>
+          <div class="lock-tab" data-mode="countdown">Countdown</div>
+          <div class="lock-tab" data-mode="stopwatch">Stopwatch</div>
         </div>
-        <div style="display: flex; align-items: center; gap: 12px; font-size: 28px; font-weight: 800;" class="streak-glow">
-          <svg width="32" height="32" viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M17.5 10c0 3-2.5 5.5-5.5 5.5S6.5 13 6.5 10a5.5 5.5 0 0 1 11 0z" opacity="0.3"/><path d="M12 2c-3.3 4-5 8-5 11 0 2.8 2.2 5 5 5s5-2.2 5-5c0-3-1.7-7-5-11zm0 13c-1.1 0-2-.9-2-2 0-1.5 1.5-3.5 2-4.5.5 1 2 3 2 4.5 0 1.1-.9 2-2 2z"/></svg>
-          ${streak} Day Streak
+
+        <div class="mode-panel active" id="panel-clock">
+          <div style="display:flex; align-items:baseline; justify-content:center; gap:16px;">
+            <div id="lock-clock-time" style="font-size: 260px; font-weight: 900; color: #f4f4f5; letter-spacing: -0.05em; line-height: 1; font-family: 'HelveticaLogo', sans-serif;">--:--</div>
+            <div id="lock-clock-ampm" style="font-size: 40px; font-weight: 700; color: #a1a1aa; letter-spacing: -0.02em; font-family: 'HelveticaLogo', sans-serif;">--</div>
+          </div>
+        </div>
+
+        <div class="mode-panel" id="panel-pomodoro">
+          <div id="pomo-time" class="timer-glow" style="font-size: 220px; font-weight: 900; color: #f4f4f5; letter-spacing: -0.05em; line-height: 1; font-family: 'HelveticaLogo', sans-serif;">25:00</div>
+          <div style="display: flex; gap: 16px; margin-top: 32px;">
+            <button class="big-timer-btn" id="btn-pomo-toggle">Lock In</button>
+            <button class="big-timer-btn outline" id="btn-pomo-reset">Reset</button>
+          </div>
+        </div>
+
+        <div class="mode-panel" id="panel-countdown">
+          <div style="display:flex; align-items:center; justify-content:center; gap:8px;">
+            <input type="number" id="cd-mins" value="60" style="font-size: 160px; font-weight: 900; color: #f4f4f5; letter-spacing: -0.05em; line-height: 1; font-family: 'HelveticaLogo', sans-serif; background: transparent; border: none; width: 220px; text-align: right; outline: none; border-bottom: 4px solid transparent; transition: 0.2s;" onfocus="this.style.borderBottom='4px solid #fff'" onblur="this.style.borderBottom='4px solid transparent'">
+            <span style="font-size: 160px; font-weight: 900; color: #f4f4f5; letter-spacing: -0.05em; line-height: 1; font-family: 'HelveticaLogo', sans-serif; margin-bottom: 20px;">:</span>
+            <input type="number" id="cd-secs" value="00" style="font-size: 160px; font-weight: 900; color: #f4f4f5; letter-spacing: -0.05em; line-height: 1; font-family: 'HelveticaLogo', sans-serif; background: transparent; border: none; width: 220px; text-align: left; outline: none; border-bottom: 4px solid transparent; transition: 0.2s;" onfocus="this.style.borderBottom='4px solid #fff'" onblur="this.style.borderBottom='4px solid transparent'">
+          </div>
+          <div style="display: flex; gap: 16px; margin-top: 16px;">
+            <button class="big-timer-btn" id="btn-cd-toggle">Start</button>
+            <button class="big-timer-btn outline" id="btn-cd-reset">Reset</button>
+          </div>
+        </div>
+
+        <div class="mode-panel" id="panel-stopwatch">
+          <div id="sw-time" class="timer-glow" style="font-size: 220px; font-weight: 900; color: #f4f4f5; letter-spacing: -0.05em; line-height: 1; font-family: 'HelveticaLogo', sans-serif;">00:00</div>
+          <div style="display: flex; gap: 16px; margin-top: 32px;">
+            <button class="big-timer-btn" id="btn-sw-toggle">Start</button>
+            <button class="big-timer-btn outline" id="btn-sw-reset">Reset</button>
+          </div>
+        </div>
+
+        <!-- Focus Stats Row -->
+        <div style="display: flex; gap: 48px; margin-top: 64px; align-items: center; justify-content: center; font-family: 'HelveticaLogo', sans-serif; flex-shrink: 0;">
+          
+          <div style="display:flex; flex-direction:column; align-items:center; gap:10px;">
+            <span style="font-size:15px; font-weight:800; color:#71717a; text-transform:uppercase; letter-spacing:0.15em;">Rank</span>
+            <span style="font-size:28px; font-weight:900; color:#fff;">Level ${level}</span>
+          </div>
+          
+          <div style="width:2px; height:40px; background:rgba(255,255,255,0.08); border-radius: 2px;"></div>
+          
+          <div style="display:flex; flex-direction:column; align-items:center; gap:10px;">
+            <span style="font-size:15px; font-weight:800; color:#71717a; text-transform:uppercase; letter-spacing:0.15em;">Today's Focus</span>
+            <span id="expanded-timer" class="timer-glow" style="font-size:28px; font-weight:900; color:#fff;">
+              ${formatTime(todaySecs)}
+            </span>
+          </div>
+
+          <div style="width:2px; height:40px; background:rgba(255,255,255,0.08); border-radius: 2px;"></div>
+          
+          <div style="display:flex; flex-direction:column; align-items:center; gap:10px;">
+            <span style="font-size:15px; font-weight:800; color:#71717a; text-transform:uppercase; letter-spacing:0.15em;">Streak</span>
+            <span class="streak-glow" style="display:flex; align-items:center; gap:8px; font-size:28px; font-weight:900; color:#ff9500;">
+              <svg width="24" height="24" viewBox="0 0 448 512" fill="currentColor" stroke="none" style="position:relative; top:-2px;"><path d="M159.3 5.4c7.8-7.3 19.9-7.2 27.7 .1c27.6 25.9 53.5 53.8 77.7 84c11-14.4 23.5-30.1 37-42.9c7.9-7.4 20.1-7.4 28 .1c34.6 33 63.9 76.6 84.5 118c20.3 40.8 33.8 82.5 33.8 111.9C448 404.2 348.2 512 224 512C98.4 512 0 404.1 0 276.5c0-38.4 17.8-85.3 45.4-131.7C73.3 97.7 112.7 48.6 159.3 5.4zM225.7 416c25.3 0 47.7-7 68.8-21c42.1-29.4 53.4-88.2 28.1-134.4c-4.5-9-16-9.6-22.5-2l-25.2 29.3c-6.6 7.6-18.5 7.4-24.7-.5c-16.5-21-46-58.5-62.8-79.8c-6.3-8-18.3-8.1-24.7-.1c-33.8 42.5-50.8 69.3-50.8 99.4C112 375.4 162.6 416 225.7 416z"></path></svg>
+              ${streak} Days
+            </span>
+          </div>
         </div>
       </div>
     `;
@@ -244,7 +319,7 @@ async function render() {
     if (target.startsWith('http')) {
       try {
         const url = new URL(target);
-        iconUrl = `https://www.google.com/s2/favicons?sz=64&domain_url=${url.hostname}`;
+        iconUrl = `https://www.google.com/s2/favicons?sz=128&domain_url=${url.hostname}`;
       } catch {}
     } else if (ipc) {
       iconUrl = await ipc.invoke('get-file-icon', target) || '';
@@ -268,6 +343,123 @@ async function render() {
     if (ipc) ipc.send('dashboard-complete', config);
   });
 }
+
+
+// Tab switching
+document.querySelectorAll('.lock-tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.lock-tab').forEach(t => t.classList.remove('active'));
+    tab.classList.add('active');
+    document.querySelectorAll('.mode-panel').forEach(p => p.classList.remove('active'));
+    document.getElementById('panel-' + tab.getAttribute('data-mode'))?.classList.add('active');
+  });
+});
+
+// Timers state
+(window as any).pomoLeft = (window as any).pomoLeft ?? 25 * 60;
+(window as any).pomoActive = (window as any).pomoActive ?? false;
+
+(window as any).cdLeft = (window as any).cdLeft ?? 60 * 60;
+(window as any).cdActive = (window as any).cdActive ?? false;
+
+(window as any).swSecs = (window as any).swSecs ?? 0;
+(window as any).swActive = (window as any).swActive ?? false;
+
+function fmt(s: number) {
+  const m = Math.floor(s / 60);
+  const sc = s % 60;
+  return `${m.toString().padStart(2, '0')}:${sc.toString().padStart(2, '0')}`;
+}
+
+// Tick loop
+if (!(window as any).clockTickInterval) {
+  (window as any).clockTickInterval = setInterval(() => {
+    // Clock
+    const clockEl = document.getElementById('lock-clock-time');
+    const ampmEl = document.getElementById('lock-clock-ampm');
+    if (clockEl && ampmEl) {
+      const now = new Date();
+      let h = now.getHours();
+      const ampm = h >= 12 ? 'PM' : 'AM';
+      h = h % 12;
+      h = h ? h : 12;
+      const m = now.getMinutes().toString().padStart(2, '0');
+      clockEl.textContent = `${h}:${m}`;
+      ampmEl.textContent = ampm;
+    }
+
+    // Pomodoro
+    if ((window as any).pomoActive && (window as any).pomoLeft > 0) {
+      (window as any).pomoLeft--;
+      if (ipc && (window as any).pomoLeft % 10 === 0) ipc.send('save-session', { count: 0, totalSecs: 10 }); // Sync to DB every 10s
+    }
+    const pEl = document.getElementById('pomo-time');
+    if (pEl) pEl.textContent = fmt((window as any).pomoLeft);
+
+    // Countdown
+    if ((window as any).cdActive && (window as any).cdLeft > 0) {
+      (window as any).cdLeft--;
+      if (ipc && (window as any).cdLeft % 10 === 0) ipc.send('save-session', { count: 0, totalSecs: 10 });
+      const minInp = document.getElementById('cd-mins') as HTMLInputElement;
+      const secInp = document.getElementById('cd-secs') as HTMLInputElement;
+      if (minInp && secInp) {
+        minInp.value = Math.floor((window as any).cdLeft / 60).toString().padStart(2, '0');
+        secInp.value = ((window as any).cdLeft % 60).toString().padStart(2, '0');
+      }
+    }
+
+    // Stopwatch
+    if ((window as any).swActive) {
+      (window as any).swSecs++;
+      if (ipc && (window as any).swSecs % 10 === 0) ipc.send('save-session', { count: 0, totalSecs: 10 });
+    }
+    const swEl = document.getElementById('sw-time');
+    if (swEl) swEl.textContent = fmt((window as any).swSecs);
+
+  }, 1000);
+}
+
+// Controls
+document.getElementById('btn-pomo-toggle')?.addEventListener('click', () => {
+  (window as any).pomoActive = !(window as any).pomoActive;
+  document.getElementById('btn-pomo-toggle')!.textContent = (window as any).pomoActive ? "Pause" : "Resume";
+});
+document.getElementById('btn-pomo-reset')?.addEventListener('click', () => {
+  (window as any).pomoActive = false;
+  (window as any).pomoLeft = 25 * 60;
+  document.getElementById('btn-pomo-toggle')!.textContent = "Lock In";
+});
+
+document.getElementById('btn-cd-toggle')?.addEventListener('click', () => {
+  if (!(window as any).cdActive) {
+    const minInp = document.getElementById('cd-mins') as HTMLInputElement;
+    const secInp = document.getElementById('cd-secs') as HTMLInputElement;
+    if (minInp && secInp) {
+      (window as any).cdLeft = (parseInt(minInp.value) || 0) * 60 + (parseInt(secInp.value) || 0);
+    }
+  }
+  (window as any).cdActive = !(window as any).cdActive;
+  document.getElementById('btn-cd-toggle')!.textContent = (window as any).cdActive ? "Pause" : "Resume";
+});
+document.getElementById('btn-cd-reset')?.addEventListener('click', () => {
+  (window as any).cdActive = false;
+  (window as any).cdLeft = 60 * 60;
+  document.getElementById('btn-cd-toggle')!.textContent = "Start";
+  const minInp = document.getElementById('cd-mins') as HTMLInputElement;
+  const secInp = document.getElementById('cd-secs') as HTMLInputElement;
+  if (minInp && secInp) { minInp.value = '60'; secInp.value = '00'; }
+});
+
+document.getElementById('btn-sw-toggle')?.addEventListener('click', () => {
+  (window as any).swActive = !(window as any).swActive;
+  document.getElementById('btn-sw-toggle')!.textContent = (window as any).swActive ? "Pause" : "Resume";
+});
+document.getElementById('btn-sw-reset')?.addEventListener('click', () => {
+  (window as any).swActive = false;
+  (window as any).swSecs = 0;
+  document.getElementById('btn-sw-toggle')!.textContent = "Start";
+});
+
 
 async function updateHeatmapLive() {
   if (!ipc) return;
