@@ -8,6 +8,7 @@ try {
 
 const root = document.getElementById('dash-root')!;
 
+async function render() {
   let stats: any = {};
   let cfg: any = {};
   if (ipc) {
@@ -40,35 +41,17 @@ const root = document.getElementById('dash-root')!;
   heatmapHTML += '</div></div>';
 
   const defaultShortcuts = [
-    { name: 'Google Chrome', target: 'chrome.exe', iconUrl: 'https://cdn.simpleicons.org/googlechrome', icon: '' },
-    { name: 'Spotify', target: 'spotify.exe', iconUrl: 'https://cdn.simpleicons.org/spotify', icon: '' },
-    { name: 'GitHub', target: 'https://github.com', iconUrl: 'https://cdn.simpleicons.org/github/white', icon: '' },
-    { name: 'VS Code', target: 'code', iconUrl: 'https://cdn.simpleicons.org/visualstudiocode', icon: '' }
+    { name: 'Shortcut', target: '', iconUrl: '', icon: '' },
+    { name: 'Shortcut', target: '', iconUrl: '', icon: '' },
+    { name: 'Shortcut', target: '', iconUrl: '', icon: '' },
+    { name: 'Shortcut', target: '', iconUrl: '', icon: '' }
   ];
 
 
-  // Fetch real icons for defaults if not yet saved
   if ((!cfg.shortcuts || cfg.shortcuts.length === 0) && ipc) {
-    for (const s of defaultShortcuts) {
-        if (s.target.startsWith('http')) {
-          try {
-            const urlObj = new URL(s.target);
-            s.iconUrl = `https://www.google.com/s2/favicons?sz=64&domain=${urlObj.hostname}`;
-          } catch(e) {}
-        } else {
-          try {
-            const u = await ipc.invoke('get-file-icon', s.target);
-            if (u) {
-              s.iconUrl = u;
-            }
-          } catch(e) {}
-        }
-      }
-    }
     cfg.shortcuts = defaultShortcuts;
     ipc.send('save-config', cfg);
   }
-
   const activeShortcuts = (cfg.shortcuts && cfg.shortcuts.length > 0) ? cfg.shortcuts : defaultShortcuts;
 
   let shortcutsHTML = '';

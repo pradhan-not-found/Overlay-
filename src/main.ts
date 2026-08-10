@@ -101,41 +101,60 @@ function renderHeatmap() {
 
 
 function renderShortcuts(shortcuts: any[]) {
-
   const expContainer = document.getElementById('quick-row-shortcuts');
   const idleContainer = document.getElementById('idle-shortcuts');
 
+  const MAX_SLOTS = 4;
+  const items = [...shortcuts];
+  while (items.length < MAX_SLOTS) {
+    items.push({ isPlaceholder: true, name: 'Add Shortcut' });
+  }
+
+  const addSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>`;
+
   if (expContainer) {
     expContainer.innerHTML = '';
-    shortcuts.forEach(s => {
+    items.forEach(s => {
       const btn = document.createElement('button');
       btn.className = 'qbtn';
       btn.title = s.name;
-      const effectiveIconUrl = s.iconUrl;
-      const fallbackIcon = shortcutSvgRaw.replace('width="14"', 'width="18"').replace('height="14"', 'height="18"');
       
-      btn.innerHTML = effectiveIconUrl
-        ? `<img src="${effectiveIconUrl}" style="width:18px; height:18px; object-fit:contain; border-radius:3px;" />`
-        : fallbackIcon;
-      btn.addEventListener('click', e => { e.stopPropagation(); if (ipc) ipc.send('open-shortcut', s.target); });
+      if (s.isPlaceholder) {
+        btn.innerHTML = addSvg.replace('width="14"', 'width="16"').replace('height="14"', 'height="16"');
+        btn.addEventListener('click', e => { e.stopPropagation(); if (ipc) ipc.send('open-dashboard'); });
+      } else {
+        const effectiveIconUrl = s.iconUrl;
+        const fallbackIcon = shortcutSvgRaw.replace('width="14"', 'width="18"').replace('height="14"', 'height="18"');
+        btn.innerHTML = effectiveIconUrl
+          ? `<img src="${effectiveIconUrl}" style="width:18px; height:18px; object-fit:contain; border-radius:3px;" />`
+          : fallbackIcon;
+        btn.addEventListener('click', e => { e.stopPropagation(); if (ipc) ipc.send('open-shortcut', s.target); });
+      }
       expContainer.appendChild(btn);
     });
   }
 
   if (idleContainer) {
     idleContainer.innerHTML = '';
-    shortcuts.forEach(s => {
+    items.forEach(s => {
       const btn = document.createElement('button');
       btn.className = 'ibtn';
-      btn.style.cssText = 'padding:0; display:flex; align-items:center; justify-content:center; width:22px; height:22px; flex-shrink:0;';
-      btn.title = s.name;
-      const effectiveIconUrl = s.iconUrl;
-      const fallbackIcon = shortcutSvgRaw;
       
-      btn.innerHTML = effectiveIconUrl
-        ? `<img src="${effectiveIconUrl}" style="width:14px; height:14px; object-fit:contain; border-radius:2px;" />`
-        : fallbackIcon;
-      btn.addEventListener('click', e => { e.stopPropagation(); if (ipc) ipc.send('open-shortcut', s.target); });
+      if (s.isPlaceholder) {
+        btn.style.cssText = 'padding:0; display:flex; align-items:center; justify-content:center; width:22px; height:22px; flex-shrink:0; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12); border-radius: 6px; color: rgba(255,255,255,0.4); transition: 0.15s;';
+        btn.innerHTML = addSvg;
+        btn.onmouseover = () => { btn.style.background = 'rgba(255,255,255,0.1)'; btn.style.color = '#fff'; };
+        btn.onmouseout = () => { btn.style.background = 'rgba(255,255,255,0.06)'; btn.style.color = 'rgba(255,255,255,0.4)'; };
+        btn.addEventListener('click', e => { e.stopPropagation(); if (ipc) ipc.send('open-dashboard'); });
+      } else {
+        btn.style.cssText = 'padding:0; display:flex; align-items:center; justify-content:center; width:22px; height:22px; flex-shrink:0;';
+        const effectiveIconUrl = s.iconUrl;
+        const fallbackIcon = shortcutSvgRaw;
+        btn.innerHTML = effectiveIconUrl
+          ? `<img src="${effectiveIconUrl}" style="width:14px; height:14px; object-fit:contain; border-radius:2px;" />`
+          : fallbackIcon;
+        btn.addEventListener('click', e => { e.stopPropagation(); if (ipc) ipc.send('open-shortcut', s.target); });
+      }
       idleContainer.appendChild(btn);
     });
   }
@@ -296,9 +315,15 @@ document.getElementById('app')!.innerHTML = `
       </div>
 
       <!-- Battery indicator -->
-      <div id="battery-badge" style="display:none; align-items:center; gap:4px; font-size:10px; font-weight:600; color:var(--muted); padding:2px 6px; border-radius:20px; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.08);">
-        <svg id="bat-icon" xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="6" width="18" height="12" rx="2" ry="2"></rect><line x1="23" y1="13" x2="23" y2="11"></line></svg>
-        <span id="bat-pct">--</span>
+      <div id="battery-badge" style="display:none; align-items:center; gap:6px; font-size:10px; font-weight:600; color:var(--muted); padding:4px 8px; border-radius:20px; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.08); font-family: 'Helvetica', sans-serif; cursor: default;">
+        <div style="display:flex; align-items:center; gap: 1.5px;">
+          <div class="battery-wrapper" style="position:relative; width: 20px; height: 10px; border: 1.5px solid currentColor; border-radius: 3px; padding: 1px; box-sizing: border-box;">
+            <div id="bat-fill" style="height: 100%; width: 50%; background: currentColor; border-radius: 1px; transition: width 0.3s ease, background 0.3s ease;"></div>
+            <div id="bat-charge-icon" style="display:none; position:absolute; left:50%; top:50%; transform:translate(-50%, -50%); font-size:8px; line-height: 1; color: #000;">⚡</div>
+          </div>
+          <div style="width: 2px; height: 4px; background: currentColor; border-radius: 0 2px 2px 0; opacity: 0.6;"></div>
+        </div>
+        <span id="bat-pct" style="margin-top: 1px;">--</span>
       </div>
 
       <div class="quick-row" id="quick-row">
@@ -721,16 +746,16 @@ function closeCamera() {
   camPopup.classList.add('hidden');
 }
 
-document.getElementById('qbtn-cam')!.addEventListener('click', e => { e.stopPropagation(); openCamera(); });
-camClose.addEventListener('click', e => { e.stopPropagation(); closeCamera(); });
+document.getElementById('qbtn-cam')?.addEventListener('click', e => { e.stopPropagation(); openCamera(); });
+camClose?.addEventListener('click', e => { e.stopPropagation(); closeCamera(); });
 
 // ─── Settings / Actions ──────────────────────────────────────────────────────
-document.getElementById('qbtn-settings')!.addEventListener('click', e => {
+document.getElementById('qbtn-settings')?.addEventListener('click', e => {
   e.stopPropagation();
   send('open-settings');
 });
 
-document.getElementById('qbtn-screenshot')!.addEventListener('click', e => {
+document.getElementById('qbtn-screenshot')?.addEventListener('click', e => {
   e.stopPropagation();
   send('take-screenshot');
 });
@@ -751,19 +776,30 @@ if (ipc) {
   ipc.on('battery-status', (_: any, b: any) => {
     const badge = document.getElementById('battery-badge') as HTMLElement;
     const pctEl = document.getElementById('bat-pct');
-    const icon  = document.getElementById('bat-icon');
-    if (!badge || !pctEl) return;
+    const fill  = document.getElementById('bat-fill');
+    const chargeIcon = document.getElementById('bat-charge-icon');
+    if (!badge || !pctEl || !fill) return;
 
     const pct = Math.round((b?.percent ?? 0));
+    const isCharging = b?.acConnected || false;
+
     pctEl.textContent = `${pct}%`;
+    fill.style.width = `${pct}%`;
 
     // Color based on level
     let color = 'var(--muted)';
-    if (pct <= 20) color = '#ff453a';
-    else if (pct <= 50) color = '#ffd60a';
-    else color = '#30d158';
-    if (icon) icon.style.stroke = color;
+    if (pct <= 20 && !isCharging) color = '#ff453a';
+    else if (pct <= 50 && !isCharging) color = '#ffd60a';
+    else if (isCharging) color = '#30d158';
+    else color = '#fff';
+
     badge.style.color = color;
+
+    if (chargeIcon) {
+      chargeIcon.style.display = isCharging ? 'block' : 'none';
+      if (isCharging) fill.style.opacity = '0.5'; // Dim fill so bolt is highly visible
+      else fill.style.opacity = '1';
+    }
   });
 
 

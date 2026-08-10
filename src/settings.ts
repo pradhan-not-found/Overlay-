@@ -202,13 +202,7 @@ async function render() {
   const h = Math.floor(m / 60);
   const timeString = h > 0 ? `${h}h ${m%60}m` : `${m}m`;
 
-  const defaultShortcuts = [
-    { name: 'Google Chrome', target: 'chrome.exe', iconUrl: 'https://cdn.simpleicons.org/googlechrome', icon: '' },
-    { name: 'Spotify', target: 'spotify.exe', iconUrl: 'https://cdn.simpleicons.org/spotify', icon: '' },
-    { name: 'GitHub', target: 'https://github.com', iconUrl: 'https://cdn.simpleicons.org/github/white', icon: '' },
-    { name: 'VS Code', target: 'code', iconUrl: 'https://cdn.simpleicons.org/visualstudiocode', icon: '' }
-  ];
-  let customShortcuts = (currentConfig.shortcuts && currentConfig.shortcuts.length > 0) ? currentConfig.shortcuts : defaultShortcuts;
+  let customShortcuts = currentConfig.shortcuts || [];
 
 
 

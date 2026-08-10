@@ -23,6 +23,7 @@
     "wait-on": "^9.1.0"
   },
   "build": {
+    "npmRebuild": false,
     "appId": "com.pradhan.overlay",
     "productName": "Overlay",
     "directories": {

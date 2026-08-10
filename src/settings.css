@@ -460,3 +460,6 @@ html, body {
   border-color: rgba(255,255,255,0.1);
 }
 
+
+@font-face { font-family: 'HelveticaLogo'; src: url('/fonts/Helvetica.ttf') format('truetype'); }
+.brand { font-family: 'HelveticaLogo', sans-serif; font-weight: normal; font-style: normal; }
