@@ -1,4 +1,5 @@
 'use strict';
+process.env['ELECTRON_DISABLE_SECURITY_WARNINGS'] = 'true';
 
 const { app, BrowserWindow, ipcMain, shell, screen, nativeImage, Notification } = require('electron');
 const path   = require('path');
@@ -312,7 +313,11 @@ function createPillWindow() {
   mainWindow.on('closed', () => { mainWindow = null; });
   
   mainWindow.webContents.on('console-message', (event, level, message, line, sourceId) => {
-    console.log(`[FRONTEND ${level}] ${message} (${sourceId}:${line})`);
+    if (typeof level === 'object') {
+      console.log(`[FRONTEND ${level.level}] ${level.message} (${level.sourceId}:${level.line})`);
+    } else {
+      console.log(`[FRONTEND ${level}] ${message} (${sourceId}:${line})`);
+    }
   });
 }
 
