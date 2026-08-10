@@ -110,10 +110,10 @@ async function render() {
   heatmapHTML += '</div></div>';
 
   const defaultShortcuts = [
-    { name: 'Shortcut', target: '', iconUrl: '', icon: '' },
-    { name: 'Shortcut', target: '', iconUrl: '', icon: '' },
-    { name: 'Shortcut', target: '', iconUrl: '', icon: '' },
-    { name: 'Shortcut', target: '', iconUrl: '', icon: '' }
+    { name: 'Shortcut 1', target: '', iconUrl: '', icon: '' },
+    { name: 'Shortcut 2', target: '', iconUrl: '', icon: '' },
+    { name: 'Shortcut 3', target: '', iconUrl: '', icon: '' },
+    { name: 'Shortcut 4', target: '', iconUrl: '', icon: '' }
   ];
 
 
@@ -242,36 +242,46 @@ async function render() {
     root.innerHTML = `
       ${headerHTML}
       <style>
+        .shortcut-card {
+          background: #1a1a1a; border: 1px solid rgba(255,255,255,0.05); border-radius: 12px; padding: 16px;
+          display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px;
+          transition: all 0.2s; cursor: pointer; position: relative;
+        }
+        .shortcut-card:hover { background: #222; transform: translateY(-2px); border-color: rgba(255,255,255,0.15); }
         .shortcut-card:hover .btn-del-shortcut { display: flex !important; }
+        .section-title { font-family: 'HelveticaLogo', sans-serif; font-size: 16px; font-weight: 800; color: #f4f4f5; margin-bottom: 12px; letter-spacing: 0.05em; text-transform: uppercase; }
+        input { font-family: 'HelveticaLogo', sans-serif; transition: all 0.2s; }
+        input:focus { border-color: rgba(255,255,255,0.4) !important; outline: none; }
+        .btn-primary { background: #fff; color: #000; border: none; font-family: 'HelveticaLogo', sans-serif; font-weight: 800; cursor: pointer; transition: transform 0.1s; }
+        .btn-primary:active { transform: scale(0.95); }
+        .btn-primary:hover { background: #f0f0f0; }
+        .dash-title .brand { font-family: 'HelveticaLogo', sans-serif; font-weight: 900; font-size: 24px; letter-spacing: -0.02em; }
       </style>
-      <div class="fade-in" style="display: flex; flex-direction: column; align-items: center; justify-content: center; width: 100%; height: 100%;">
-        <div class="dash-header" style="border:none; margin-bottom: 24px; padding:0; flex-direction: column; gap: 8px;">
-          <div style="display: flex; align-items: center; gap: 12px;">
-            <img src="/applogo.png" alt="Overlay Logo" class="dash-logo" />
-            <div class="dash-title"><span class="brand">Overlay</span></div>
+      <div class="fade-in" style="display: flex; flex-direction: column; align-items: center; justify-content: center; width: 100%; height: 100%; font-family: 'HelveticaLogo', sans-serif;">
+        <div class="dash-header" style="border:none; margin-bottom: 32px; padding:0; flex-direction: column; gap: 8px;">
+          <div style="display: flex; align-items: center; justify-content: center; gap: 12px;">
+            <img src="/applogo.png" alt="Overlay Logo" class="dash-logo" style="width:32px; height:32px;" />
+            <div class="dash-title"><span class="brand">Overlay Dashboard</span></div>
           </div>
+          <div style="color: #a1a1aa; font-size: 13px; font-weight: 600;">Manage your shortcuts & focus data</div>
         </div>
         
-        <div style="width: 100%; max-width: 580px; margin-top: 16px;">
+        <div style="width: 100%; max-width: 600px; padding: 0 24px;">
           <div class="section-title">Focus Activity Heatmap</div>
-          <div class="heatmap-container">
+          <div class="heatmap-container" style="background: rgba(255,255,255,0.03); padding: 16px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.05); margin-bottom: 24px;">
             ${heatmapHTML}
           </div>
 
           <div class="section-title">Quick Shortcuts</div>
-          <div class="shortcuts-grid" style="margin-bottom: 16px;">
+          <div class="shortcuts-grid" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 24px;">
             ${shortcutsHTML}
           </div>
           
           <div class="section-title">Add Shortcut</div>
-          <div style="display:flex; gap:8px; margin-bottom: 24px;">
-            <input type="text" id="new-sc-name" placeholder="Name" style="background:#111; border:1px solid rgba(255,255,255,0.1); padding:8px 12px; color:#fff; border-radius:6px; flex:1; font-family: inherit;">
-            <input type="text" id="new-sc-target" placeholder="Target (.exe path or URL)" style="background:#111; border:1px solid rgba(255,255,255,0.1); padding:8px 12px; color:#fff; border-radius:6px; flex:2; font-family: inherit;">
-            <button id="btn-add-sc" class="btn-primary" style="padding: 0 16px; border-radius:6px; font-weight:600;">Add</button>
-          </div>
-          
-          <div style="display: flex; justify-content: center; margin-top: 32px;">
-            <button class="btn-primary" id="btn-save" style="padding: 10px 24px; font-size: 15px;">Continue to Overlay</button>
+          <div style="display:flex; gap:12px; margin-bottom: 32px; background: rgba(255,255,255,0.03); padding: 16px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.05);">
+            <input type="text" id="new-sc-name" placeholder="Shortcut Name" style="background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.1); padding: 12px 16px; color: #fff; border-radius: 8px; flex: 1; font-size: 14px;">
+            <input type="text" id="new-sc-target" placeholder="Target (.exe path or URL)" style="background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.1); padding: 12px 16px; color: #fff; border-radius: 8px; flex: 2; font-size: 14px;">
+            <button id="btn-add-sc" class="btn-primary" style="padding: 0 24px; border-radius: 8px; font-size: 15px;">Add</button>
           </div>
         </div>
       </div>
