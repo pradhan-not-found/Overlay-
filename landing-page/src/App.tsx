@@ -134,31 +134,12 @@ function App() {
                 Experience frictionless productivity. Overlay is a keyboard-driven workspace that puts all your essential tools just a keystroke away. Register now for early access.
               </p>
 
-              {status === 'success' ? (
-                <div className="success-message fade-in" style={{ 
-                  border: '1px solid #166534', background: '#f0fdf4', color: '#166534', 
-                  padding: '16px 20px', borderRadius: '12px', display: 'flex', 
-                  alignItems: 'center', gap: '12px', marginTop: '24px', fontWeight: 600 
-                }}>
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
-                  Thank you for registering! We'll be in touch soon.
-                </div>
-              ) : (
-                <form className="waitlist-form" onSubmit={handleSubmit}>
-                  <input
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="Enter your email..."
-                    className="glass-input"
-                    required
-                    disabled={status === 'loading'}
-                  />
-                  <button type="submit" className="glass-button" disabled={status === 'loading'}>
-                    {status === 'loading' ? 'Joining...' : 'Join Waitlist'}
-                  </button>
-                </form>
-              )}
+              <div className="download-buttons fade-in" style={{ display: 'flex', flexWrap: 'wrap', gap: '20px', width: '100%', justifyContent: 'center', marginTop: '32px' }}>
+                <a href="https://github.com/pradhan-not-found/Overlay-/releases/latest/download/Overlay%20Setup%201.0.0.exe" className="glass-button dl-btn" style={{ textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '10px', fontSize: '16px', padding: '14px 28px' }}>
+                  <img src={windowsLogo} alt="Windows" style={{ width: '22px', height: '22px', objectFit: 'contain', filter: 'brightness(0) invert(1)' }} />
+                  Download for Windows
+                </a>
+              </div>
             </>
           )}
 
