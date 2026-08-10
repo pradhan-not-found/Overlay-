@@ -11,11 +11,24 @@ const db     = require('./db.cjs');
 let autoUpdater = null;
 try {
   autoUpdater = require('electron-updater').autoUpdater;
-  autoUpdater.autoDownload = true;        // Download automatically in background
-  autoUpdater.autoInstallOnAppQuit = true; // Install on next quit
+  autoUpdater.autoDownload = true;         // Download automatically in background
+  autoUpdater.autoInstallOnAppQuit = true;  // Install on next quit
   autoUpdater.allowDowngrade = false;
+  autoUpdater.channel = 'latest';           // Use 'latest' release channel
+
+  // Private repo with PUBLIC releases — no token needed for release downloads.
+  // GitHub allows making individual releases publicly visible even on private repos.
+  // Just mark each release as "Public" when you publish it on GitHub.
+  autoUpdater.setFeedURL({
+    provider: 'github',
+    owner: 'pradhan-not-found',
+    repo: 'Overlay-',
+    releaseType: 'release',
+    private: false  // Releases are publicly accessible
+  });
+
   if (!app.isPackaged) {
-    // In dev mode, allow checking against the local package.json version
+    // In dev mode, don't auto-check — just simulate
     autoUpdater.forceDevUpdateConfig = true;
   }
 } catch(e) {
