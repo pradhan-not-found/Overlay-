@@ -315,15 +315,15 @@ document.getElementById('app')!.innerHTML = `
       </div>
 
       <!-- Battery indicator -->
-      <div id="battery-badge" style="display:none; align-items:center; gap:6px; font-size:10px; font-weight:600; color:var(--muted); padding:4px 8px; border-radius:20px; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.08); font-family: 'Helvetica', sans-serif; cursor: default;">
-        <div style="display:flex; align-items:center; gap: 1.5px;">
-          <div class="battery-wrapper" style="position:relative; width: 20px; height: 10px; border: 1.5px solid currentColor; border-radius: 3px; padding: 1px; box-sizing: border-box;">
-            <div id="bat-fill" style="height: 100%; width: 50%; background: currentColor; border-radius: 1px; transition: width 0.3s ease, background 0.3s ease;"></div>
-            <div id="bat-charge-icon" style="display:none; position:absolute; left:50%; top:50%; transform:translate(-50%, -50%); font-size:8px; line-height: 1; color: #000;">⚡</div>
+      <div id="battery-badge" style="display:none; align-items:center; gap:6px; font-size:11px; font-weight:600; color:var(--text-main); padding:4px 10px; border-radius:20px; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.08); font-family: 'Helvetica', Arial, sans-serif; cursor: default;">
+        <div style="display:flex; align-items:center; gap: 1px;">
+          <div class="battery-wrapper" style="position:relative; width: 22px; height: 11px; border: 1px solid rgba(255,255,255,0.4); border-radius: 3px; padding: 1px; box-sizing: border-box;">
+            <div id="bat-fill" style="height: 100%; width: 50%; background: #fff; border-radius: 1px; transition: width 0.3s ease, background 0.3s ease;"></div>
+            <svg id="bat-charge-icon" style="display:none; position:absolute; left:50%; top:50%; transform:translate(-50%, -50%);" xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="#000" stroke="none"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
           </div>
-          <div style="width: 2px; height: 4px; background: currentColor; border-radius: 0 2px 2px 0; opacity: 0.6;"></div>
+          <div style="width: 2px; height: 4px; background: rgba(255,255,255,0.4); border-radius: 0 2px 2px 0;"></div>
         </div>
-        <span id="bat-pct" style="margin-top: 1px;">--</span>
+        <span id="bat-pct" style="margin-top: 1px; color: #fff;">--</span>
       </div>
 
       <div class="quick-row" id="quick-row">
@@ -787,18 +787,17 @@ if (ipc) {
     fill.style.width = `${pct}%`;
 
     // Color based on level
-    let color = 'var(--muted)';
-    if (pct <= 20 && !isCharging) color = '#ff453a';
-    else if (pct <= 50 && !isCharging) color = '#ffd60a';
-    else if (isCharging) color = '#30d158';
-    else color = '#fff';
+    let fillBg = '#fff';
+    if (pct <= 20 && !isCharging) fillBg = '#ff453a';
+    else if (pct <= 50 && !isCharging) fillBg = '#ffd60a';
+    else if (isCharging) fillBg = '#30d158';
 
-    badge.style.color = color;
+    fill.style.background = fillBg;
+    badge.style.color = '#fff';
 
     if (chargeIcon) {
       chargeIcon.style.display = isCharging ? 'block' : 'none';
-      if (isCharging) fill.style.opacity = '0.5'; // Dim fill so bolt is highly visible
-      else fill.style.opacity = '1';
+      fill.style.opacity = '1';
     }
   });
 
