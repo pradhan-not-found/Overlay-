@@ -491,8 +491,8 @@ ipcMain.on('save-config', (_e, cfg) => {
     cfg.shortcuts.forEach(s => db.addShortcut(s));
     delete cfg.shortcuts;
   }
-  writeConfig({ ...readConfig(), ...cfg });
-  const finalCfg = readConfig();
+  const finalCfg = { ...readConfig(), ...cfg };
+  writeConfig(finalCfg);
   finalCfg.shortcuts = db.getShortcuts();
   if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send('widget-config', finalCfg);
 });
