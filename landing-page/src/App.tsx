@@ -7,38 +7,10 @@ import phLogo from './assets/logo/producthunt.png';
 export type ViewState = 'home' | 'features' | 'pricing' | 'access' | 'privacy' | 'terms' | 'contact' | 'now';
 
 function App() {
-  const [email, setEmail] = useState('');
-  const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
   const [currentView, setCurrentView] = useState<ViewState>('home');
   const [password, setPassword] = useState('');
   const [isUnlocked, setIsUnlocked] = useState(false);
   const [accessError, setAccessError] = useState('');
-
-  // NOTE: Replace this with your Google Apps Script Web App URL!
-  const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxi9gFwCeJt85jedXkVeGmrBgW_MRZtCU3wMlAC9mEF586H86WaV1K9w-1N5KjzfuVDew/exec';
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (email.trim()) {
-      setStatus('loading');
-      try {
-        await fetch(GOOGLE_SCRIPT_URL, {
-          method: 'POST',
-          mode: 'no-cors',
-          headers: {
-            'Content-Type': 'text/plain;charset=utf-8',
-          },
-          body: JSON.stringify({ email: email.trim() }),
-        });
-        
-        // Because of no-cors, fetch resolves opaque responses even on success
-        setStatus('success');
-        setEmail('');
-      } catch {
-        setStatus('error');
-      }
-    }
-  };
 
   if (currentView === 'access' && isUnlocked) {
     return (
