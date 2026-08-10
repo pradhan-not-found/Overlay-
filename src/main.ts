@@ -1,4 +1,20 @@
 import './style.css';
+import playSvgRaw from './assets/icons/play.svg?raw';
+import pauseSvgRaw from './assets/icons/pause.svg?raw';
+import prevSvgRaw from './assets/icons/prev.svg?raw';
+import nextSvgRaw from './assets/icons/next.svg?raw';
+import musicSvgRaw from './assets/icons/music.svg?raw';
+import calendarSvgRaw from './assets/icons/calendar.svg?raw';
+import camSvgRaw from './assets/icons/cam.svg?raw';
+import screenshotSvgRaw from './assets/icons/screenshot.svg?raw';
+import settingsSvgRaw from './assets/icons/settings.svg?raw';
+import chevronLeftSvgRaw from './assets/icons/chevron-left.svg?raw';
+import chevronRightSvgRaw from './assets/icons/chevron-right.svg?raw';
+import closeSvgRaw from './assets/icons/close.svg?raw';
+import shortcutSvgRaw from './assets/icons/shortcut.svg?raw';
+import volMuteSvgRaw from './assets/icons/vol-mute.svg?raw';
+import volLowSvgRaw from './assets/icons/vol-low.svg?raw';
+import volHighSvgRaw from './assets/icons/vol-high.svg?raw';
 
 // ─── IPC bridge ───────────────────────────────────────────────────────────────
 let ipc: any = null;
@@ -21,19 +37,110 @@ let totalFocusSecsToday = 0;
 let FOCUS_SECS = 25 * 60;
 const BREAK_SECS =  5 * 60;
 
+let globalStats: Record<string, { count: number, totalSecs: number }> = {};
+
 // ─── Session persistence (IPC Database) ────────────────────────────────────────
 function loadSessions() {
   if (ipc) {
     ipc.invoke('get-stats').then((stats: any) => {
-      const key = todayKey();
-      if (stats && stats[key]) {
-        sessionCountToday = stats[key].count || 0;
-        totalFocusSecsToday = stats[key].totalSecs || 0;
-        updateStats();
+      if (stats) {
+        globalStats = stats;
+        const key = todayKey();
+        if (stats[key]) {
+          sessionCountToday = stats[key].count || 0;
+          totalFocusSecsToday = stats[key].totalSecs || 0;
+        }
       }
+      updateStats();
+      renderHeatmap();
+    }).catch(() => {
+      updateStats();
+      renderHeatmap();
+    });
+    
+    ipc.invoke('get-config').then((cfg: any) => {
+      if (cfg?.shortcuts?.length > 0) {
+        renderShortcuts(cfg.shortcuts);
+      }
+    }).catch(() => {});
+  }
+}
+
+function renderHeatmap() {
+  const container = document.getElementById('t-heatmap');
+  if (!container) return;
+  
+  container.innerHTML = '';
+  const today = new Date();
+  
+  // Render last 7 days
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date(today);
+    d.setDate(today.getDate() - i);
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const dd = String(d.getDate()).padStart(2, '0');
+    const key = `${y}-${m}-${dd}`;
+    
+    const count = globalStats[key]?.count || 0;
+    
+    const box = document.createElement('div');
+    box.className = 'heat-box';
+    box.title = `${key}: ${count} sessions`;
+    
+    if (count === 0) box.style.background = 'rgba(255,255,255,0.08)';
+    else if (count < 3) box.style.background = '#0e4429';
+    else if (count < 5) box.style.background = '#006d32';
+    else if (count < 7) box.style.background = '#26a641';
+    else box.style.background = '#39d353';
+    
+    container.appendChild(box);
+  }
+}
+
+
+
+function renderShortcuts(shortcuts: any[]) {
+
+  const expContainer = document.getElementById('quick-row-shortcuts');
+  const idleContainer = document.getElementById('idle-shortcuts');
+
+  if (expContainer) {
+    expContainer.innerHTML = '';
+    shortcuts.forEach(s => {
+      const btn = document.createElement('button');
+      btn.className = 'qbtn';
+      btn.title = s.name;
+      const effectiveIconUrl = s.iconUrl;
+      const fallbackIcon = shortcutSvgRaw.replace('width="14"', 'width="18"').replace('height="14"', 'height="18"');
+      
+      btn.innerHTML = effectiveIconUrl
+        ? `<img src="${effectiveIconUrl}" style="width:18px; height:18px; object-fit:contain; border-radius:3px;" />`
+        : fallbackIcon;
+      btn.addEventListener('click', e => { e.stopPropagation(); if (ipc) ipc.send('open-shortcut', s.target); });
+      expContainer.appendChild(btn);
+    });
+  }
+
+  if (idleContainer) {
+    idleContainer.innerHTML = '';
+    shortcuts.forEach(s => {
+      const btn = document.createElement('button');
+      btn.className = 'ibtn';
+      btn.style.cssText = 'padding:0; display:flex; align-items:center; justify-content:center; width:22px; height:22px; flex-shrink:0;';
+      btn.title = s.name;
+      const effectiveIconUrl = s.iconUrl;
+      const fallbackIcon = shortcutSvgRaw;
+      
+      btn.innerHTML = effectiveIconUrl
+        ? `<img src="${effectiveIconUrl}" style="width:14px; height:14px; object-fit:contain; border-radius:2px;" />`
+        : fallbackIcon;
+      btn.addEventListener('click', e => { e.stopPropagation(); if (ipc) ipc.send('open-shortcut', s.target); });
+      idleContainer.appendChild(btn);
     });
   }
 }
+
 function saveSessions() {
   if (ipc) {
     ipc.send('save-session', { count: sessionCountToday, totalSecs: totalFocusSecsToday });
@@ -71,8 +178,9 @@ document.getElementById('app')!.innerHTML = `
 
   <!-- ══ IDLE STATE ══ -->
   <div class="view view-idle active" id="view-idle" style="width: 100%; display: flex; align-items: center; justify-content: space-between; padding: 0 18px;">
-    <div class="idle-state-default" id="idle-state-default" style="display: flex; align-items: center; justify-content: center; width: 100%;">
+    <div class="idle-state-default" id="idle-state-default" style="display: flex; align-items: center; justify-content: space-between; width: 100%;">
       <span class="idle-clock" id="idle-clock">00:00</span>
+      <div id="idle-shortcuts" style="display: flex; align-items: center; gap: 6px;"></div>
     </div>
     
     <!-- Media state -->
@@ -90,8 +198,10 @@ document.getElementById('app')!.innerHTML = `
       <span id="idle-track-name" style="font-size: 13px; font-weight: 600; color: var(--ink); margin-left: 10px; max-width: 180px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"></span>
       <div class="idle-controls" id="idle-controls" style="margin-left: auto; display: flex; align-items: center; gap: 8px;">
         <div id="idle-source-logo" style="display: flex; align-items: center; justify-content: center; opacity: 0.8;"></div>
+        <div class="music-bars" id="idle-music-bars" style="display: none; margin-right: 4px;">
+        </div>
         <button class="ibtn" id="btn-idle-play" title="Play/Pause" style="padding: 4px; display: flex; align-items: center; justify-content: center;">
-          <svg id="idle-play-icon" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M5 3l14 9-14 9V3z"></path></svg>
+          ${playSvgRaw}
         </button>
       </div>
     </div>
@@ -99,7 +209,11 @@ document.getElementById('app')!.innerHTML = `
     <!-- Timer state -->
     <div class="idle-state-timer hidden" id="idle-state-timer" style="display: none; align-items: center; justify-content: center; width: 100%;">
       <span style="font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.1em; margin-right: 12px;">Lock In</span>
-      <span class="idle-timer-hint" id="idle-timer-hint" style="font-size: 14px; font-weight: 600; font-variant-numeric: tabular-nums; color: var(--ink);"></span>
+      <span class="idle-timer-hint" id="idle-timer-hint" style="font-size: 14px; font-weight: 600; font-variant-numeric: tabular-nums; color: var(--ink); margin-right: 12px;"></span>
+      <div style="width: 1px; height: 12px; background: rgba(255,255,255,0.2); margin-right: 12px;"></div>
+      <button class="ibtn" id="btn-idle-timer-toggle" title="Pause / Resume" style="padding: 2px; display: flex; align-items: center; justify-content: center; background: transparent; border: none; color: var(--muted); cursor: pointer; transition: 0.2s;">
+        ${playSvgRaw}
+      </button>
     </div>
   </div>
 
@@ -114,14 +228,19 @@ document.getElementById('app')!.innerHTML = `
         <span class="ring-time" id="ring-time">25:00</span>
       </div>
 
-      <div class="t-stats" id="t-stats">
-        <span class="stat-chip" id="stat-sessions">${sessionCountToday} sessions today</span>
-        <span class="stat-chip" id="stat-time">${fmtHMS(totalFocusSecsToday)} focused</span>
+      <div class="t-stats" style="display: flex; flex-direction: column; align-items: flex-start; gap: 4px; margin-bottom: 8px;">
+        <div style="display: flex; gap: 4px;">
+          <span id="stat-sessions" style="font-size: 10px; font-weight: 600; background: rgba(255,255,255,0.1); padding: 2px 6px; border-radius: 4px; color: #fff;">0 sessions today</span>
+          <span id="stat-time" style="font-size: 10px; font-weight: 600; background: rgba(255,255,255,0.1); padding: 2px 6px; border-radius: 4px; color: #fff;">0m focused</span>
+        </div>
+        <div id="t-heatmap" style="display: flex; flex-direction: row; align-items: center; gap: 4px; margin-top: 2px;">
+          <!-- Heatmap rendered here -->
+        </div>
       </div>
 
       <div class="t-btns" style="display:flex; gap:8px;">
-        <button class="btn btn-p" id="btn-lockin">Lock In</button>
-        <button class="btn btn-g" id="btn-reset">Reset</button>
+        <button class="btn btn-p" id="btn-lockin" style="min-width: 90px;">Lock In</button>
+        <button class="btn btn-g" id="btn-reset" style="min-width: 90px;">Reset</button>
       </div>
     </section>
 
@@ -131,24 +250,30 @@ document.getElementById('app')!.innerHTML = `
     <section class="panel p-media">
       <div class="media-row">
         <div class="m-art" id="m-art" style="position: relative;">
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"></path><circle cx="6" cy="18" r="3"></circle><circle cx="18" cy="16" r="3"></circle></svg>
+          ${musicSvgRaw}
           <div id="m-art-logo" style="position: absolute; bottom: -8px; left: -8px; border-radius: 50%; padding: 4px; background: rgba(0,0,0,0.6); backdrop-filter: blur(4px); display: none; align-items: center; justify-content: center; box-shadow: 0 2px 4px rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.1);"></div>
         </div>
         <div class="m-info">
-          <p class="m-track"  id="m-track">Nothing playing</p>
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <p class="m-track" id="m-track">Nothing playing</p>
+            <div class="music-bars" id="exp-music-bars" style="display: none; margin-bottom: 4px;">
+            </div>
+          </div>
           <p class="m-artist" id="m-artist">Open Spotify or any media player</p>
           <div class="m-ctrls">
             <button class="ibtn" id="btn-prev" title="Previous">
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M6 5a1 1 0 0 0-2 0v14a1 1 0 0 0 2 0V5zM19.5 4.5v15a1 1 0 0 1-1.5.8l-10-7.5a1 1 0 0 1 0-1.6l10-7.5a1 1 0 0 1 1.5.8z"/></svg>
+              ${prevSvgRaw}
             </button>
             <button class="ibtn play" id="btn-play" title="Play / Pause">
-              <svg id="main-play-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M7.5 4.5v15a1 1 0 0 0 1.5.8l12-7.5a1 1 0 0 0 0-1.6l-12-7.5a1 1 0 0 0-1.5.8z"/></svg>
+              ${playSvgRaw}
             </button>
             <button class="ibtn" id="btn-next" title="Next">
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M18 5a1 1 0 0 1 2 0v14a1 1 0 0 1-2 0V5zM4.5 4.5v15a1 1 0 0 0 1.5.8l10-7.5a1 1 0 0 0 0-1.6l-10-7.5a1 1 0 0 0-1.5.8z"/></svg>
+              ${nextSvgRaw}
             </button>
             <div class="vol-wrap">
-              <svg id="vol-icon" class="vol-icon" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg>
+              <div id="vol-icon-container" style="display: flex; align-items: center; cursor: pointer; flex-shrink: 0; width: 14px;">
+                ${volHighSvgRaw}
+              </div>
               <input type="range" class="vol-slider" id="vol-slider" min="0" max="1" step="0.01" value="0.5" title="Volume">
             </div>
           </div>
@@ -158,28 +283,35 @@ document.getElementById('app')!.innerHTML = `
 
     <div class="div"></div>
 
+
     <section class="panel p-right">
-      <div class="cal-card">
+      <div class="cal-card" id="cal-card-btn">
         <div class="cal-left">
           <div class="cal-dow" id="cal-dow">Mon</div>
           <div class="cal-date"><span id="cal-num">1</span> <span id="cal-month">Jan</span></div>
         </div>
         <div class="cal-icon">
-          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+          ${calendarSvgRaw}
         </div>
       </div>
-      <div class="quick-row">
+
+      <!-- Battery indicator -->
+      <div id="battery-badge" style="display:none; align-items:center; gap:4px; font-size:10px; font-weight:600; color:var(--muted); padding:2px 6px; border-radius:20px; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.08);">
+        <svg id="bat-icon" xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="6" width="18" height="12" rx="2" ry="2"></rect><line x1="23" y1="13" x2="23" y2="11"></line></svg>
+        <span id="bat-pct">--</span>
+      </div>
+
+      <div class="quick-row" id="quick-row">
+        <div id="quick-row-shortcuts" style="display:flex; gap:6px;"></div>
+        <div class="quick-divider"></div>
         <button class="qbtn" id="qbtn-cam" title="Webcam Preview">
-          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M23 7l-7 5 7 5V7z"></path><rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect></svg>
+          ${camSvgRaw}
         </button>
-        <button class="qbtn" id="qbtn-screenshot" title="Take Screenshot">
-          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path><circle cx="12" cy="13" r="4"></circle></svg>
-        </button>
-        <button class="qbtn" id="qbtn-file" title="Drop file to copy path">
-          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+        <button class="qbtn" id="qbtn-screenshot" title="Screenshot">
+          ${screenshotSvgRaw}
         </button>
         <button class="qbtn" id="qbtn-settings" title="Settings">
-          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+          ${settingsSvgRaw}
         </button>
       </div>
     </section>
@@ -187,10 +319,9 @@ document.getElementById('app')!.innerHTML = `
   <div class="view" id="view-cal" style="flex-direction: row; width: 100%; height: 100%; padding: 16px 24px; gap: 24px; background: transparent; box-sizing: border-box; overflow: hidden; align-items: stretch; font-family: 'HelveticaTrace', Helvetica, sans-serif;">
     <!-- Left: Events List -->
     <div style="flex: 1; display: flex; flex-direction: column; overflow: hidden; border-right: 1px solid rgba(255,255,255,0.1); padding-right: 24px;">
-      <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 8px;">
-        <button id="btn-close-cal" class="ibtn" style="padding: 4px 8px; display: flex; align-items: center; gap: 4px; font-size: 12px; font-weight: 600; background: rgba(255,255,255,0.1); border-radius: 6px; transition: 0.2s;">
-          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
-          Back
+      <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
+        <button id="btn-close-cal" class="qbtn" title="Back" style="width:26px; height:26px; border-radius:6px; flex-shrink:0;">
+          ${chevronLeftSvgRaw}
         </button>
         <h3 style="font-size: 10px; font-weight: 700; color: #888; text-transform: uppercase; letter-spacing: 0.08em; margin: 0;">Upcoming</h3>
       </div>
@@ -202,9 +333,9 @@ document.getElementById('app')!.innerHTML = `
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
         <h2 style="font-size: 16px; font-weight: 700; margin: 0; color: #fff; letter-spacing: -0.02em;">Calendar</h2>
         <div style="display: flex; align-items: center; gap: 2px;">
-          <button class="ibtn" id="cal-prev-month" style="padding: 2px;"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"></polyline></svg></button>
+          <button class="ibtn" id="cal-prev-month" style="padding: 2px;">${chevronLeftSvgRaw}</button>
           <h3 id="cal-month-year" style="font-size: 11px; font-weight: 700; margin: 0; color: #ccc; width: 65px; text-align: center;">Month</h3>
-          <button class="ibtn" id="cal-next-month" style="padding: 2px;"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg></button>
+          <button class="ibtn" id="cal-next-month" style="padding: 2px;">${chevronRightSvgRaw}</button>
         </div>
       </div>
       <div style="display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; margin-bottom: 2px; text-align: center; color: #888; font-size: 9px; font-weight: 700; text-transform: uppercase;">
@@ -227,7 +358,7 @@ document.getElementById('app')!.innerHTML = `
   <!-- Camera popup overlay -->
   <div class="cam-popup hidden" id="cam-popup">
     <button class="cam-close-btn" id="cam-close">
-      <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+      ${closeSvgRaw}
     </button>
     <video class="cam-feed" id="cam-feed" autoplay muted playsinline></video>
     <div class="cam-status" id="cam-status">Starting camera…</div>
@@ -255,6 +386,7 @@ const tLabel   = document.getElementById('t-label')!;
 const ringTime = document.getElementById('ring-time')!;
 const statSessions = document.getElementById('stat-sessions')!;
 const statTime     = document.getElementById('stat-time')!;
+// Heatmap handles stats visually now
 const btnLockin = document.getElementById('btn-lockin')!;
 
 // Media refs
@@ -265,16 +397,25 @@ const btnPlay = document.getElementById('btn-play')!;
 const btnPrev = document.getElementById('btn-prev')!;
 const btnNext = document.getElementById('btn-next')!;
 const volSlider = document.getElementById('vol-slider') as HTMLInputElement;
-const volIcon = document.getElementById('vol-icon')!;
+const volIconContainer = document.getElementById('vol-icon-container')!;
+
+let currentVolState = -1; // 0=mute, 1=low, 2=high
 
 function updateVolIcon(val: number) {
-  if (val === 0) {
-    volIcon.innerHTML = '<polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><line x1="23" y1="9" x2="17" y2="15"></line><line x1="17" y1="9" x2="23" y2="15"></line>';
-  } else if (val < 0.5) {
-    volIcon.innerHTML = '<polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path>';
-  } else {
-    volIcon.innerHTML = '<polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path>';
+  if (!volIconContainer || !volSlider) return;
+  
+  let newState = val === 0 ? 0 : (val < 0.5 ? 1 : 2);
+  if (newState !== currentVolState) {
+    if (newState === 0) {
+      volIconContainer.innerHTML = volMuteSvgRaw;
+    } else if (newState === 1) {
+      volIconContainer.innerHTML = volLowSvgRaw;
+    } else {
+      volIconContainer.innerHTML = volHighSvgRaw;
+    }
+    currentVolState = newState;
   }
+  
   const pct = val * 100;
   volSlider.style.background = `linear-gradient(to right, #ffffff ${pct}%, rgba(255,255,255,0.1) ${pct}%)`;
 }
@@ -286,15 +427,18 @@ invoke('get-volume').then((v: number) => {
     updateVolIcon(v);
   }
 });
-volIcon.addEventListener('click', (e) => {
+let lastVol = 0.5;
+
+volIconContainer.addEventListener('click', (e) => {
   e.stopPropagation();
-  send('toggle-mute');
   // Visually toggle it on frontend immediately for responsiveness
-  if (volSlider.value === '0') {
-    volSlider.value = '0.5';
-    updateVolIcon(0.5);
-    send('set-volume', 0.5);
+  if (parseFloat(volSlider.value) === 0) {
+    const restoreTo = lastVol > 0 ? lastVol : 0.5;
+    volSlider.value = String(restoreTo);
+    updateVolIcon(restoreTo);
+    send('set-volume', restoreTo);
   } else {
+    lastVol = parseFloat(volSlider.value);
     volSlider.value = '0';
     updateVolIcon(0);
     send('set-volume', 0);
@@ -322,20 +466,23 @@ const camClose = document.getElementById('cam-close')!;
 function fmt(secs: number) {
   return `${String(Math.floor(secs / 60)).padStart(2,'0')}:${String(secs % 60).padStart(2,'0')}`;
 }
-function fmtHMS(secs: number) {
-  if (secs < 60) return `${secs}s`;
-  if (secs < 3600) return `${Math.floor(secs / 60)}m`;
-  return `${Math.floor(secs / 3600)}h ${Math.floor((secs % 3600) / 60)}m`;
-}
 
 function updateRing() {
   updateStats();
   updateIdleView();
 }
 
+function fmtHMS(secs: number) {
+  if (secs < 60) return `${secs}s`;
+  if (secs < 3600) return `${Math.floor(secs / 60)}m`;
+  return `${Math.floor(secs / 3600)}h ${Math.floor((secs % 3600) / 60)}m`;
+}
+
 function updateStats() {
-  statSessions.textContent = `${sessionCountToday} session${sessionCountToday !== 1 ? 's' : ''} today`;
-  statTime.textContent     = fmtHMS(totalFocusSecsToday) + ' focused';
+  if (statSessions && statTime) {
+    statSessions.textContent = `${sessionCountToday} session${sessionCountToday !== 1 ? 's' : ''} today`;
+    statTime.textContent     = fmtHMS(totalFocusSecsToday) + ' focused';
+  }
 }
 
 function updateIdleView() {
@@ -343,6 +490,15 @@ function updateIdleView() {
   idleStateDefault.style.display = 'none';
   idleStateMedia.style.display = 'none';
   idleStateTimer.style.display = 'none';
+
+  const btnToggle = document.getElementById('btn-idle-timer-toggle');
+  if (btnToggle) {
+    if (timerPhase === 'focus' || timerPhase === 'break') {
+      btnToggle.innerHTML = pauseSvgRaw;
+    } else {
+      btnToggle.innerHTML = playSvgRaw;
+    }
+  }
 
   if (timerPhase === 'focus' || timerPhase === 'break') {
     // Actively running timer takes top priority
@@ -399,7 +555,7 @@ function setPhase(next: Phase) {
   } else if (next === 'expanded') {
     viewIdle.classList.remove('active');
     viewCalEl.classList.remove('active');
-    send('resize-window', { width: 760, height: 160 });
+    send('resize-window', { width: 840, height: 160 });
     pill.setAttribute('data-phase', next);
     
     setTimeout(() => {
@@ -422,13 +578,15 @@ function setPhase(next: Phase) {
 }
 
 // ─── Pomodoro timer ───────────────────────────────────────────────────────────
-let focusSecsElapsed = 0; // track elapsed for history
 
 function startTick() {
   clearInterval(timerTick);
   timerTick = setInterval(() => {
     timeLeft--;
-    if (timerPhase === 'focus') focusSecsElapsed++;
+    if (timerPhase === 'focus') {
+      totalFocusSecsToday++;
+      if (totalFocusSecsToday % 5 === 0) saveSessions(); // Save to DB every 5 secs
+    }
 
     ringTime.textContent = fmt(timeLeft);
     updateRing();
@@ -443,8 +601,6 @@ function startTick() {
       if (timerPhase === 'focus') {
         // Record session
         sessionCountToday++;
-        totalFocusSecsToday += focusSecsElapsed;
-        focusSecsElapsed = 0;
         saveSessions();
         updateStats();
 
@@ -468,7 +624,6 @@ function startTick() {
 function resetTimer() {
   clearInterval(timerTick);
   timerPhase = 'off';
-  focusSecsElapsed = 0;
   timeLeft = FOCUS_SECS;
   tLabel.textContent    = 'Lock In';
   btnLockin.textContent = 'Lock In';
@@ -505,6 +660,11 @@ btnLockin.addEventListener('click', e => {
   updateIdleView();
 });
 
+document.getElementById('btn-idle-timer-toggle')?.addEventListener('click', (e) => {
+  e.stopPropagation();
+  btnLockin.click();
+});
+
 document.getElementById('btn-reset')?.addEventListener('click', () => {
   resetTimer();
 });
@@ -513,17 +673,21 @@ document.getElementById('btn-reset')?.addEventListener('click', () => {
 function setPlaying(p: boolean) {
   mediaPlaying = p;
   
-  const playPath = '<path d="M7.5 4.5v15a1 1 0 0 0 1.5.8l12-7.5a1 1 0 0 0 0-1.6l-12-7.5a1 1 0 0 0-1.5.8z"/>';
-  const pausePath = '<path d="M7 4h2a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2zm8 0h2a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-2a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z"/>';
-  
-  btnPlay.innerHTML = `<svg id="main-play-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" stroke="none">${p ? pausePath : playPath}</svg>`;
-  btnIdlePlay.innerHTML = `<svg id="idle-play-icon" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="currentColor" stroke="none">${p ? pausePath : playPath}</svg>`;
+  btnPlay.innerHTML = p ? pauseSvgRaw : playSvgRaw;
+  btnIdlePlay.innerHTML = p ? pauseSvgRaw : playSvgRaw;
   
   const cdWrapper = document.getElementById('cd-art-wrapper');
   if (cdWrapper) {
     if (p) cdWrapper.classList.add('playing');
     else cdWrapper.classList.remove('playing');
   }
+
+  const idleBars = document.getElementById('idle-music-bars');
+  if (idleBars) idleBars.style.display = p ? 'flex' : 'none';
+
+  const expBars = document.getElementById('exp-music-bars');
+  if (expBars) expBars.style.display = p ? 'flex' : 'none';
+  
   updateIdleView();
 }
 
@@ -572,9 +736,8 @@ document.getElementById('qbtn-screenshot')!.addEventListener('click', e => {
 });
 
 // ─── File drop hint ──────────────────────────────────────────────────────────
-document.getElementById('qbtn-file')!.addEventListener('click', e => {
+document.getElementById('qbtn-file')?.addEventListener('click', e => {
   e.stopPropagation();
-  // Flash the pill to indicate file drop zone is active
   pill.classList.add('drop-active');
   setTimeout(() => pill.classList.remove('drop-active'), 1500);
 });
@@ -585,8 +748,29 @@ if (ipc) {
     pill.setAttribute('data-docked', String(docked));
   });
 
-  ipc.on('battery-status', () => {
-    // Battery hidden intentionally as requested by user
+  ipc.on('battery-status', (_: any, b: any) => {
+    const badge = document.getElementById('battery-badge') as HTMLElement;
+    const pctEl = document.getElementById('bat-pct');
+    const icon  = document.getElementById('bat-icon');
+    if (!badge || !pctEl) return;
+
+    const pct = Math.round((b?.percent ?? 0));
+    pctEl.textContent = `${pct}%`;
+
+    // Color based on level
+    let color = 'var(--muted)';
+    if (pct <= 20) color = '#ff453a';
+    else if (pct <= 50) color = '#ffd60a';
+    else color = '#30d158';
+    if (icon) icon.style.stroke = color;
+    badge.style.color = color;
+  });
+
+
+  ipc.on('widget-config', (_: any, cfg: any) => {
+    if (cfg && cfg.shortcuts) {
+      renderShortcuts(cfg.shortcuts);
+    }
   });
 
   ipc.on('media-info', (_: any, info: { title: string; artist: string; isPlaying: boolean; albumArt?: string; sourceApp?: string }) => {
@@ -649,26 +833,33 @@ if (ipc) {
   });
 
   ipc.on('widget-config', (_: any, cfg: any) => {
-    if (cfg) {
-      const pTimer = document.querySelector('.p-timer') as HTMLElement;
-      const pMedia = document.querySelector('.p-media') as HTMLElement;
-      const pRight = document.querySelector('.p-right') as HTMLElement;
-      
-      if (pTimer) pTimer.style.display = cfg.showTimer === false ? 'none' : 'flex';
-      if (pMedia) pMedia.style.display = cfg.showMedia === false ? 'none' : 'flex';
-      if (pRight) pRight.style.display = cfg.showCalendar === false ? 'none' : 'flex';
-      
-      // Also hide media and timer in idle view if turned off
-      if (cfg.showTimer === false) idleStateTimer.style.display = 'none';
-      if (cfg.showMedia === false) idleStateMedia.style.display = 'none';
-    }
-  });
-}
+    if (!cfg) return;
 
-document.getElementById('qbtn-settings')!.addEventListener('click', (e) => {
-  e.stopPropagation();
-  send('open-settings');
-});
+    // Re-render shortcuts live when user saves changes from Settings
+    if (cfg.shortcuts && cfg.shortcuts.length > 0) {
+      renderShortcuts(cfg.shortcuts);
+    }
+
+
+
+    // Panel visibility
+    const pTimer = document.querySelector('.p-timer') as HTMLElement;
+    const pMedia = document.querySelector('.p-media') as HTMLElement;
+    const pRight = document.querySelector('.p-right') as HTMLElement;
+    if (pTimer) pTimer.style.display = cfg.showTimer === false ? 'none' : 'flex';
+    if (pMedia) pMedia.style.display = cfg.showMedia === false ? 'none' : 'flex';
+    if (pRight) pRight.style.display = cfg.showCalendar === false ? 'none' : 'flex';
+    if (cfg.showTimer === false) idleStateTimer.style.display = 'none';
+    if (cfg.showMedia === false) idleStateMedia.style.display = 'none';
+
+    // Battery badge visibility
+    const batteryBadge = document.getElementById('battery-badge') as HTMLElement;
+    if (batteryBadge) batteryBadge.style.display = cfg.showBattery !== false ? 'flex' : 'none';
+  });
+
+} // end if (ipc)
+
+// qbtn-settings handled above (line ~751)
 
 // ─── Drag & Click ─────────────────────────────────────────────────────────────
 let pDown = false, dragged = false, origin = { x: 0, y: 0 };
@@ -676,7 +867,7 @@ let pDown = false, dragged = false, origin = { x: 0, y: 0 };
 pill.addEventListener('pointerdown', e => {
   const t = e.target as HTMLElement;
   if (t.closest('button') || t.tagName === 'INPUT' || t.closest('.cam-popup')) return;
-  if (t.closest('.cal-card') || t.closest('#view-cal') || t.closest('.vol-wrap')) return;
+  if (t.closest('#cal-card-btn') || t.closest('#view-cal') || t.closest('.vol-wrap')) return;
   pDown = true;
   dragged = false;
   origin = { x: e.screenX, y: e.screenY };

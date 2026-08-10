@@ -60,6 +60,7 @@ html, body {
   display: flex; align-items: center; gap: 10px;
   padding: 4px 8px 20px;
   margin-bottom: 8px;
+  -webkit-app-region: drag;
 }
 .sidebar-logo {
   width: 24px; height: 24px;
@@ -92,6 +93,7 @@ html, body {
 
 .header {
   padding: 32px 40px 16px;
+  -webkit-app-region: drag;
 }
 .header h1 {
   font-size: 20px; font-weight: 600; letter-spacing: -0.02em;
@@ -256,4 +258,205 @@ html, body {
 }
 .select-option:hover { background: rgba(255,255,255,0.05); color: var(--text-main); }
 
+/* ══════════════════════════════════════
+   ABOUT PAGE & UPDATE UI
+   ══════════════════════════════════════ */
+
+.about-hero {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 28px 0 24px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 20px;
+}
+
+.about-logo {
+  width: 64px;
+  height: 64px;
+  border-radius: 14px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+  flex-shrink: 0;
+}
+
+.about-title-block {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.about-name {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--text-main);
+  letter-spacing: -0.02em;
+  margin: 0;
+}
+
+.about-version {
+  font-size: 12px;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+/* Update card */
+.update-card {
+  background: #0d0d0d;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 16px;
+  margin-bottom: 16px;
+  transition: border-color 0.2s;
+}
+
+.update-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.update-card-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-main);
+}
+
+/* Status badges */
+.update-badge {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 20px;
+  letter-spacing: 0.03em;
+}
+.update-badge.checking {
+  background: rgba(255,255,255,0.08);
+  color: var(--text-muted);
+}
+.update-badge.available {
+  background: rgba(255,159,10,0.15);
+  color: #ff9f0a;
+  border: 1px solid rgba(255,159,10,0.25);
+}
+.update-badge.downloading {
+  background: rgba(10,132,255,0.15);
+  color: #0a84ff;
+  border: 1px solid rgba(10,132,255,0.25);
+}
+.update-badge.downloaded {
+  background: rgba(48,209,88,0.15);
+  color: #30d158;
+  border: 1px solid rgba(48,209,88,0.25);
+}
+.update-badge.up-to-date {
+  background: rgba(48,209,88,0.1);
+  color: #30d158;
+}
+.update-badge.error {
+  background: rgba(255,69,58,0.12);
+  color: #ff453a;
+  border: 1px solid rgba(255,69,58,0.2);
+}
+
+/* Download progress bar */
+.update-progress-track {
+  height: 3px;
+  background: rgba(255,255,255,0.08);
+  border-radius: 2px;
+  margin-bottom: 12px;
+  overflow: hidden;
+}
+.update-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #0a84ff, #34aadc);
+  border-radius: 2px;
+  transition: width 0.4s ease;
+  position: relative;
+}
+.update-progress-fill::after {
+  content: '';
+  position: absolute;
+  right: 0; top: 0; bottom: 0;
+  width: 40px;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3));
+  animation: shimmer 1s infinite;
+}
+@keyframes shimmer {
+  0% { opacity: 0; }
+  50% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+.update-card-status {
+  font-size: 12px;
+  color: var(--text-muted);
+  line-height: 1.6;
+  margin-bottom: 14px;
+}
+.update-card-status p { margin: 0; }
+.update-card-status strong { color: var(--text-main); font-weight: 600; }
+
+.update-card-footer {
+  display: flex;
+  gap: 8px;
+}
+
+/* Update action buttons */
+.update-btn {
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 7px 14px;
+  border-radius: 7px;
+  border: 1px solid var(--border);
+  background: #1a1a1a;
+  color: var(--text-main);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  letter-spacing: 0.01em;
+}
+.update-btn:hover:not([disabled]) {
+  background: #252525;
+  border-color: rgba(255,255,255,0.15);
+}
+.update-btn.primary {
+  background: #30d158;
+  color: #000;
+  border-color: transparent;
+  box-shadow: 0 2px 12px rgba(48,209,88,0.3);
+}
+.update-btn.primary:hover {
+  background: #2ac04e;
+  box-shadow: 0 4px 16px rgba(48,209,88,0.4);
+}
+
+/* About links */
+.about-links {
+  display: flex;
+  gap: 8px;
+}
+
+.about-link {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-muted);
+  text-decoration: none;
+  padding: 6px 12px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: #0d0d0d;
+  transition: all 0.15s;
+}
+.about-link:hover {
+  color: var(--text-main);
+  background: #1a1a1a;
+  border-color: rgba(255,255,255,0.1);
+}
 

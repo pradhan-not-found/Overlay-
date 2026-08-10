@@ -67,6 +67,7 @@ html, body {
   margin-bottom: 40px;
   border-bottom: 1px solid var(--border);
   padding-bottom: 24px;
+  -webkit-app-region: drag;
 }
 .dash-logo {
   width: 32px; height: 32px;

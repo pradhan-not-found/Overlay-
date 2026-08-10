@@ -1,11 +1,100 @@
 'use strict';
 
-const { app, BrowserWindow, ipcMain, shell, screen, nativeImage } = require('electron');
+const { app, BrowserWindow, ipcMain, shell, screen, nativeImage, Notification } = require('electron');
 const path   = require('path');
 const fs     = require('fs');
 const si     = require('systeminformation');
 const { exec, execSync } = require('child_process');
 const db     = require('./db.cjs');
+
+// ─── Auto Updater ─────────────────────────────────────────────────────────────
+let autoUpdater = null;
+try {
+  autoUpdater = require('electron-updater').autoUpdater;
+  autoUpdater.autoDownload = true;        // Download automatically in background
+  autoUpdater.autoInstallOnAppQuit = true; // Install on next quit
+  autoUpdater.allowDowngrade = false;
+  if (!app.isPackaged) {
+    // In dev mode, allow checking against the local package.json version
+    autoUpdater.forceDevUpdateConfig = true;
+  }
+} catch(e) {
+  console.warn('[Updater] electron-updater not available:', e.message);
+}
+
+function sendUpdateStatus(event, data) {
+  // Broadcast to all relevant windows
+  [settingsWindow].forEach(win => {
+    if (win && !win.isDestroyed()) {
+      win.webContents.send('update-status', { event, ...data });
+    }
+  });
+}
+
+function initAutoUpdater() {
+  if (!autoUpdater) return;
+  
+  autoUpdater.on('checking-for-update', () => {
+    console.log('[Updater] Checking for update…');
+    sendUpdateStatus('checking', {});
+  });
+
+  autoUpdater.on('update-available', (info) => {
+    console.log('[Updater] Update available:', info.version);
+    sendUpdateStatus('available', { version: info.version, releaseNotes: info.releaseNotes || '' });
+    
+    // Fire a native OS notification
+    if (Notification.isSupported()) {
+      const notif = new Notification({
+        title: `Overlay ${info.version} is available`,
+        body: 'Downloading update in the background…',
+        icon: path.join(__dirname, '../applogo.png')
+      });
+      notif.on('click', () => {
+        if (settingsWindow && !settingsWindow.isDestroyed()) {
+          settingsWindow.show();
+          settingsWindow.focus();
+        } else {
+          openSettings();
+        }
+      });
+      notif.show();
+    }
+  });
+
+  autoUpdater.on('update-not-available', (info) => {
+    console.log('[Updater] Up to date:', info.version);
+    sendUpdateStatus('not-available', { version: info.version });
+  });
+
+  autoUpdater.on('download-progress', (progress) => {
+    const pct = Math.round(progress.percent);
+    sendUpdateStatus('downloading', { percent: pct, bytesPerSecond: progress.bytesPerSecond, transferred: progress.transferred, total: progress.total });
+  });
+
+  autoUpdater.on('update-downloaded', (info) => {
+    console.log('[Updater] Update downloaded:', info.version);
+    sendUpdateStatus('downloaded', { version: info.version });
+    
+    // Notify user it's ready
+    if (Notification.isSupported()) {
+      const notif = new Notification({
+        title: `Overlay ${info.version} ready to install`,
+        body: 'Click to restart and apply the update.',
+        icon: path.join(__dirname, '../applogo.png')
+      });
+      notif.on('click', () => {
+        autoUpdater.quitAndInstall(false, true);
+      });
+      notif.show();
+    }
+  });
+
+  autoUpdater.on('error', (err) => {
+    console.error('[Updater] Error:', err.message);
+    sendUpdateStatus('error', { message: err.message });
+  });
+}
 
 // Suppress noisy GPU disk cache errors in terminal
 app.commandLine.appendSwitch('disable-gpu-shader-disk-cache');
@@ -228,9 +317,20 @@ ipcMain.on('start-drag', (_e, origin) => {
     let nx = dragBounds.x + (cur.x - dragStart.x);
     let ny = dragBounds.y + (cur.y - dragStart.y);
     const docked = ny <= primary.y - PAD + 30;
+    
+    // Lock to screen edges (accounting for invisible PAD)
+    const minX = primary.x - PAD;
+    const maxX = primary.x + primary.width - dragBounds.w + PAD;
+    const minY = primary.y - PAD;
+    const maxY = primary.y + primary.height - dragBounds.h + PAD;
+
+    if (nx < minX) nx = minX;
+    if (nx > maxX) nx = maxX;
+    if (ny < minY) ny = minY;
+    if (ny > maxY) ny = maxY;
+
     if (docked) {
       ny = primary.y - PAD;
-      nx = Math.round(primary.x + (primary.width - dragBounds.w) / 2);
     }
     mainWindow.setBounds({ x: nx, y: ny, width: dragBounds.w, height: dragBounds.h });
     mainWindow.webContents.send('docked-state', docked);
@@ -248,7 +348,7 @@ ipcMain.on('resize-window', (_e, { width, height }) => {
   const winH = height + PAD * 2;
   const cur     = mainWindow.getBounds();
   const primary = screen.getPrimaryDisplay().bounds;
-  const newX    = Math.round(primary.x + (primary.width - winW) / 2);
+  const newX    = Math.round(cur.x + (cur.width - winW) / 2);
   const docked  = cur.y <= primary.y - PAD + 30;
   const newY    = docked ? (primary.y - PAD) : Math.round(cur.y + (cur.height - winH) / 2);
   mainWindow.setBounds({ x: newX, y: newY, width: winW, height: winH }, false);
@@ -281,19 +381,22 @@ startMediaPolling();
 // ─── Misc IPC ──────────────────────────────────────────────────────────────
 ipcMain.on('open-external', (_e, url) => shell.openExternal(url));
 ipcMain.on('open-dashboard', () => createDashWindow());
-ipcMain.handle('get-config', () => readConfig());
+ipcMain.handle('get-config', () => {
+  const cfg = readConfig();
+  const shortcuts = db.getShortcuts();
+  if (shortcuts && shortcuts.length > 0) cfg.shortcuts = shortcuts;
+  return cfg;
+});
 
 // ─── Database & Stats ──────────────────────────────────────────────────────
 ipcMain.on('save-session', (_e, { count, totalSecs }) => {
   const d = new Date();
   const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-  const stats = readStats();
-  stats[key] = { count, totalSecs };
-  writeStats(stats);
+  db.updateStats(key, count, totalSecs);
 });
 
 ipcMain.handle('get-stats', () => {
-  return readStats();
+  return db.getStats();
 });
 
 // Launch Windows Snipping Tool via URI
@@ -302,9 +405,8 @@ ipcMain.on('take-screenshot', () => {
 });
 
 ipcMain.on('save-shortcuts', (_e, shortcuts) => {
-  const cfg = readConfig();
-  cfg.shortcuts = shortcuts;
-  writeConfig(cfg);
+  db.clearShortcuts();
+  shortcuts.forEach(s => db.addShortcut(s));
 });
 
 ipcMain.on('open-shortcut', (_e, target) => {
@@ -316,6 +418,16 @@ ipcMain.on('open-shortcut', (_e, target) => {
     exec(`start "" "${target}"`, (err) => {
       if (err) console.error('Failed to open shortcut:', err);
     });
+  }
+});
+
+ipcMain.handle('get-file-icon', async (_e, path) => {
+  try {
+    const icon = await app.getFileIcon(path, { size: 'normal' });
+    return icon.toDataURL();
+  } catch (err) {
+    console.error('Failed to get file icon for', path, err);
+    return null;
   }
 });
 
@@ -343,14 +455,28 @@ function createDashWindow() {
 
 // ─── Misc IPC ──────────────────────────────────────────────────────────────
 ipcMain.on('dashboard-complete', (_e, cfg) => {
+  if (cfg.shortcuts) {
+    db.clearShortcuts();
+    cfg.shortcuts.forEach(s => db.addShortcut(s));
+    delete cfg.shortcuts;
+  }
   writeConfig({ ...readConfig(), ...cfg, setupComplete: true });
   if (dashWindow && !dashWindow.isDestroyed()) dashWindow.close();
-  if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send('widget-config', cfg);
+  const finalCfg = readConfig();
+  finalCfg.shortcuts = db.getShortcuts();
+  if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send('widget-config', finalCfg);
 });
 
 ipcMain.on('save-config', (_e, cfg) => {
+  if (cfg.shortcuts) {
+    db.clearShortcuts();
+    cfg.shortcuts.forEach(s => db.addShortcut(s));
+    delete cfg.shortcuts;
+  }
   writeConfig({ ...readConfig(), ...cfg });
-  if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send('widget-config', cfg);
+  const finalCfg = readConfig();
+  finalCfg.shortcuts = db.getShortcuts();
+  if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send('widget-config', finalCfg);
 });
 
 // ─── Lifecycle ────────────────────────────────────────────────────────────────
@@ -362,9 +488,19 @@ app.whenReady().then(() => {
     setTimeout(() => createDashWindow(), 800);
   } else {
     mainWindow.webContents.once('did-finish-load', () => {
+      cfg.shortcuts = db.getShortcuts();
       if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send('widget-config', cfg);
     });
   }
+
+  // ── Auto-update: wire up events then check after 10 s (let app load first) ──
+  initAutoUpdater();
+  if (app.isPackaged && autoUpdater) {
+    setTimeout(() => {
+      autoUpdater.checkForUpdates().catch(e => console.warn('[Updater] check failed:', e.message));
+    }, 10_000);
+  }
+
   app.on('activate', () => {
     if (!mainWindow || mainWindow.isDestroyed()) createPillWindow();
   });
@@ -373,3 +509,23 @@ app.whenReady().then(() => {
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') app.quit();
 });
+
+// ─── Update IPC handlers ───────────────────────────────────────────────────────
+ipcMain.handle('get-app-version', () => app.getVersion());
+
+ipcMain.on('check-for-updates', () => {
+  if (!autoUpdater) return;
+  if (app.isPackaged) {
+    autoUpdater.checkForUpdates().catch(e => {
+      sendUpdateStatus('error', { message: e.message });
+    });
+  } else {
+    // In dev, simulate the response
+    sendUpdateStatus('not-available', { version: app.getVersion() });
+  }
+});
+
+ipcMain.on('install-update', () => {
+  if (autoUpdater) autoUpdater.quitAndInstall(false, true);
+});
+

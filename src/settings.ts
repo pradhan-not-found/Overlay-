@@ -5,7 +5,6 @@ let ipc: any = null;
 try {
   if ((window as any).require) ipc = (window as any).require('electron').ipcRenderer;
 } catch {}
-
 const TABS = [
   { name: 'Dashboard', icon: '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="3" y1="9" x2="21" y2="9"></line><line x1="9" y1="21" x2="9" y2="9"></line></svg>' },
   { name: 'General', icon: '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>' },
@@ -15,14 +14,139 @@ const TABS = [
   { name: 'Battery', icon: '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="6" width="18" height="12" rx="2" ry="2"></rect><line x1="23" y1="13" x2="23" y2="11"></line></svg>' },
   { name: 'Shelf', icon: '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"></path></svg>' },
   { name: 'Shortcuts', icon: '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 3a3 3 0 0 0-3 3v12a3 3 0 0 0 3 3 3 3 0 0 0 3-3 3 3 0 0 0-3-3H6a3 3 0 0 0-3 3 3 3 0 0 0 3 3 3 3 0 0 0 3-3V6a3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3h12a3 3 0 0 0 3-3 3 3 0 0 0-3-3z"></path></svg>' },
-  { name: 'Extensions', icon: '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>' },
   { name: 'About', icon: '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>' }
 ];
 
 let activeTab = 'Dashboard';
 let currentConfig: any = {};
+let appVersion = '1.0.0';
+let updateState: {
+  event: 'idle' | 'checking' | 'available' | 'not-available' | 'downloading' | 'downloaded' | 'error';
+  version?: string;
+  percent?: number;
+  message?: string;
+} = { event: 'idle' };
+
+// Fetch app version from main process once
+if (ipc) {
+  ipc.invoke('get-app-version').then((v: string) => { appVersion = v; }).catch(() => {});
+
+  // Listen for update events from the main process
+  ipc.on('update-status', (_: any, status: any) => {
+    updateState = status;
+    // Re-render About pane inline without full re-render
+    const aboutPane = document.querySelector('[data-pane="About"]') as HTMLElement;
+    if (aboutPane && activeTab === 'About') {
+      renderAboutContent(aboutPane);
+    }
+    // Show a notification badge on the About nav item
+    const badge = document.getElementById('nav-update-badge');
+    if (badge) {
+      badge.style.display = (status.event === 'available' || status.event === 'downloaded') ? 'flex' : 'none';
+    }
+  });
+}
+
+function renderAboutContent(container: HTMLElement) {
+  const isChecking    = updateState.event === 'checking';
+  const isAvailable   = updateState.event === 'available';
+  const isDownloading = updateState.event === 'downloading';
+  const isDownloaded  = updateState.event === 'downloaded';
+  const isUpToDate    = updateState.event === 'not-available';
+  const isError       = updateState.event === 'error';
+
+  const statusBadge = (() => {
+    if (isChecking)    return `<span class="update-badge checking">Checking…</span>`;
+    if (isAvailable)   return `<span class="update-badge available">v${updateState.version} available</span>`;
+    if (isDownloading) return `<span class="update-badge downloading">Downloading ${updateState.percent ?? 0}%</span>`;
+    if (isDownloaded)  return `<span class="update-badge downloaded">Ready to install</span>`;
+    if (isUpToDate)    return `<span class="update-badge up-to-date">Up to date</span>`;
+    if (isError)       return `<span class="update-badge error">Update error</span>`;
+    return '';
+  })();
+
+  const progressBar = isDownloading ? `
+    <div class="update-progress-track">
+      <div class="update-progress-fill" style="width: ${updateState.percent ?? 0}%"></div>
+    </div>
+  ` : '';
+
+  const actionBtn = (() => {
+    if (isDownloaded) return `<button id="btn-install-update" class="update-btn primary">Restart &amp; Install Update</button>`;
+    if (isChecking || isDownloading) return `<button class="update-btn" disabled style="opacity:0.5; cursor:not-allowed;">Checking…</button>`;
+    return `<button id="btn-check-updates" class="update-btn">Check for Updates</button>`;
+  })();
+
+  container.innerHTML = `
+    <div class="group">
+      <div class="about-hero">
+        <img src="/applogo.png" class="about-logo" />
+        <div class="about-title-block">
+          <h2 class="about-name"><span class="brand">Overlay</span></h2>
+          <div class="about-version">Version ${appVersion}</div>
+        </div>
+      </div>
+
+      <div class="update-card">
+        <div class="update-card-header">
+          <div class="update-card-title">
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
+            Software Update
+          </div>
+          ${statusBadge}
+        </div>
+        ${progressBar}
+        <div class="update-card-status">
+          ${isDownloaded
+            ? `<p>Overlay <strong>v${updateState.version}</strong> has been downloaded and is ready to install. Restart to apply the update.</p>`
+            : isAvailable
+            ? `<p>Overlay <strong>v${updateState.version}</strong> is being downloaded in the background. You'll be notified when it's ready.</p>`
+            : isError
+            ? `<p style="color: var(--accent-red, #ff453a);">Could not check for updates. Check your internet connection.</p>`
+            : isUpToDate
+            ? `<p>You're running the latest version of Overlay.</p>`
+            : `<p>Click below to check if a new version is available.</p>`
+          }
+        </div>
+        <div class="update-card-footer">
+          ${actionBtn}
+        </div>
+      </div>
+
+      <div class="about-links">
+        <a href="#" id="link-github" class="about-link">
+          <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path></svg>
+          GitHub
+        </a>
+        <a href="#" id="link-changelog" class="about-link">
+          <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+          Changelog
+        </a>
+      </div>
+    </div>
+  `;
+
+  // Bind buttons
+  document.getElementById('btn-check-updates')?.addEventListener('click', () => {
+    if (ipc) ipc.send('check-for-updates');
+    updateState = { event: 'checking' };
+    renderAboutContent(container);
+  });
+  document.getElementById('btn-install-update')?.addEventListener('click', () => {
+    if (ipc) ipc.send('install-update');
+  });
+  document.getElementById('link-github')?.addEventListener('click', (e) => {
+    e.preventDefault();
+    if (ipc) ipc.send('open-external', 'https://github.com/pradhan-not-found/Overlay-');
+  });
+  document.getElementById('link-changelog')?.addEventListener('click', (e) => {
+    e.preventDefault();
+    if (ipc) ipc.send('open-external', 'https://github.com/pradhan-not-found/Overlay-/releases');
+  });
+}
 
 const root = document.getElementById('settings-root')!;
+
 
 async function render() {
   let count = 0, secs = 0;
@@ -78,6 +202,16 @@ async function render() {
   const h = Math.floor(m / 60);
   const timeString = h > 0 ? `${h}h ${m%60}m` : `${m}m`;
 
+  const defaultShortcuts = [
+    { name: 'Google Chrome', target: 'chrome.exe', iconUrl: 'https://cdn.simpleicons.org/googlechrome', icon: '' },
+    { name: 'Spotify', target: 'spotify.exe', iconUrl: 'https://cdn.simpleicons.org/spotify', icon: '' },
+    { name: 'GitHub', target: 'https://github.com', iconUrl: 'https://cdn.simpleicons.org/github/white', icon: '' },
+    { name: 'VS Code', target: 'code', iconUrl: 'https://cdn.simpleicons.org/visualstudiocode', icon: '' }
+  ];
+  let customShortcuts = (currentConfig.shortcuts && currentConfig.shortcuts.length > 0) ? currentConfig.shortcuts : defaultShortcuts;
+
+
+
   root.innerHTML = `
     <div class="sidebar">
       <div class="sidebar-header">
@@ -85,9 +219,10 @@ async function render() {
         <span class="sidebar-title" style="font-weight: 600;">Overlay</span>
       </div>
       ${TABS.map(t => `
-        <div class="nav-item ${t.name === activeTab ? 'active' : ''}" data-tab="${t.name}">
+        <div class="nav-item ${t.name === activeTab ? 'active' : ''}" data-tab="${t.name}" style="position:relative;">
           ${t.icon}
           ${t.name}
+          ${t.name === 'About' ? `<span id="nav-update-badge" style="display:none; position:absolute; top:6px; right:8px; width:7px; height:7px; border-radius:50%; background:#ff9f0a; box-shadow:0 0 6px rgba(255,159,10,0.6);"></span>` : ''}
         </div>
       `).join('')}
     </div>
@@ -260,28 +395,34 @@ async function render() {
               <div class="row"><span class="row-label">Lock In</span><span class="row-label" style="font-family:monospace; background:var(--border); padding:4px 8px; border-radius:4px;">Ctrl + Shift + F</span></div>
             </div>
           </div>
-        </div>
-
-        <!-- Extensions Pane -->
-        <div class="pane-section ${activeTab === 'Extensions' ? 'active' : ''}">
           <div class="group">
-            <h2>Installed Extensions</h2>
+            <h2>Dashboard Custom Shortcuts</h2>
             <div class="card">
-              <div class="row"><span class="row-label">GitHub Integration</span><div class="switch"></div></div>
-              <div class="row"><span class="row-label">Discord Rich Presence</span><div class="switch on"></div></div>
+              ${customShortcuts.map((s: any, idx: number) => {
+                const effectiveIconUrl = s.iconUrl;
+                const fallbackIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M8 12h8M12 8v8"/></svg>`;
+                const iconHtml = effectiveIconUrl ? `<img src="${effectiveIconUrl}" style="width:16px; height:16px; object-fit:contain; border-radius:2px;" />` : fallbackIcon;
+                return `
+                <div class="row">
+                  <span class="row-label" style="display:flex; align-items:center; gap:12px;">
+                    ${iconHtml}
+                    <span>${s.name} <span style="opacity:0.5; font-size: 11px; margin-left: 6px;">(${s.target})</span></span>
+                  </span>
+                  <button class="btn-del-shortcut" data-idx="${idx}" style="background:transparent; border:none; color:var(--text-muted); cursor:pointer;"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
+                </div>
+              `}).join('')}
+            </div>
+            <div class="card" style="margin-top: 16px; padding: 16px; display: flex; flex-direction: column; gap: 12px; background: rgba(255,255,255,0.02);">
+              <div style="font-size: 13px; font-weight: 600;">Add New Shortcut</div>
+              <input type="text" id="new-sc-name" placeholder="Name (e.g. Chrome)" style="background: #111; border: 1px solid var(--border); padding: 8px 12px; color: #fff; border-radius: 4px; outline: none; font-family: inherit; font-size: 13px;">
+              <input type="text" id="new-sc-target" placeholder="Target (Path or URL)" style="background: #111; border: 1px solid var(--border); padding: 8px 12px; color: #fff; border-radius: 4px; outline: none; font-family: inherit; font-size: 13px;">
+              <button id="btn-add-sc" style="background: var(--text-main); color: #000; border: none; padding: 8px 16px; border-radius: 4px; font-weight: 600; cursor: pointer; font-size: 13px; align-self: flex-start; transition: opacity 0.2s;">Add Shortcut</button>
             </div>
           </div>
         </div>
 
         <!-- About Pane -->
-        <div class="pane-section ${activeTab === 'About' ? 'active' : ''}">
-          <div class="group">
-            <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; padding: 40px 0; gap: 16px;">
-              <img src="/applogo.png" style="width: 80px; height: 80px; border-radius: 12px;"/>
-              <h2 style="font-size: 20px; font-weight: 600; color: var(--text-main); margin-bottom: 0;"><span class="brand">Overlay</span></h2>
-              <div style="color: var(--text-muted); font-size: 13px;">Version 1.0.0</div>
-            </div>
-          </div>
+        <div class="pane-section ${activeTab === 'About' ? 'active' : ''}" data-pane="About">
         </div>
 
       </div>
@@ -296,6 +437,10 @@ async function render() {
     });
   });
 
+  // Populate About pane (it's empty on render, filled dynamically)
+  const aboutPane = root.querySelector('[data-pane="About"]') as HTMLElement;
+  if (aboutPane) renderAboutContent(aboutPane);
+
   // ── Attach Settings Interactions ──────────────────────────────────────────
   document.querySelectorAll('.switch[data-cfg]').forEach(el => {
     el.addEventListener('click', () => {
@@ -305,6 +450,24 @@ async function render() {
         currentConfig[cfgKey] = !isOff;
         ipc.send('save-config', currentConfig);
         el.classList.toggle('on');
+      }
+    });
+  });
+
+  // Extension toggles — save to DB and update notch live
+  document.querySelectorAll('.ext-toggle').forEach(el => {
+    el.addEventListener('click', () => {
+      const extId = el.getAttribute('data-ext-id');
+      if (!extId || !ipc) return;
+      const isOn = el.classList.contains('on');
+      if (!currentConfig.extensions) currentConfig.extensions = {};
+      currentConfig.extensions[extId] = { enabled: !isOn };
+      ipc.send('save-config', currentConfig);
+      el.classList.toggle('on');
+      // Update the ACTIVE badge inline without re-rendering
+      const badge = (el as HTMLElement).closest('.card')?.querySelector('span[style*="font-size: 10px"]') as HTMLElement | null;
+      if (badge) {
+        badge.style.display = !isOn ? '' : 'none';
       }
     });
   });
@@ -351,6 +514,55 @@ async function render() {
 
     document.addEventListener('click', () => {
       dropdown.classList.remove('open');
+    });
+  }
+
+  document.querySelectorAll('.btn-del-shortcut').forEach(el => {
+    el.addEventListener('click', () => {
+      const idx = parseInt(el.getAttribute('data-idx') || '0', 10);
+      const newShortcuts = [...customShortcuts];
+      newShortcuts.splice(idx, 1);
+      currentConfig.shortcuts = newShortcuts;
+      if (ipc) {
+        ipc.send('save-shortcuts', newShortcuts);
+        ipc.send('dashboard-complete', currentConfig);
+      }
+      render();
+    });
+  });
+
+  const btnAddSc = document.getElementById('btn-add-sc');
+  if (btnAddSc) {
+    btnAddSc.addEventListener('click', async () => {
+      const nameInput = document.getElementById('new-sc-name') as HTMLInputElement;
+      const targetInput = document.getElementById('new-sc-target') as HTMLInputElement;
+      const name = nameInput.value.trim();
+      const target = targetInput.value.trim();
+      if (!name || !target) return;
+      
+      let iconUrl = '';
+      if (target.startsWith('http')) {
+        try {
+          const url = new URL(target);
+          iconUrl = `https://www.google.com/s2/favicons?sz=64&domain_url=${url.hostname}`;
+        } catch {}
+      } else if (ipc) {
+        iconUrl = await ipc.invoke('get-file-icon', target) || '';
+      }
+
+      const newShortcuts = [...customShortcuts, {
+        name,
+        target,
+        iconUrl,
+        icon: '<circle cx="12" cy="12" r="10"></circle><polygon points="10 8 16 12 10 16 10 8"></polygon>'
+      }];
+      
+      currentConfig.shortcuts = newShortcuts;
+      if (ipc) {
+        ipc.send('save-shortcuts', newShortcuts);
+        ipc.send('save-config', currentConfig);
+      }
+      render();
     });
   }
 

@@ -8,10 +8,13 @@ try {
 
 const root = document.getElementById('dash-root')!;
 
-async function render() {
   let stats: any = {};
+  let cfg: any = {};
   if (ipc) {
-    try { stats = await ipc.invoke('get-stats'); } catch(e) {}
+    try { 
+      stats = await ipc.invoke('get-stats');
+      cfg = await ipc.invoke('get-config');
+    } catch(e) {}
   }
 
   // Generate heatmap grid (last 60 days)
@@ -37,25 +40,62 @@ async function render() {
   heatmapHTML += '</div></div>';
 
   const defaultShortcuts = [
-    { name: 'Google Chrome', target: 'chrome.exe', icon: '<circle cx="12" cy="12" r="10"></circle><circle cx="12" cy="12" r="4"></circle><line x1="21.17" y1="8" x2="12" y2="8"></line><line x1="3.95" y1="6.06" x2="8.54" y2="14"></line><line x1="10.88" y1="21.94" x2="15.46" y2="14"></line>' },
-    { name: 'Spotify', target: 'spotify.exe', icon: '<path d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2zm4.6 14.45c-.2.3-.55.4-.85.2-2.35-1.45-5.3-1.75-8.8-.95-.35.1-.65-.15-.75-.5-.1-.35.15-.65.5-.75 3.8-.85 7.1-.5 9.7 1.15.3.15.4.55.2 1zM18 13.5c-.25.35-.7.5-1.05.25-2.7-1.65-6.8-2.15-9.95-1.15-.4.1-.8-.1-.9-.5-.1-.4.1-.8.5-.9 3.6-1.1 8.2-.5 11.2 1.35.3.15.45.6.2.95zm.1-2.85C14.5 8.1 8.2 7.9 5.2 8.8c-.5.15-1-.15-1.15-.65-.15-.5.15-1 .65-1.15 3.55-1 10.4-.75 13.7 1.25.4.25.6.8.35 1.25-.25.4-.8.55-1.25.3z"/>' },
-    { name: 'GitHub', target: 'https://github.com', icon: '<path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path>' },
-    { name: 'VS Code', target: 'code', icon: '<polyline points="4 17 10 11 4 5"></polyline><line x1="12" y1="19" x2="20" y2="19"></line>' }
+    { name: 'Google Chrome', target: 'chrome.exe', iconUrl: 'https://cdn.simpleicons.org/googlechrome', icon: '' },
+    { name: 'Spotify', target: 'spotify.exe', iconUrl: 'https://cdn.simpleicons.org/spotify', icon: '' },
+    { name: 'GitHub', target: 'https://github.com', iconUrl: 'https://cdn.simpleicons.org/github/white', icon: '' },
+    { name: 'VS Code', target: 'code', iconUrl: 'https://cdn.simpleicons.org/visualstudiocode', icon: '' }
   ];
 
+
+  // Fetch real icons for defaults if not yet saved
+  if ((!cfg.shortcuts || cfg.shortcuts.length === 0) && ipc) {
+    for (const s of defaultShortcuts) {
+        if (s.target.startsWith('http')) {
+          try {
+            const urlObj = new URL(s.target);
+            s.iconUrl = `https://www.google.com/s2/favicons?sz=64&domain=${urlObj.hostname}`;
+          } catch(e) {}
+        } else {
+          try {
+            const u = await ipc.invoke('get-file-icon', s.target);
+            if (u) {
+              s.iconUrl = u;
+            }
+          } catch(e) {}
+        }
+      }
+    }
+    cfg.shortcuts = defaultShortcuts;
+    ipc.send('save-config', cfg);
+  }
+
+  const activeShortcuts = (cfg.shortcuts && cfg.shortcuts.length > 0) ? cfg.shortcuts : defaultShortcuts;
+
   let shortcutsHTML = '';
-  for (const s of defaultShortcuts) {
+  for (const s of activeShortcuts) {
+    const fallbackIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M8 12h8M12 8v8"/></svg>`;
+
+    const effectiveIconUrl = s.iconUrl;
+    
+    const iconContent = effectiveIconUrl
+      ? `<img src="${effectiveIconUrl}" style="width:24px; height:24px; object-fit:contain; border-radius:4px;" />`
+      : fallbackIcon;
+    
     shortcutsHTML += `
-      <div class="shortcut-card" data-target="${s.target}">
+      <div class="shortcut-card" data-target="${s.target}" style="position: relative;">
         <div class="shortcut-icon">
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${s.icon}</svg>
+          ${iconContent}
         </div>
         <div class="shortcut-name">${s.name}</div>
+        <button class="btn-del-shortcut" data-name="${s.name}" style="position: absolute; top: -6px; right: -6px; background: #ff4a4a; color: white; border: none; border-radius: 50%; width: 18px; height: 18px; display: none; cursor: pointer; align-items: center; justify-content: center; font-size: 10px;">X</button>
       </div>
     `;
   }
 
   root.innerHTML = `
+    <style>
+      .shortcut-card:hover .btn-del-shortcut { display: flex !important; }
+    </style>
     <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; width: 100%; height: 100%;">
       <div class="dash-header" style="border:none; margin-bottom: 24px; padding:0; flex-direction: column; gap: 8px;">
         <div style="display: flex; align-items: center; gap: 12px;">
@@ -71,8 +111,15 @@ async function render() {
         </div>
 
         <div class="section-title">Quick Shortcuts</div>
-        <div class="shortcuts-grid">
+        <div class="shortcuts-grid" style="margin-bottom: 16px;">
           ${shortcutsHTML}
+        </div>
+        
+        <div class="section-title">Add Shortcut</div>
+        <div style="display:flex; gap:8px; margin-bottom: 24px;">
+          <input type="text" id="new-sc-name" placeholder="Name" style="background:#111; border:1px solid rgba(255,255,255,0.1); padding:8px 12px; color:#fff; border-radius:6px; flex:1; font-family: inherit;">
+          <input type="text" id="new-sc-target" placeholder="Target (.exe path or URL)" style="background:#111; border:1px solid rgba(255,255,255,0.1); padding:8px 12px; color:#fff; border-radius:6px; flex:2; font-family: inherit;">
+          <button id="btn-add-sc" class="btn-primary" style="padding: 0 16px; border-radius:6px; font-weight:600;">Add</button>
         </div>
         
         <div style="display: flex; justify-content: center; margin-top: 32px;">
@@ -91,11 +138,82 @@ async function render() {
     });
   });
 
+  document.querySelectorAll('.btn-del-shortcut').forEach(el => {
+    el.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const name = el.getAttribute('data-name');
+      const idx = activeShortcuts.findIndex((s: any) => s.name === name);
+      if (idx > -1) {
+        activeShortcuts.splice(idx, 1);
+        cfg.shortcuts = activeShortcuts;
+        if (ipc) ipc.send('save-config', cfg);
+        render();
+      }
+    });
+  });
+
+  document.getElementById('btn-add-sc')?.addEventListener('click', async () => {
+    const nameInput = document.getElementById('new-sc-name') as HTMLInputElement;
+    const targetInput = document.getElementById('new-sc-target') as HTMLInputElement;
+    const name = nameInput.value.trim();
+    const target = targetInput.value.trim();
+    if (!name || !target) return;
+
+    let iconUrl = '';
+    if (target.startsWith('http')) {
+      try {
+        const url = new URL(target);
+        iconUrl = `https://www.google.com/s2/favicons?sz=64&domain_url=${url.hostname}`;
+      } catch {}
+    } else if (ipc) {
+      iconUrl = await ipc.invoke('get-file-icon', target) || '';
+    }
+
+    const newShortcut = {
+      name,
+      target,
+      iconUrl,
+      icon: '<circle cx="12" cy="12" r="10"></circle><polygon points="10 8 16 12 10 16 10 8"></polygon>'
+    };
+
+    activeShortcuts.push(newShortcut);
+    cfg.shortcuts = activeShortcuts;
+    if (ipc) ipc.send('save-config', cfg);
+    render();
+  });
+
   document.getElementById('btn-save')!.addEventListener('click', () => {
     const config = { setupComplete: true };
     if (ipc) ipc.send('dashboard-complete', config);
   });
 }
 
+async function updateHeatmapLive() {
+  if (!ipc) return;
+  try {
+    const stats = await ipc.invoke('get-stats');
+    const cells = document.querySelectorAll('.heatmap-cell');
+    if (!cells.length) return;
+    
+    const today = new Date();
+    const key = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+    const dayStats = stats[key];
+    
+    if (dayStats && dayStats.totalSecs) {
+      let level = 0;
+      const mins = dayStats.totalSecs / 60;
+      if (mins > 60) level = 4;
+      else if (mins > 30) level = 3;
+      else if (mins > 10) level = 2;
+      else level = 1;
+      
+      const lastCell = cells[cells.length - 1]; // The last cell is today
+      lastCell.setAttribute('data-level', String(level));
+      lastCell.setAttribute('title', `${key}: ${Math.round(mins)} mins`);
+    }
+  } catch(e) {}
+}
+
 render();
+setInterval(updateHeatmapLive, 2000);
 
