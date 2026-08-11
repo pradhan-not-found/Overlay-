@@ -42,7 +42,7 @@ function App() {
               <img src={appleLogo} alt="Mac" style={{ width: '22px', height: '22px', objectFit: 'contain', filter: 'brightness(0) invert(1)' }} />
               Download for Mac
             </a>
-            <a href="https://github.com/pradhan-not-found/Overlay-/releases/latest/download/Overlay%20Setup%201.0.0.exe" className="dl-btn">
+            <a href="https://github.com/pradhan-not-found/Overlay-/releases/latest/download/Overlay%20Setup%201.0.1.exe" className="dl-btn">
               <img src={windowsLogo} alt="Windows" style={{ width: '22px', height: '22px', objectFit: 'contain', filter: 'brightness(0) invert(1)' }} />
               Download for Windows
             </a>
@@ -106,12 +106,13 @@ function App() {
                 Experience frictionless productivity. Overlay is a keyboard-driven workspace that puts all your essential tools just a keystroke away. Register now for early access.
               </p>
 
-              <div className="download-buttons fade-in" style={{ display: 'flex', flexWrap: 'wrap', gap: '20px', width: '100%', justifyContent: 'center', marginTop: '32px' }}>
-                <a href="https://github.com/pradhan-not-found/Overlay-/releases/latest/download/Overlay%20Setup%201.0.0.exe" className="glass-button dl-btn" style={{ textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '10px', fontSize: '16px', padding: '14px 28px' }}>
-                  <img src={windowsLogo} alt="Windows" style={{ width: '22px', height: '22px', objectFit: 'contain', filter: 'brightness(0) invert(1)' }} />
-                  Download for Windows
-                </a>
-              </div>
+              <form className="waitlist-form fade-in" style={{ marginTop: '32px', display: 'flex', gap: '12px', justifyContent: 'center' }} onSubmit={(e) => { 
+                e.preventDefault(); 
+                alert('Thanks for joining the waitlist! We will be in touch soon.'); 
+              }}>
+                <input type="email" placeholder="Enter your email" className="glass-input" required />
+                <button type="submit" className="glass-button">Join Waitlist</button>
+              </form>
             </>
           )}
 
