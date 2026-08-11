@@ -121,13 +121,29 @@ function renderShortcuts(shortcuts: any[]) {
       
       if (s.isPlaceholder) {
         btn.innerHTML = addSvg.replace('width="14"', 'width="16"').replace('height="14"', 'height="16"');
-        btn.addEventListener('click', e => { e.stopPropagation(); if (ipc) ipc.send('open-dashboard'); });
+        btn.addEventListener('click', e => { e.stopPropagation(); if (ipc) ipc.send('open-settings', 'Shortcuts'); });
       } else {
-        const effectiveIconUrl = s.iconUrl;
         const fallbackIcon = shortcutSvgRaw.replace('width="14"', 'width="18"').replace('height="14"', 'height="18"');
-        btn.innerHTML = effectiveIconUrl
-          ? `<img src="${effectiveIconUrl}" style="width:18px; height:18px; object-fit:contain; border-radius:3px;" />`
-          : fallbackIcon;
+        // For web targets, always compute icon fresh from the URL (never trust stale stored iconUrl)
+        let primaryIcon = s.iconUrl || '';
+        let directFavicon = '';
+        try {
+          if (s.target?.startsWith('http')) {
+            const u = new URL(s.target);
+            primaryIcon = `https://t3.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://${u.hostname}&size=128`;
+            directFavicon = `${u.origin}/favicon.ico`;
+          }
+        } catch {}
+        if (primaryIcon) {
+          const img = document.createElement('img');
+          img.src = primaryIcon;
+          img.style.cssText = 'width:18px; height:18px; object-fit:contain; border-radius:3px;';
+          img.onerror = () => { if (directFavicon) { img.onerror = null; img.src = directFavicon; } else { btn.innerHTML = fallbackIcon; } };
+          btn.innerHTML = '';
+          btn.appendChild(img);
+        } else {
+          btn.innerHTML = fallbackIcon;
+        }
         btn.addEventListener('click', e => { e.stopPropagation(); if (ipc) ipc.send('open-shortcut', s.target); });
       }
       expContainer.appendChild(btn);
@@ -145,14 +161,30 @@ function renderShortcuts(shortcuts: any[]) {
         btn.innerHTML = addSvg;
         btn.onmouseover = () => { btn.style.background = 'rgba(255,255,255,0.1)'; btn.style.color = '#fff'; };
         btn.onmouseout = () => { btn.style.background = 'rgba(255,255,255,0.06)'; btn.style.color = 'rgba(255,255,255,0.4)'; };
-        btn.addEventListener('click', e => { e.stopPropagation(); if (ipc) ipc.send('open-dashboard'); });
+        btn.addEventListener('click', e => { e.stopPropagation(); if (ipc) ipc.send('open-settings', 'Shortcuts'); });
       } else {
         btn.style.cssText = 'padding:0; display:flex; align-items:center; justify-content:center; width:22px; height:22px; flex-shrink:0;';
-        const effectiveIconUrl = s.iconUrl;
         const fallbackIcon = shortcutSvgRaw;
-        btn.innerHTML = effectiveIconUrl
-          ? `<img src="${effectiveIconUrl}" style="width:14px; height:14px; object-fit:contain; border-radius:2px;" />`
-          : fallbackIcon;
+        // For web targets, always compute icon fresh from the URL
+        let primaryIcon = s.iconUrl || '';
+        let directFavicon = '';
+        try {
+          if (s.target?.startsWith('http')) {
+            const u = new URL(s.target);
+            primaryIcon = `https://t3.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://${u.hostname}&size=128`;
+            directFavicon = `${u.origin}/favicon.ico`;
+          }
+        } catch {}
+        if (primaryIcon) {
+          const img = document.createElement('img');
+          img.src = primaryIcon;
+          img.style.cssText = 'width:14px; height:14px; object-fit:contain; border-radius:2px;';
+          img.onerror = () => { if (directFavicon) { img.onerror = null; img.src = directFavicon; } else { btn.innerHTML = fallbackIcon; } };
+          btn.innerHTML = '';
+          btn.appendChild(img);
+        } else {
+          btn.innerHTML = fallbackIcon;
+        }
         btn.addEventListener('click', e => { e.stopPropagation(); if (ipc) ipc.send('open-shortcut', s.target); });
       }
       idleContainer.appendChild(btn);
@@ -160,9 +192,9 @@ function renderShortcuts(shortcuts: any[]) {
   }
 }
 
-function saveSessions() {
+function addSessionStats(countDelta: number, secsDelta: number) {
   if (ipc) {
-    ipc.send('save-session', { count: sessionCountToday, totalSecs: totalFocusSecsToday });
+    ipc.send('add-stats', { count: countDelta, totalSecs: secsDelta });
   }
 }
 function todayKey() {
@@ -613,6 +645,38 @@ function setPhase(next: Phase) {
   }
 }
 
+// ─── Dashboard Timer Sync (IPC) ────────────────────────────────────────────────
+if (ipc) {
+  ipc.on('sync-timer', (_e, state: { type: string, time: number, active: boolean }) => {
+    if (state.type === 'none') {
+      if (timerPhase !== 'off') resetTimer();
+      return;
+    }
+    
+    // Override local timer with dashboard's source of truth
+    clearInterval(timerTick);
+    
+    if (state.type === 'pomodoro') tLabel.textContent = 'Lock In';
+    else if (state.type === 'countdown') tLabel.textContent = 'Countdown';
+    else if (state.type === 'stopwatch') tLabel.textContent = 'Stopwatch';
+
+    timeLeft = state.time;
+    ringTime.textContent = fmt(state.time);
+    idleTimerHint.textContent = fmt(state.time);
+    
+    if (state.active) {
+      timerPhase = 'focus';
+      btnLockin.textContent = 'Pause';
+    } else {
+      timerPhase = 'paused';
+      btnLockin.textContent = 'Resume';
+      idleTimerHint.textContent = 'Paused';
+    }
+    
+    updateIdleView();
+  });
+}
+
 // ─── Pomodoro timer ───────────────────────────────────────────────────────────
 
 function startTick() {
@@ -621,7 +685,7 @@ function startTick() {
     timeLeft--;
     if (timerPhase === 'focus') {
       totalFocusSecsToday++;
-      if (totalFocusSecsToday % 5 === 0) saveSessions(); // Save to DB every 5 secs
+      if (totalFocusSecsToday % 5 === 0) addSessionStats(0, 5); // Save to DB every 5 secs
     }
 
     ringTime.textContent = fmt(timeLeft);
@@ -637,7 +701,7 @@ function startTick() {
       if (timerPhase === 'focus') {
         // Record session
         sessionCountToday++;
-        saveSessions();
+        addSessionStats(1, FOCUS_SECS % 5);
         updateStats();
 
         // Transition to break
@@ -672,28 +736,33 @@ function resetTimer() {
 
 btnLockin.addEventListener('click', e => {
   e.stopPropagation();
-  if (timerPhase === 'off') {
-    timerPhase = 'focus';
-    tLabel.textContent    = 'Focusing';
-    btnLockin.textContent = 'Pause';
-    startTick();
-  } else if (timerPhase === 'focus') {
-    clearInterval(timerTick);
-    timerPhase = 'paused';
-    tLabel.textContent    = 'Paused';
-    btnLockin.textContent = 'Resume';
-    idleTimerHint.textContent = 'Paused';
-  } else if (timerPhase === 'paused') {
-    timerPhase = 'focus';
-    tLabel.textContent    = 'Focusing';
-    btnLockin.textContent = 'Pause';
-    startTick();
-  } else if (timerPhase === 'break') {
-    tLabel.textContent    = 'Break';
-    btnLockin.textContent = 'Skip Break';
-    startTick();
+  if (ipc) {
+    ipc.send('toggle-dashboard-timer');
+  } else {
+    // Fallback if no IPC (e.g., browser preview)
+    if (timerPhase === 'off') {
+      timerPhase = 'focus';
+      tLabel.textContent    = 'Focusing';
+      btnLockin.textContent = 'Pause';
+      startTick();
+    } else if (timerPhase === 'focus') {
+      clearInterval(timerTick);
+      timerPhase = 'paused';
+      tLabel.textContent    = 'Paused';
+      btnLockin.textContent = 'Resume';
+      idleTimerHint.textContent = 'Paused';
+    } else if (timerPhase === 'paused') {
+      timerPhase = 'focus';
+      tLabel.textContent    = 'Focusing';
+      btnLockin.textContent = 'Pause';
+      startTick();
+    } else if (timerPhase === 'break') {
+      tLabel.textContent    = 'Break';
+      btnLockin.textContent = 'Skip Break';
+      startTick();
+    }
+    updateIdleView();
   }
-  updateIdleView();
 });
 
 document.getElementById('btn-idle-timer-toggle')?.addEventListener('click', (e) => {
@@ -712,6 +781,7 @@ document.getElementById('btn-exp-notch-expand')?.addEventListener('click', (e) =
 });
 
 document.getElementById('btn-reset')?.addEventListener('click', () => {
+  if (ipc) ipc.send('toggle-dashboard-timer'); // Reset should ideally send a reset command, but toggle is ok for now. Or we can just fallback to local reset if disconnected.
   resetTimer();
 });
 
@@ -841,11 +911,13 @@ if (ipc) {
       let iconSvg = '<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg>'; // default monitor
       
       if (appLower.includes('spotify')) {
-        iconSvg = '<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="#1DB954"><path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.54.659.3 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.6.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.419 1.56-.299.54-1.02.72-1.56.3z"/></svg>';
+        iconSvg = '<img src="https://upload.wikimedia.org/wikipedia/commons/1/19/Spotify_logo_without_text.svg" style="width:14px; height:14px; object-fit:contain;" />';
       } else if (appLower.includes('chrome')) {
-        iconSvg = '<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#4285F4" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><circle cx="12" cy="12" r="4"></circle><line x1="21.17" y1="8" x2="12" y2="8"></line><line x1="3.95" y1="6.06" x2="8.54" y2="14"></line><line x1="10.88" y1="21.94" x2="15.46" y2="14"></line></svg>';
+        iconSvg = '<img src="https://upload.wikimedia.org/wikipedia/commons/e/e1/Google_Chrome_icon_%28February_2022%29.svg" style="width:14px; height:14px; object-fit:contain;" />';
       } else if (appLower.includes('edge')) {
-        iconSvg = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#0078D7" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M12 2a10 10 0 0 1 10 10c0 5.523-4.477 10-10 10S2 17.523 2 12 6.477 2 12 2z"></path><path d="M22 12A10 10 0 0 0 12 2v10z"></path></svg>';
+        iconSvg = '<img src="https://upload.wikimedia.org/wikipedia/commons/9/98/Microsoft_Edge_logo_%282019%29.svg" style="width:14px; height:14px; object-fit:contain;" />';
+      } else if (appLower.includes('apple music') || appLower.includes('music')) {
+        iconSvg = '<img src="https://upload.wikimedia.org/wikipedia/commons/5/5f/Apple_Music_icon.svg" style="width:14px; height:14px; object-fit:contain;" />';
       }
 
       mArtLogo.innerHTML = iconSvg;

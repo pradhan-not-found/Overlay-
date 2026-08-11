@@ -395,7 +395,12 @@ async function render() {
               ${customShortcuts.map((s: any, idx: number) => {
                 const effectiveIconUrl = s.iconUrl;
                 const fallbackIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M8 12h8M12 8v8"/></svg>`;
-                const iconHtml = effectiveIconUrl ? `<img src="${effectiveIconUrl}" style="width:16px; height:16px; object-fit:contain; border-radius:2px;" />` : fallbackIcon;
+                // For URL shortcuts, build a fallback to direct favicon.ico
+                let directFavicon = '';
+                try { if (s.target?.startsWith('http')) { const u = new URL(s.target); directFavicon = `${u.origin}/favicon.ico`; } } catch {}
+                const iconHtml = effectiveIconUrl
+                  ? `<img src="${effectiveIconUrl}" style="width:16px; height:16px; object-fit:contain; border-radius:2px;" onerror="this.onerror=null; ${directFavicon ? `this.src='${directFavicon}'` : `this.style.display='none'`};" />`
+                  : fallbackIcon;
                 return `
                 <div class="row">
                   <span class="row-label" style="display:flex; align-items:center; gap:12px;">
@@ -538,7 +543,10 @@ async function render() {
       if (target.startsWith('http')) {
         try {
           const url = new URL(target);
-          iconUrl = `https://www.google.com/s2/favicons?sz=64&domain_url=${url.hostname}`;
+          const hostname = url.hostname;
+          // Use Google's high-res favicon API (domain= is more reliable than domain_url=)
+          // Also try the direct /favicon.ico as a fallback loaded in the img tag
+          iconUrl = `https://t3.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://${hostname}&size=128`;
         } catch {}
       } else if (ipc) {
         iconUrl = await ipc.invoke('get-file-icon', target) || '';
@@ -560,6 +568,22 @@ async function render() {
     });
   }
 
+}
+
+// Deep-link support: open to a specific tab via URL hash (#tab=Shortcuts)
+(window as any).__navigateToTab = (tab: string) => {
+  const valid = TABS.find(t => t.name === tab);
+  if (valid) {
+    activeTab = valid.name;
+    render();
+  }
+};
+
+// Check URL hash on load
+const hashTab = new URLSearchParams(location.hash.replace('#', '')).get('tab');
+if (hashTab) {
+  const validTab = TABS.find(t => t.name === hashTab);
+  if (validTab) activeTab = validTab.name;
 }
 
 render();

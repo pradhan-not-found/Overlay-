@@ -28,6 +28,10 @@ function initDB() {
       count INTEGER DEFAULT 0,
       totalSecs INTEGER DEFAULT 0
     );
+    CREATE TABLE IF NOT EXISTS settings (
+      key TEXT PRIMARY KEY,
+      value TEXT
+    );
   `);
 }
 
@@ -85,6 +89,26 @@ function updateStats(dateKey, count, totalSecs) {
   stmt.run({ date_key: dateKey, count, totalSecs });
 }
 
+function addStats(dateKey, count, totalSecs) {
+  const existing = db.prepare('SELECT count, totalSecs FROM stats WHERE date_key = ?').get(dateKey);
+  if (existing) {
+    const newCount = existing.count + count;
+    const newSecs = existing.totalSecs + totalSecs;
+    db.prepare('UPDATE stats SET count = ?, totalSecs = ? WHERE date_key = ?').run(newCount, newSecs, dateKey);
+  } else {
+    db.prepare('INSERT INTO stats (date_key, count, totalSecs) VALUES (?, ?, ?)').run(dateKey, count, totalSecs);
+  }
+}
+
+function getSetting(key, defaultValue = null) {
+  const row = db.prepare('SELECT value FROM settings WHERE key = ?').get(key);
+  return row ? row.value : defaultValue;
+}
+
+function setSetting(key, value) {
+  db.prepare('INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)').run(key, String(value));
+}
+
 module.exports = {
   initDB,
   getEvents,
@@ -95,5 +119,8 @@ module.exports = {
   deleteShortcut,
   clearShortcuts,
   getStats,
-  updateStats
+  updateStats,
+  addStats,
+  getSetting,
+  setSetting
 };

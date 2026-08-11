@@ -214,6 +214,27 @@ ipcMain.on('delete-event', (event, id) => {
   try { db.deleteEvent(id); } catch (err) { console.error('DB Delete Event Error:', err); }
 });
 
+ipcMain.handle('get-setting', (event, key, defaultValue) => {
+  try { return db.getSetting(key, defaultValue); } catch (err) { return defaultValue; }
+});
+
+ipcMain.on('set-setting', (event, key, value) => {
+  try { db.setSetting(key, value); } catch (err) { console.error('DB Set Setting Error:', err); }
+});
+
+// Timer sync IPC handlers (Dashboard <-> Notch)
+ipcMain.on('sync-timer', (event, state) => {
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    mainWindow.webContents.send('sync-timer', state);
+  }
+});
+
+ipcMain.on('toggle-dashboard-timer', () => {
+  if (dashWindow && !dashWindow.isDestroyed()) {
+    dashWindow.webContents.send('toggle-dashboard-timer');
+  }
+});
+
 // Media key IPC handlers
 ipcMain.on('media-play-pause', () => pressMediaKey(179));
 ipcMain.on('media-next',       () => pressMediaKey(176));
@@ -244,9 +265,11 @@ ipcMain.on('toggle-mute', async () => {
 const PAD = 32;
 let settingsWindow = null;
 
-function openSettings() {
+function openSettings(tab) {
+  const hash = tab ? `#tab=${tab}` : '';
   if (settingsWindow && !settingsWindow.isDestroyed()) {
     settingsWindow.focus();
+    if (tab) settingsWindow.webContents.executeJavaScript(`window.__navigateToTab && window.__navigateToTab('${tab}')`);
     return;
   }
   settingsWindow = new BrowserWindow({
@@ -259,13 +282,14 @@ function openSettings() {
   });
   const devUrl = process.env.VITE_DEV_SERVER_URL;
   if (app.isPackaged) {
-    settingsWindow.loadFile(path.join(__dirname, '../dist/settings.html'));
+    settingsWindow.loadFile(path.join(__dirname, '../dist/settings.html'), { hash: hash.slice(1) });
   } else {
-    settingsWindow.loadURL((devUrl || 'http://localhost:5173') + '/settings.html');
+    settingsWindow.loadURL((devUrl || 'http://localhost:5173') + '/settings.html' + hash);
   }
+  settingsWindow.on('closed', () => { settingsWindow = null; });
 }
 
-ipcMain.on('open-settings', openSettings);
+ipcMain.on('open-settings', (_e, tab) => openSettings(tab));
 
 function createPillWindow() {
   // Initialize Database
@@ -413,6 +437,12 @@ ipcMain.on('save-session', (_e, { count, totalSecs }) => {
   db.updateStats(key, count, totalSecs);
 });
 
+ipcMain.on('add-stats', (_e, { count, totalSecs }) => {
+  const d = new Date();
+  const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  db.addStats(key, count, totalSecs);
+});
+
 ipcMain.handle('get-stats', () => {
   return db.getStats();
 });
@@ -457,14 +487,17 @@ function createDashWindow(options) {
     return; 
   }
   dashWindow = new BrowserWindow({
-    width: 720, height: 540,
-    titleBarStyle: 'hidden',
-    titleBarOverlay: { color: '#000000', symbolColor: '#ffffff' },
+    width: 720, height: 560,
+    frame: true,
     transparent: false,
-    backgroundColor: '#000000',
-    resizable: false,
+    backgroundColor: '#111111',
+    resizable: true,
+    maximizable: true,
+    fullscreenable: true,
     center: true,
-    title: 'Overlay — Dashboard',
+    minWidth: 640,
+    minHeight: 480,
+    title: 'Overlay — Focus',
     autoHideMenuBar: true,
     icon: nativeImage.createFromPath(path.join(__dirname, '../applogo.png')),
     webPreferences: { nodeIntegration: true, contextIsolation: false }
