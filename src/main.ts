@@ -647,7 +647,7 @@ function setPhase(next: Phase) {
 
 // ─── Dashboard Timer Sync (IPC) ────────────────────────────────────────────────
 if (ipc) {
-  ipc.on('sync-timer', (_e, state: { type: string, time: number, active: boolean }) => {
+  ipc.on('sync-timer', (_e: any, state: { type: string, time: number, active: boolean }) => {
     if (state.type === 'none') {
       if (timerPhase !== 'off') resetTimer();
       return;
