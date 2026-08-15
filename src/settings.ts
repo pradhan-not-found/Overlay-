@@ -1,4 +1,5 @@
 import './settings.css';
+import appLogoUrl from '../applogo.png';
 
 // IPC
 let ipc: any = null;
@@ -80,7 +81,9 @@ function renderAboutContent(container: HTMLElement) {
   container.innerHTML = `
     <div class="group">
       <div class="about-hero">
-        <img src="/applogo.png" class="about-logo" />
+        <div class="about-logo-container">
+          <img src="${appLogoUrl}" class="about-logo" />
+        </div>
         <div class="about-title-block">
           <h2 class="about-name"><span class="brand">Overlay</span></h2>
           <div class="about-version">Version ${appVersion}</div>
@@ -209,7 +212,7 @@ async function render() {
   root.innerHTML = `
     <div class="sidebar">
       <div class="sidebar-header">
-        <img src="/applogo.png" alt="Overlay" class="sidebar-logo">
+        <img src="${appLogoUrl}" alt="Overlay" class="sidebar-logo">
         <span class="sidebar-title" style="font-weight: 600;">Overlay</span>
       </div>
       ${TABS.map(t => `
