@@ -231,7 +231,13 @@ document.getElementById('app')!.innerHTML = `
   <div class="view view-idle active" id="view-idle" style="width: 100%; display: flex; align-items: center; justify-content: space-between; padding: 0 18px;">
     <div class="idle-state-default" id="idle-state-default" style="display: flex; align-items: center; justify-content: space-between; width: 100%;">
       <span class="idle-clock" id="idle-clock">00:00</span>
-      <div id="idle-shortcuts" style="display: flex; align-items: center; gap: 6px;"></div>
+      <div style="display: flex; align-items: center; gap: 6px;">
+        <div id="idle-shortcuts" style="display: flex; align-items: center; gap: 6px;"></div>
+        <div style="width: 1px; height: 12px; background: rgba(255,255,255,0.2); margin: 0 4px;"></div>
+        <button class="ibtn" id="btn-close-app" title="Hide Overlay" style="padding: 2px; color: var(--muted); cursor: pointer;">
+          ${closeSvgRaw.replace('width="24"', 'width="14"').replace('height="24"', 'height="14"')}
+        </button>
+      </div>
     </div>
     
     <!-- Media state -->
@@ -768,6 +774,11 @@ btnLockin.addEventListener('click', e => {
 document.getElementById('btn-idle-timer-toggle')?.addEventListener('click', (e) => {
   e.stopPropagation();
   btnLockin.click();
+});
+
+document.getElementById('btn-close-app')?.addEventListener('click', (e) => {
+  e.stopPropagation();
+  if (ipc) ipc.send('hide-overlay');
 });
 
 

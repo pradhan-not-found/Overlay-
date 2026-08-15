@@ -1,7 +1,7 @@
 'use strict';
 process.env['ELECTRON_DISABLE_SECURITY_WARNINGS'] = 'true';
 
-const { app, BrowserWindow, ipcMain, shell, screen, nativeImage, Notification } = require('electron');
+const { app, BrowserWindow, ipcMain, shell, screen, nativeImage, Notification, Tray, Menu } = require('electron');
 const path   = require('path');
 const fs     = require('fs');
 const si     = require('systeminformation');
@@ -120,6 +120,21 @@ let dashWindow  = null;
 let dragInterval = null;
 let dragStart   = { x: 0, y: 0 };
 let dragBounds  = { x: 0, y: 0, w: 0, h: 0 };
+let tray = null;
+
+function createTray() {
+  if (tray) return;
+  tray = new Tray(nativeImage.createFromPath(path.join(__dirname, '../applogo.png')));
+  const contextMenu = Menu.buildFromTemplate([
+    { label: 'Show Overlay', click: () => { if (mainWindow && !mainWindow.isDestroyed()) { mainWindow.show(); mainWindow.focus(); } else { createPillWindow(); } } },
+    { label: 'Dashboard', click: () => createDashWindow() },
+    { label: 'Settings', click: () => openSettings() },
+    { type: 'separator' },
+    { label: 'Quit Overlay', click: () => { app.isQuitting = true; app.quit(); } }
+  ]);
+  tray.setToolTip('Overlay');
+  tray.setContextMenu(contextMenu);
+}
 
 const configPath = () => path.join(app.getPath('userData'), 'overlay_config.json');
 const statsPath = () => path.join(app.getPath('userData'), 'overlay_stats.json');
@@ -519,7 +534,16 @@ ipcMain.on('dashboard-complete', (_e, cfg) => {
   if (dashWindow && !dashWindow.isDestroyed()) dashWindow.close();
   const finalCfg = readConfig();
   finalCfg.shortcuts = db.getShortcuts();
-  if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send('widget-config', finalCfg);
+  
+  if (!mainWindow || mainWindow.isDestroyed()) {
+    createPillWindow();
+    mainWindow.webContents.once('did-finish-load', () => {
+      if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send('widget-config', finalCfg);
+    });
+  } else {
+    mainWindow.show();
+    mainWindow.webContents.send('widget-config', finalCfg);
+  }
 });
 
 ipcMain.on('save-config', (_e, cfg) => {
@@ -535,35 +559,59 @@ ipcMain.on('save-config', (_e, cfg) => {
 });
 
 // ─── Lifecycle ────────────────────────────────────────────────────────────────
-app.whenReady().then(() => {
-  app.setAppUserModelId('com.overlay.app');
-  const cfg = readConfig();
-  createPillWindow();
-  if (!cfg.setupComplete) {
-    setTimeout(() => createDashWindow(), 800);
-  } else {
-    mainWindow.webContents.once('did-finish-load', () => {
-      cfg.shortcuts = db.getShortcuts();
-      if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send('widget-config', cfg);
-    });
-  }
-
-  // ── Auto-update: wire up events then check after 10 s (let app load first) ──
-  initAutoUpdater();
-  if (app.isPackaged && autoUpdater) {
-    setTimeout(() => {
-      autoUpdater.checkForUpdates().catch(e => console.warn('[Updater] check failed:', e.message));
-    }, 10_000);
-  }
-
-  app.on('activate', () => {
-    if (!mainWindow || mainWindow.isDestroyed()) createPillWindow();
+const gotTheLock = app.requestSingleInstanceLock();
+if (!gotTheLock) {
+  app.quit();
+} else {
+  app.on('second-instance', (event, commandLine, workingDirectory) => {
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      if (mainWindow.isMinimized()) mainWindow.restore();
+      mainWindow.show();
+      mainWindow.focus();
+    } else {
+      createPillWindow();
+    }
   });
-});
 
-app.on('window-all-closed', () => {
-  if (process.platform !== 'darwin') app.quit();
-});
+  app.whenReady().then(() => {
+    app.setAppUserModelId('com.overlay.app');
+    createTray();
+    const cfg = readConfig();
+    
+    if (!cfg.setupComplete) {
+      setTimeout(() => createDashWindow(), 800);
+    } else {
+      createPillWindow();
+      mainWindow.webContents.once('did-finish-load', () => {
+        cfg.shortcuts = db.getShortcuts();
+        if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send('widget-config', cfg);
+      });
+    }
+
+    // ── Auto-update: wire up events then check after 10 s (let app load first) ──
+    initAutoUpdater();
+    if (app.isPackaged && autoUpdater) {
+      setTimeout(() => {
+        autoUpdater.checkForUpdates().catch(e => console.warn('[Updater] check failed:', e.message));
+      }, 10_000);
+    }
+
+    app.on('activate', () => {
+      if (!mainWindow || mainWindow.isDestroyed()) createPillWindow();
+      else mainWindow.show();
+    });
+  });
+
+  app.on('window-all-closed', () => {
+    // Let the app run in the system tray in the background
+  });
+
+  ipcMain.on('hide-overlay', () => {
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.hide();
+    }
+  });
+}
 
 // ─── Update IPC handlers ───────────────────────────────────────────────────────
 ipcMain.handle('get-app-version', () => app.getVersion());

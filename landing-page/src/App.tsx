@@ -46,7 +46,7 @@ function App() {
               <img src={appleLogo} alt="Mac" style={{ width: '22px', height: '22px', objectFit: 'contain', filter: 'brightness(0) invert(1)' }} />
               Download for Mac
             </a>
-            <a href="https://github.com/pradhan-not-found/Overlay-/releases/download/v1.0.1/Overlay-Setup-1.0.1.exe" className="dl-btn">
+            <a href="https://github.com/pradhan-not-found/Overlay-/releases/download/v1.0.2/Overlay-Setup-1.0.2.exe" className="dl-btn">
               <img src={windowsLogo} alt="Windows" style={{ width: '22px', height: '22px', objectFit: 'contain', filter: 'brightness(0) invert(1)' }} />
               Download for Windows
             </a>
