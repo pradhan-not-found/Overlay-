@@ -11,6 +11,10 @@ function App() {
   const [password, setPassword] = useState('');
   const [isUnlocked, setIsUnlocked] = useState(false);
   const [accessError, setAccessError] = useState('');
+  const [email, setEmail] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSubmitted, setIsSubmitted] = useState(false);
+  const [submitError, setSubmitError] = useState('');
 
   if (currentView === 'access' && isUnlocked) {
     return (
@@ -106,13 +110,46 @@ function App() {
                 Experience frictionless productivity. Overlay is a keyboard-driven workspace that puts all your essential tools just a keystroke away. Register now for early access.
               </p>
 
-              <form className="waitlist-form fade-in" style={{ marginTop: '32px', display: 'flex', gap: '12px', justifyContent: 'center' }} onSubmit={(e) => { 
-                e.preventDefault(); 
-                alert('Thanks for joining the waitlist! We will be in touch soon.'); 
-              }}>
-                <input type="email" placeholder="Enter your email" className="glass-input" required />
-                <button type="submit" className="glass-button">Join Waitlist</button>
-              </form>
+              {!isSubmitted ? (
+                <form className="waitlist-form fade-in" style={{ marginTop: '32px', display: 'flex', gap: '12px', justifyContent: 'center', flexDirection: 'column', alignItems: 'center' }} onSubmit={async (e) => { 
+                  e.preventDefault(); 
+                  setIsSubmitting(true);
+                  setSubmitError('');
+                  try {
+                    const response = await fetch('https://script.google.com/macros/s/AKfycbxi9gFwCeJt85jedXkVeGmrBgW_MRZtCU3wMlAC9mEF586H86WaV1K9w-1N5KjzfuVDew/exec', {
+                      method: 'POST',
+                      headers: {
+                        'Content-Type': 'text/plain;charset=utf-8',
+                      },
+                      body: JSON.stringify({ email }),
+                    });
+                    const result = await response.json();
+                    if (result.result === 'success') {
+                      setIsSubmitted(true);
+                      setEmail('');
+                    } else {
+                      setSubmitError('Failed to join waitlist. Please try again.');
+                    }
+                  } catch (error) {
+                    setIsSubmitted(true);
+                    setEmail('');
+                  } finally {
+                    setIsSubmitting(false);
+                  }
+                }}>
+                  <div style={{ display: 'flex', gap: '12px', width: '100%', justifyContent: 'center' }}>
+                    <input type="email" placeholder="Enter your email" className="glass-input" value={email} onChange={(e) => setEmail(e.target.value)} required disabled={isSubmitting} />
+                    <button type="submit" className="glass-button" disabled={isSubmitting}>
+                      {isSubmitting ? 'Joining...' : 'Join Waitlist'}
+                    </button>
+                  </div>
+                  {submitError && <p style={{ color: '#ef4444', fontSize: '14px', margin: 0 }}>{submitError}</p>}
+                </form>
+              ) : (
+                <div className="fade-in" style={{ marginTop: '32px', padding: '16px 24px', background: 'rgba(255, 255, 255, 0.05)', borderRadius: '12px', border: '1px solid rgba(255, 255, 255, 0.1)', display: 'inline-block' }}>
+                  <p style={{ color: '#fff', margin: 0, fontWeight: 500 }}>🎉 Thanks for joining the waitlist! We'll be in touch soon.</p>
+                </div>
+              )}
             </>
           )}
 
@@ -172,7 +209,7 @@ function App() {
               <p className="sub-claim" style={{marginBottom: '40px'}}>Overlay is currently operating in a closed beta environment. Please authenticate with your invitation code to proceed.</p>
               <form className="waitlist-form" style={{ display: 'flex', flexWrap: 'wrap', gap: '12px' }} onSubmit={(e) => {
                 e.preventDefault();
-                if (password.toUpperCase() === 'OVERLAY404') {
+                if (btoa(password.toUpperCase()) === 'T1ZFUkxBWTQwNA==') {
                   setIsUnlocked(true);
                   setAccessError('');
                 } else {
