@@ -146,8 +146,8 @@ function App() {
                   {submitError && <p style={{ color: '#ef4444', fontSize: '14px', margin: 0 }}>{submitError}</p>}
                 </form>
               ) : (
-                <div className="fade-in" style={{ marginTop: '32px', padding: '16px 24px', background: 'rgba(255, 255, 255, 0.05)', borderRadius: '12px', border: '1px solid rgba(255, 255, 255, 0.1)', display: 'inline-block' }}>
-                  <p style={{ color: '#fff', margin: 0, fontWeight: 500 }}>🎉 Thanks for joining the waitlist! We'll be in touch soon.</p>
+                <div className="fade-in" style={{ marginTop: '32px', padding: '16px 24px', background: 'rgba(0, 0, 0, 0.05)', borderRadius: '12px', border: '1px solid rgba(0, 0, 0, 0.1)', display: 'inline-block' }}>
+                  <p style={{ color: '#000', margin: 0, fontWeight: 500 }}>🎉 Thanks for joining the waitlist! We'll be in touch soon.</p>
                 </div>
               )}
             </>
