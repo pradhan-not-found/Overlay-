@@ -457,16 +457,17 @@ function startTick() {
     }
     if(activeNav==='stopwatch') { const el=document.getElementById('sw-time'); if(el)el.textContent=fmtHMS(swSecs); }
 
-    // Sync to notch
+    // Sync to notch — only broadcast when there is actual timer state
     if(ipc) {
       let type='none',time=0,active=false;
-      if(pomoActive)              {type='pomodoro'; time=pomoLeft; active=true;}
-      else if(cdActive)           {type='countdown';time=cdLeft;   active=true;}
-      else if(swActive)           {type='stopwatch';time=swSecs;   active=true;}
-      else if(pomoLeft<pomoDuration*60) {type='pomodoro'; time=pomoLeft;  active=false;}
-      else if(cdLeft<cdCustomLeft)      {type='countdown';time=cdLeft;    active=false;}
-      else if(swSecs>0)                 {type='stopwatch';time=swSecs;    active=false;}
-      ipc.send('sync-timer',{type,time,active});
+      if(pomoActive)                    { type='pomodoro';  time=pomoLeft; active=true; }
+      else if(cdActive)                 { type='countdown'; time=cdLeft;   active=true; }
+      else if(swActive)                 { type='stopwatch'; time=swSecs;   active=true; }
+      else if(pomoLeft < pomoDuration*60) { type='pomodoro';  time=pomoLeft; active=false; }
+      else if(cdLeft < cdCustomLeft)      { type='countdown'; time=cdLeft;   active=false; }
+      else if(swSecs > 0)                 { type='stopwatch'; time=swSecs;   active=false; }
+      // Only send if something meaningful to show — don't spam 'none' when fully idle
+      if(type !== 'none') ipc.send('sync-timer', { type, time, active });
     }
 
     (window as any).pomoLeft=pomoLeft; (window as any).pomoActive=pomoActive;
