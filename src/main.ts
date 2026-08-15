@@ -668,11 +668,16 @@ if (ipc) {
 
     timeLeft = state.time;
     ringTime.textContent = fmt(state.time);
+    // Ensure the hint is visible (resetTimer hides it with 'hidden' class)
+    idleTimerHint.classList.remove('hidden');
     idleTimerHint.textContent = fmt(state.time);
     
     if (state.active) {
       timerPhase = 'focus';
       btnLockin.textContent = 'Pause';
+      // Restart local tick so the notch keeps counting down even if the
+      // dashboard window is closed mid-session.
+      startTick();
     } else {
       timerPhase = 'paused';
       btnLockin.textContent = 'Resume';
