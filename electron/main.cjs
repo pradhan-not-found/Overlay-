@@ -536,9 +536,31 @@ function createDashWindow(options) {
     icon: nativeImage.createFromPath(path.join(__dirname, '../applogo.png')),
     webPreferences: { nodeIntegration: true, contextIsolation: false }
   });
-  const devUrl = process.env.VITE_DEV_SERVER_URL;
-  if (app.isPackaged) dashWindow.loadFile(path.join(__dirname, '../dist/dashboard.html'));
-  else dashWindow.loadURL((devUrl || 'http://localhost:5173') + '/dashboard.html');
+  const devUrl = process.env.VITE_DEV_SERVER_URL || 'http://localhost:5173';
+  const dashUrl = app.isPackaged
+    ? path.join(__dirname, '../dist/dashboard.html')
+    : devUrl + '/dashboard.html';
+
+  console.log('[Dashboard] Loading:', dashUrl);
+
+  if (app.isPackaged) {
+    dashWindow.loadFile(dashUrl);
+  } else {
+    dashWindow.loadURL(dashUrl).catch(err => {
+      console.error('[Dashboard] Failed to load URL:', err.message);
+    });
+  }
+
+  dashWindow.webContents.on('did-fail-load', (_e, code, desc, url) => {
+    console.error(`[Dashboard] Page failed to load: ${code} ${desc} at ${url}`);
+    // Retry once after 1s if vite server wasn't ready
+    setTimeout(() => {
+      if (dashWindow && !dashWindow.isDestroyed()) {
+        dashWindow.loadURL(devUrl + '/dashboard.html').catch(() => {});
+      }
+    }, 1000);
+  });
+
   dashWindow.on('closed', () => { dashWindow = null; });
 }
 
