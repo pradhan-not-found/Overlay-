@@ -686,6 +686,36 @@ if (ipc) {
     
     updateIdleView();
   });
+
+  // Fired by main.cjs when dashboard is NOT open and user clicks Lock In in notch
+  ipc.on('start-local-timer', () => {
+    if (timerPhase === 'off') {
+      timerPhase = 'focus';
+      tLabel.textContent    = 'Focusing';
+      btnLockin.textContent = 'Pause';
+      idleTimerHint.classList.remove('hidden');
+      idleTimerHint.textContent = fmt(timeLeft);
+      startTick();
+    } else if (timerPhase === 'focus') {
+      clearInterval(timerTick);
+      timerPhase = 'paused';
+      tLabel.textContent    = 'Paused';
+      btnLockin.textContent = 'Resume';
+      idleTimerHint.textContent = 'Paused';
+    } else if (timerPhase === 'paused') {
+      timerPhase = 'focus';
+      tLabel.textContent    = 'Focusing';
+      btnLockin.textContent = 'Pause';
+      idleTimerHint.classList.remove('hidden');
+      idleTimerHint.textContent = fmt(timeLeft);
+      startTick();
+    } else if (timerPhase === 'break') {
+      tLabel.textContent    = 'Break';
+      btnLockin.textContent = 'Skip Break';
+      startTick();
+    }
+    updateIdleView();
+  });
 }
 
 // ─── Pomodoro timer ───────────────────────────────────────────────────────────

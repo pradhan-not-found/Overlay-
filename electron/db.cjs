@@ -32,6 +32,13 @@ function initDB() {
       key TEXT PRIMARY KEY,
       value TEXT
     );
+    CREATE TABLE IF NOT EXISTS laps (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      session_date TEXT NOT NULL,
+      lap_num INTEGER NOT NULL,
+      split_secs INTEGER NOT NULL,
+      elapsed_secs INTEGER NOT NULL
+    );
   `);
 }
 
@@ -109,6 +116,21 @@ function setSetting(key, value) {
   db.prepare('INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)').run(key, String(value));
 }
 
+function addLap(lap) {
+  const d = new Date();
+  const date = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  db.prepare('INSERT INTO laps (session_date, lap_num, split_secs, elapsed_secs) VALUES (?, ?, ?, ?)')
+    .run(date, lap.lap_num, lap.split_secs, lap.elapsed_secs);
+}
+
+function getLaps(date) {
+  return db.prepare('SELECT * FROM laps WHERE session_date = ? ORDER BY lap_num ASC').all(date);
+}
+
+function clearLaps(date) {
+  db.prepare('DELETE FROM laps WHERE session_date = ?').run(date);
+}
+
 module.exports = {
   initDB,
   getEvents,
@@ -122,5 +144,8 @@ module.exports = {
   updateStats,
   addStats,
   getSetting,
-  setSetting
+  setSetting,
+  addLap,
+  getLaps,
+  clearLaps
 };

@@ -1,451 +1,489 @@
 import './dashboard.css';
 
-// IPC
+// ─── IPC ────────────────────────────────────────────────────────────────────
 let ipc: any = null;
-try {
-  if ((window as any).require) ipc = (window as any).require('electron').ipcRenderer;
-} catch {}
+try { if ((window as any).require) ipc = (window as any).require('electron').ipcRenderer; } catch {}
 
 const root = document.getElementById('dash-root')!;
 
+// ─── SVG Icons ──────────────────────────────────────────────────────────────
+const icons = {
+  flame: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 3z"/></svg>`,
+  timer: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="2" x2="12" y2="6"/><circle cx="12" cy="14" r="8"/><polyline points="12 10 12 14 14.5 14"/><line x1="4.93" y1="5.64" x2="7.76" y2="8.46"/><line x1="19.07" y1="5.64" x2="16.24" y2="8.46"/></svg>`,
+  stopwatch: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="13" r="8"/><polyline points="12 9 12 13 15 13"/><path d="M9 2h6"/><path d="M12 2v2"/></svg>`,
+  chart: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/><line x1="2" y1="20" x2="22" y2="20"/></svg>`,
+  calendar: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>`,
+  play: `<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" stroke="none"><polygon points="5 3 19 12 5 21 5 3"/></svg>`,
+  pause: `<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" stroke="none"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>`,
+  reset: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-4.5"/></svg>`,
+  lap: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>`,
+  share: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>`,
+  trash: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>`,
+  plus: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>`,
+  chevLeft: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>`,
+  chevRight: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>`,
+};
 
-function formatTime(secs: number) {
-  if (!secs) return '00:00:00';
-  const h = Math.floor(secs / 3600);
-  const m = Math.floor((secs % 3600) / 60);
-  const s = secs % 60;
-  return h.toString().padStart(2, '0') + ':' + m.toString().padStart(2, '0') + ':' + s.toString().padStart(2, '0');
+// ─── Helpers ────────────────────────────────────────────────────────────────
+function todayKey() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+function fmt(s: number) {
+  const m = Math.floor(s / 60), sc = s % 60;
+  return `${String(m).padStart(2,'0')}:${String(sc).padStart(2,'0')}`;
+}
+function fmtHMS(s: number) {
+  const h = Math.floor(s/3600), m = Math.floor((s%3600)/60), sc = s%60;
+  return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(sc).padStart(2,'0')}`;
+}
+function streakColor(n: number) {
+  if (n === 0) return '#555555';
+  if (n <= 2)  return '#e0d5c0';
+  if (n <= 6)  return '#ff9500';
+  if (n <= 13) return '#ff6b35';
+  return '#ff3b30';
+}
+function streakGlow(n: number) {
+  if (n >= 14) return '0 0 20px rgba(255,59,48,0.5)';
+  if (n >= 7)  return '0 0 16px rgba(255,107,53,0.4)';
+  if (n >= 3)  return '0 0 12px rgba(255,149,0,0.3)';
+  return 'none';
 }
 
-async function render() {
-  let stats: any = {};
-  let activeTabMode = 'clock';
-  let pomoDuration = 25;
+// ─── State ──────────────────────────────────────────────────────────────────
+let activeNav = 'lockin';
+let stats: any = {};
+let pomoLeft = (window as any).pomoLeft ?? 25 * 60;
+let pomoActive = (window as any).pomoActive ?? false;
+let pomoDuration = 25;
+let cdLeft = (window as any).cdLeft ?? 60 * 60;
+let cdActive = (window as any).cdActive ?? false;
+let cdCustomLeft = cdLeft;
+let swSecs = (window as any).swSecs ?? 0;
+let swActive = (window as any).swActive ?? false;
+let laps: {num: number, split: number, elapsed: number}[] = [];
+let lastLapElapsed = 0;
+let calYear = new Date().getFullYear();
+let calMonth = new Date().getMonth();
+let calEvents: any[] = [];
+let tickInterval: any = null;
+let totalAllTimeSecs = 0;
+let streak = 0;
+let todaySecs = 0;
+let level = 1;
+
+// ─── Boot ────────────────────────────────────────────────────────────────────
+async function boot() {
   if (ipc) {
-    try { 
-      stats = await ipc.invoke('get-stats');
-      activeTabMode = await ipc.invoke('get-setting', 'dashboard-mode', 'clock');
+    try {
+      stats = await ipc.invoke('get-stats') || {};
       pomoDuration = parseInt(await ipc.invoke('get-setting', 'pomodoro-duration', '25')) || 25;
-    } catch(e) {}
+      activeNav = await ipc.invoke('get-setting', 'dashboard-nav', 'lockin') || 'lockin';
+      const savedCd = parseInt(await ipc.invoke('get-setting', 'countdown-last', '3600')) || 3600;
+      if (!cdActive) { cdLeft = savedCd; cdCustomLeft = savedCd; }
+      calEvents = await ipc.invoke('get-events') || [];
+    } catch {}
+    try {
+      const today = todayKey();
+      laps = ((await ipc.invoke('get-laps', today)) || []).map((r: any) => ({
+        num: r.lap_num, split: r.split_secs, elapsed: r.elapsed_secs
+      }));
+      if (laps.length > 0) lastLapElapsed = laps[laps.length-1].elapsed;
+    } catch {}
   }
-  
-  if (!(window as any).pomoActive) {
-    (window as any).pomoLeft = (window as any).pomoLeft ?? (pomoDuration * 60);
-  }
+
+  if (!(window as any).pomoActive) pomoLeft = pomoDuration * 60;
   (window as any).pomoDuration = pomoDuration;
 
+  computeStats();
+  render();
+  startTick();
+  bindIPC();
+}
 
-  let totalAllTimeSecs = 0;
-  let streak = 0;
-  let todaySecs = 0;
-  
-  if (stats) {
-    const sortedDates = Object.keys(stats).sort((a,b) => b.localeCompare(a));
-    for (const key of sortedDates) {
-      totalAllTimeSecs += stats[key].totalSecs || 0;
-    }
+function computeStats() {
+  totalAllTimeSecs = 0; streak = 0; todaySecs = 0;
+  const keys = Object.keys(stats).sort((a,b) => b.localeCompare(a));
+  for (const k of keys) totalAllTimeSecs += stats[k].totalSecs || 0;
 
-    let currentDate = new Date();
-    currentDate.setHours(0,0,0,0);
-    
-    let todayKey = currentDate.getFullYear() + '-' + String(currentDate.getMonth()+1).padStart(2,'0') + '-' + String(currentDate.getDate()).padStart(2,'0');
-    let yesterdayDate = new Date(currentDate);
-    yesterdayDate.setDate(yesterdayDate.getDate() - 1);
-    let yesterdayKey = yesterdayDate.getFullYear() + '-' + String(yesterdayDate.getMonth()+1).padStart(2,'0') + '-' + String(yesterdayDate.getDate()).padStart(2,'0');
+  const today = new Date(); today.setHours(0,0,0,0);
+  const tk = todayKey();
+  todaySecs = stats[tk]?.totalSecs || 0;
 
-    if (stats[todayKey]) {
-      todaySecs = stats[todayKey].totalSecs || 0;
-    }
-
-    let checkDate = new Date(currentDate);
-    if (!stats[todayKey] || stats[todayKey].totalSecs === 0) {
-      if (!stats[yesterdayKey] || stats[yesterdayKey].totalSecs === 0) {
-        streak = 0;
-      } else {
-        checkDate = yesterdayDate;
-      }
-    }
-
-    if (streak !== 0 || (stats[todayKey] && stats[todayKey].totalSecs > 0)) {
-      let tempStreak = 0;
-      while (true) {
-        let k = checkDate.getFullYear() + '-' + String(checkDate.getMonth()+1).padStart(2,'0') + '-' + String(checkDate.getDate()).padStart(2,'0');
-        if (stats[k] && stats[k].totalSecs > 0) {
-          tempStreak++;
-          checkDate.setDate(checkDate.getDate() - 1);
-        } else {
-          break;
-        }
-      }
-      streak = tempStreak;
-    }
+  let checkDate = new Date(today);
+  const yk = (() => { const d = new Date(today); d.setDate(d.getDate()-1); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; })();
+  if (!stats[tk]?.totalSecs) {
+    if (!stats[yk]?.totalSecs) { streak = 0; }
+    else { checkDate.setDate(checkDate.getDate()-1); }
   }
+  if (streak !== 0 || stats[tk]?.totalSecs > 0) {
+    let ts = 0;
+    while (true) {
+      const k = `${checkDate.getFullYear()}-${String(checkDate.getMonth()+1).padStart(2,'0')}-${String(checkDate.getDate()).padStart(2,'0')}`;
+      if (stats[k]?.totalSecs > 0) { ts++; checkDate.setDate(checkDate.getDate()-1); } else break;
+    }
+    streak = ts;
+  }
+  level = Math.floor(totalAllTimeSecs / 18000) + 1;
+}
 
-  const level = Math.floor(totalAllTimeSecs / 18000) + 1;
-
-  
+// ─── Render ──────────────────────────────────────────────────────────────────
+function render() {
   root.innerHTML = `
-      <style>
-        .streak-glow { text-shadow: 0 0 20px rgba(255, 149, 0, 0.4); }
-        .timer-glow { font-variant-numeric: tabular-nums; }
-        @font-face {
-          font-family: 'HelveticaLogo';
-          src: url('/fonts/Helvetica.ttf') format('truetype');
-        }
-        .lock-tab-container {
-          -webkit-app-region: no-drag; 
-          position: absolute; 
-          top: 24px; 
-          left: 50%; 
-          transform: translateX(-50%); 
-          display: flex; 
-          gap: 2px; 
-          background: rgba(10,10,12,0.6); 
-          backdrop-filter: blur(20px);
-          -webkit-backdrop-filter: blur(20px);
-          padding: 5px; 
-          border-radius: 14px; 
-          border: 1px solid rgba(255,255,255,0.06); 
-          box-shadow: 0 8px 32px rgba(0,0,0,0.4), inset 0 1px 2px rgba(0,0,0,0.6);
-          z-index: 100; 
-          white-space: nowrap;
-        }
-        .lock-tab { 
-          padding: 8px 20px; 
-          border-radius: 10px; 
-          font-size: 13px; 
-          font-weight: 600; 
-          color: #71717a; 
-          cursor: pointer; 
-          transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-          letter-spacing: 0.02em;
-        }
-        .lock-tab:hover {
-          color: #e4e4e7;
-        }
-        .lock-tab.active { 
-          background: rgba(255,255,255,0.12); 
-          color: #ffffff; 
-          font-weight: 700;
-          box-shadow: 0 2px 10px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.08);
-        }
-        .mode-panel { display: none; flex-direction: column; align-items: center; justify-content: center; width: 100%; flex: 1; margin-top: 24px; padding: 0 40px; box-sizing: border-box; overflow: hidden; }
-        .mode-panel.active { display: flex; animation: fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
-        @keyframes fadeIn { from { opacity: 0; transform: scale(0.98); } to { opacity: 1; transform: scale(1); } }
-        .big-timer-btn { padding: 12px 32px; border-radius: 30px; font-size: 16px; font-weight: 600; cursor: pointer; border: none; color: #000; background: #fff; transition: all 0.2s ease; outline: none; letter-spacing: 0.02em; }
-        .big-timer-btn:hover { background: #f4f4f5; }
-        .big-timer-btn:active { transform: scale(0.95); opacity: 0.9; }
-        .big-timer-btn.outline { background: transparent; border: 1.5px solid rgba(255,255,255,0.25); color: #fff; }
-        .big-timer-btn.outline:hover { background: rgba(255,255,255,0.1); border-color: rgba(255,255,255,0.4); }
-        .pomo-dur-btn { padding: 4px 12px; border-radius: 8px; font-size: 12px; font-weight: 600; color: #a1a1aa; cursor: pointer; transition: 0.2s; }
-        .pomo-dur-btn:hover { color: #fff; }
-        .pomo-dur-btn.active { background: rgba(255,255,255,0.15); color: #fff; box-shadow: 0 1px 4px rgba(0,0,0,0.2); }
-        input[type="number"]::-webkit-inner-spin-button, 
-        input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
-      </style>
-      <div class="fade-in" style="display: flex; flex-direction: column; width: 100%; height: 100vh; background: #111; position: relative; overflow: hidden;">
-        
-        <!-- Draggable Title Bar Area -->
-        <div style="-webkit-app-region: drag; position: absolute; top: 0; left: 0; right: 0; height: 60px; z-index: 90;"></div>
-
-        <!-- Tab Bar -->
-        <div class="lock-tab-container">
-          <div class="lock-tab ${activeTabMode === 'clock' ? 'active' : ''}" data-mode="clock">Clock</div>
-          <div class="lock-tab ${activeTabMode === 'pomodoro' ? 'active' : ''}" data-mode="pomodoro">Pomodoro</div>
-          <div class="lock-tab ${activeTabMode === 'countdown' ? 'active' : ''}" data-mode="countdown">Countdown</div>
-          <div class="lock-tab ${activeTabMode === 'stopwatch' ? 'active' : ''}" data-mode="stopwatch">Stopwatch</div>
+    <div class="dash-layout">
+      <nav class="nav-rail">
+        <div class="nav-brand">${icons.flame}</div>
+        <div class="nav-items">
+          ${navItem('lockin',    icons.flame,     'Lock In')}
+          ${navItem('countdown', icons.timer,     'Countdown')}
+          ${navItem('stopwatch', icons.stopwatch, 'Stopwatch')}
+          ${navItem('stats',     icons.chart,     'Stats')}
+          ${navItem('calendar',  icons.calendar,  'Calendar')}
         </div>
-
-        <!-- Timer panels fill the middle -->
-        <div style="flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 0; padding: 60px 40px 120px; box-sizing: border-box;">
-
-          <div class="mode-panel ${activeTabMode === 'clock' ? 'active' : ''}" id="panel-clock">
-            <div style="display:flex; align-items:baseline; justify-content:center; gap:12px; max-width: 100%; width: 100%;">
-              <div id="lock-clock-time" style="font-size: clamp(60px, 18vw, 220px); font-weight: 500; color: #f4f4f5; letter-spacing: -0.05em; line-height: 1; font-family: 'HelveticaLogo', sans-serif; flex-shrink: 1; min-width: 0;">--:--</div>
-              <div id="lock-clock-ampm" style="font-size: clamp(16px, 3vw, 36px); font-weight: 700; color: #a1a1aa; letter-spacing: -0.02em; font-family: 'HelveticaLogo', sans-serif; flex-shrink: 0;">--</div>
-            </div>
+        <div class="nav-footer">
+          <div class="nav-stat-chip" title="Focus Level">
+            <span class="nav-chip-label">LVL</span>
+            <span class="nav-chip-val">${level}</span>
           </div>
-
-          <div class="mode-panel ${activeTabMode === 'pomodoro' ? 'active' : ''}" id="panel-pomodoro">
-            <div style="font-size: 13px; font-weight: 800; color: #52525b; text-transform: uppercase; letter-spacing: 0.15em; margin-bottom: 12px;">Lock In</div>
-            <div id="pomo-time" class="timer-glow" style="font-size: clamp(80px, 20vw, 220px); font-weight: 500; color: #f4f4f5; letter-spacing: -0.05em; line-height: 1; font-family: 'HelveticaLogo', sans-serif;">25:00</div>
-            <div style="display: flex; gap: 16px; margin-top: 32px;">
-              <button class="big-timer-btn" id="btn-pomo-toggle">Lock In</button>
-              <button class="big-timer-btn outline" id="btn-pomo-reset">Reset</button>
-            </div>
-            <div class="pomo-duration-selector" style="display: flex; gap: 8px; margin-top: 24px; background: rgba(0,0,0,0.4); padding: 4px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.05);">
-              <div class="pomo-dur-btn ${pomoDuration === 15 ? 'active' : ''}" data-dur="15">15m</div>
-              <div class="pomo-dur-btn ${pomoDuration === 25 ? 'active' : ''}" data-dur="25">25m</div>
-              <div class="pomo-dur-btn ${pomoDuration === 50 ? 'active' : ''}" data-dur="50">50m</div>
-              <div class="pomo-dur-btn ${pomoDuration === 90 ? 'active' : ''}" data-dur="90">90m</div>
-            </div>
-          </div>
-
-          <div class="mode-panel ${activeTabMode === 'countdown' ? 'active' : ''}" id="panel-countdown">
-            <div style="display:flex; align-items:center; justify-content:center; gap:4px; font-variant-numeric: tabular-nums;">
-              <input type="number" id="cd-mins" value="60" style="font-size: clamp(60px, 15vw, 160px); font-weight: 500; color: #f4f4f5; letter-spacing: -0.05em; line-height: 1; font-family: 'HelveticaLogo', sans-serif; background: transparent; border: none; width: 2.2ch; text-align: right; outline: none; border-bottom: 4px solid transparent; transition: 0.2s; padding: 0;" onfocus="this.style.borderBottom='4px solid #fff'" onblur="this.style.borderBottom='4px solid transparent'">
-              <span style="font-size: clamp(60px, 15vw, 160px); font-weight: 500; color: #f4f4f5; letter-spacing: -0.05em; line-height: 1; font-family: 'HelveticaLogo', sans-serif; position: relative; top: -4px;">:</span>
-              <input type="number" id="cd-secs" value="00" style="font-size: clamp(60px, 15vw, 160px); font-weight: 500; color: #f4f4f5; letter-spacing: -0.05em; line-height: 1; font-family: 'HelveticaLogo', sans-serif; background: transparent; border: none; width: 2.2ch; text-align: left; outline: none; border-bottom: 4px solid transparent; transition: 0.2s; padding: 0;" onfocus="this.style.borderBottom='4px solid #fff'" onblur="this.style.borderBottom='4px solid transparent'">
-            </div>
-            <div style="display: flex; gap: 16px; margin-top: 16px;">
-              <button class="big-timer-btn" id="btn-cd-toggle">Start</button>
-              <button class="big-timer-btn outline" id="btn-cd-reset">Reset</button>
-            </div>
-          </div>
-
-          <div class="mode-panel ${activeTabMode === 'stopwatch' ? 'active' : ''}" id="panel-stopwatch">
-            <div id="sw-time" class="timer-glow" style="font-size: clamp(80px, 20vw, 220px); font-weight: 500; color: #f4f4f5; letter-spacing: -0.05em; line-height: 1; font-family: 'HelveticaLogo', sans-serif;">00:00</div>
-            <div style="display: flex; gap: 16px; margin-top: 32px;">
-              <button class="big-timer-btn" id="btn-sw-toggle">Start</button>
-              <button class="big-timer-btn outline" id="btn-sw-reset">Reset</button>
-            </div>
-          </div>
-        </div><!-- end middle flex -->
-
-        <!-- Stats bar floating at bottom -->
-        <div style="position: absolute; bottom: 32px; left: 50%; transform: translateX(-50%); display: flex; align-items: center; justify-content: center; gap: clamp(16px, 4vw, 40px); height: 80px; background: rgba(20,20,22,0.6); backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px); border: 1px solid rgba(255,255,255,0.08); box-shadow: 0 12px 40px rgba(0,0,0,0.5); border-radius: 40px; padding: 0 32px; z-index: 50; font-family: 'HelveticaLogo', sans-serif; white-space: nowrap;">
-          
-          <div style="display:flex; flex-direction:column; align-items:center; gap:4px;">
-            <span style="font-size:12px; font-weight:600; color:#a1a1aa; text-transform:uppercase; letter-spacing:0.1em;">Rank</span>
-            <span style="font-size:24px; font-weight:600; color:#fff;">Level ${level}</span>
-          </div>
-          
-          <div style="width:1px; height:32px; background:linear-gradient(to bottom, rgba(255,255,255,0), rgba(255,255,255,0.1), rgba(255,255,255,0));"></div>
-          
-          <div style="display:flex; flex-direction:column; align-items:center; gap:4px;">
-            <span style="font-size:12px; font-weight:600; color:#a1a1aa; text-transform:uppercase; letter-spacing:0.1em;">Today's Focus</span>
-            <span id="expanded-timer" class="timer-glow" style="font-size:24px; font-weight:600; color:#fff;">
-              ${formatTime(todaySecs)}
-            </span>
-          </div>
-
-          <div style="width:1px; height:32px; background:linear-gradient(to bottom, rgba(255,255,255,0), rgba(255,255,255,0.1), rgba(255,255,255,0));"></div>
-          
-          <div style="display:flex; flex-direction:column; align-items:center; gap:4px;">
-            <span style="font-size:12px; font-weight:600; color:#a1a1aa; text-transform:uppercase; letter-spacing:0.1em;">Streak</span>
-            <span class="streak-glow" style="display:flex; align-items:center; gap:6px; font-size:24px; font-weight:600; color:#ff9500;">
-              <svg width="18" height="18" viewBox="0 0 448 512" fill="currentColor" stroke="none" style="position:relative; top:-1px;"><path d="M159.3 5.4c7.8-7.3 19.9-7.2 27.7 .1c27.6 25.9 53.5 53.8 77.7 84c11-14.4 23.5-30.1 37-42.9c7.9-7.4 20.1-7.4 28 .1c34.6 33 63.9 76.6 84.5 118c20.3 40.8 33.8 82.5 33.8 111.9C448 404.2 348.2 512 224 512C98.4 512 0 404.1 0 276.5c0-38.4 17.8-85.3 45.4-131.7C73.3 97.7 112.7 48.6 159.3 5.4zM225.7 416c25.3 0 47.7-7 68.8-21c42.1-29.4 53.4-88.2 28.1-134.4c-4.5-9-16-9.6-22.5-2l-25.2 29.3c-6.6 7.6-18.5 7.4-24.7-.5c-16.5-21-46-58.5-62.8-79.8c-6.3-8-18.3-8.1-24.7-.1c-33.8 42.5-50.8 69.3-50.8 99.4C112 375.4 162.6 416 225.7 416z"></path></svg>
-              ${streak} Days
-            </span>
+          <div class="nav-stat-chip" title="${streak} day streak" style="color:${streakColor(streak)};text-shadow:${streakGlow(streak)};">
+            ${icons.flame}
+            <span class="nav-chip-val">${streak}d</span>
           </div>
         </div>
-      </div>
-    `;
-    
+      </nav>
+
+      <main class="dash-main">
+        <div class="panel ${activeNav==='lockin'    ? 'active':''}" id="panel-lockin">${renderPomodoro()}</div>
+        <div class="panel ${activeNav==='countdown' ? 'active':''}" id="panel-countdown">${renderCountdown()}</div>
+        <div class="panel ${activeNav==='stopwatch' ? 'active':''}" id="panel-stopwatch">${renderStopwatch()}</div>
+        <div class="panel ${activeNav==='stats'     ? 'active':''}" id="panel-stats">${renderStats()}</div>
+        <div class="panel ${activeNav==='calendar'  ? 'active':''}" id="panel-calendar">${renderCalendar()}</div>
+      </main>
+    </div>
+  `;
   bindEvents();
 }
 
+function navItem(id: string, icon: string, label: string) {
+  return `<button class="nav-item ${activeNav===id?'active':''}" data-nav="${id}" title="${label}">
+    ${icon}<span class="nav-label">${label}</span>
+  </button>`;
+}
 
-// Tab switching
-function bindEvents() {
-  document.querySelectorAll('.lock-tab').forEach(tab => {
-    tab.addEventListener('click', () => {
-      document.querySelectorAll('.lock-tab').forEach(t => t.classList.remove('active'));
-      tab.classList.add('active');
-      document.querySelectorAll('.mode-panel').forEach(p => p.classList.remove('active'));
-      
-      const mode = tab.getAttribute('data-mode') || 'clock';
-      document.getElementById('panel-' + mode)?.classList.add('active');
-      
-      if (ipc) ipc.send('set-setting', 'dashboard-mode', mode);
-    });
-  });
+// ─── Panel Renderers ─────────────────────────────────────────────────────────
+function renderPomodoro() {
+  const durBtns = [15,25,50,90].map(d =>
+    `<button class="dur-btn${pomoDuration===d?' active':''}" data-dur="${d}">${d}m</button>`
+  ).join('');
+  return `<div class="panel-inner">
+    <div class="panel-hdr"><div class="panel-label">LOCK IN</div><div class="panel-sub">Pomodoro Focus Timer</div></div>
+    <div class="big-time" id="pomo-time">${fmt(pomoLeft)}</div>
+    <div class="dur-row">${durBtns}</div>
+    <div class="ctrl-row">
+      <button class="ctrl-btn primary" id="btn-pomo-toggle">${pomoActive?icons.pause:icons.play}<span>${pomoActive?'Pause':pomoLeft<pomoDuration*60?'Resume':'Lock In'}</span></button>
+      <button class="ctrl-btn secondary" id="btn-pomo-reset">${icons.reset}<span>Reset</span></button>
+    </div>
+    <div class="session-pills">
+      <div class="info-pill">Today &nbsp;<b>${fmtHMS(todaySecs)}</b></div>
+    </div>
+  </div>`;
+}
 
-  document.getElementById('btn-pomo-toggle')?.addEventListener('click', () => {
-    (window as any).pomoActive = !(window as any).pomoActive;
-    document.getElementById('btn-pomo-toggle')!.textContent = (window as any).pomoActive ? "Pause" : "Lock In";
-  });
-  document.getElementById('btn-pomo-reset')?.addEventListener('click', () => {
-    (window as any).pomoActive = false;
-    (window as any).pomoLeft = ((window as any).pomoDuration || 25) * 60;
-    document.getElementById('btn-pomo-toggle')!.textContent = "Lock In";
-    document.getElementById('pomo-time')!.textContent = fmt((window as any).pomoLeft);
-  });
-
-  document.querySelectorAll('.pomo-dur-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      document.querySelectorAll('.pomo-dur-btn').forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-      const dur = parseInt(btn.getAttribute('data-dur') || '25');
-      (window as any).pomoDuration = dur;
-      if (!(window as any).pomoActive) {
-        (window as any).pomoLeft = dur * 60;
-        document.getElementById('pomo-time')!.textContent = fmt(dur * 60);
-      }
-      if (ipc) ipc.send('set-setting', 'pomodoro-duration', dur);
-    });
-  });
-
-  document.getElementById('btn-cd-toggle')?.addEventListener('click', () => {
-    if (!(window as any).cdActive) {
-      const minInp = document.getElementById('cd-mins') as HTMLInputElement;
-      const secInp = document.getElementById('cd-secs') as HTMLInputElement;
-      if (minInp && secInp) {
-        (window as any).cdLeft = (parseInt(minInp.value) || 0) * 60 + (parseInt(secInp.value) || 0);
-      }
+function renderCountdown() {
+  const cdM = String(Math.floor(cdLeft/60)).padStart(2,'0');
+  const cdS = String(cdLeft%60).padStart(2,'0');
+  return `<div class="panel-inner">
+    <div class="panel-hdr"><div class="panel-label">COUNTDOWN</div><div class="panel-sub">Custom Timer</div></div>
+    ${cdActive
+      ? `<div class="big-time" id="cd-display">${fmt(cdLeft)}</div>`
+      : `<div class="cd-input-row">
+          <input type="number" id="cd-mins" class="time-input" value="${cdM}" min="0" max="99" placeholder="00">
+          <span class="time-colon">:</span>
+          <input type="number" id="cd-secs" class="time-input" value="${cdS}" min="0" max="59" placeholder="00">
+        </div>`
     }
-    (window as any).cdActive = !(window as any).cdActive;
-    document.getElementById('btn-cd-toggle')!.textContent = (window as any).cdActive ? "Pause" : "Resume";
+    <div class="ctrl-row">
+      <button class="ctrl-btn primary" id="btn-cd-toggle">${cdActive?icons.pause:icons.play}<span>${cdActive?'Pause':cdLeft<cdCustomLeft?'Resume':'Start'}</span></button>
+      <button class="ctrl-btn secondary" id="btn-cd-reset">${icons.reset}<span>Reset</span></button>
+    </div>
+  </div>`;
+}
+
+function renderStopwatch() {
+  const lapsHtml = laps.slice().reverse().map(l =>
+    `<div class="lap-row"><span class="lap-num">Lap ${l.num}</span><span class="lap-split">${fmt(l.split)}</span><span class="lap-total">${fmtHMS(l.elapsed)}</span></div>`
+  ).join('');
+  return `<div class="panel-inner">
+    <div class="panel-hdr"><div class="panel-label">STOPWATCH</div><div class="panel-sub">Elapsed Time</div></div>
+    <div class="big-time mono" id="sw-time">${fmtHMS(swSecs)}</div>
+    <div class="ctrl-row">
+      <button class="ctrl-btn primary" id="btn-sw-toggle">${swActive?icons.pause:icons.play}<span>${swActive?'Pause':swSecs>0?'Resume':'Start'}</span></button>
+      ${swActive?`<button class="ctrl-btn accent" id="btn-sw-lap">${icons.lap}<span>Lap</span></button>`:''}
+      <button class="ctrl-btn secondary" id="btn-sw-reset">${icons.reset}<span>Reset</span></button>
+    </div>
+    ${laps.length>0?`<div class="laps-hdr"><span>Lap</span><span>Split</span><span>Total</span></div><div class="laps-list">${lapsHtml}</div>`:''}
+  </div>`;
+}
+
+function renderStats() {
+  const today = new Date();
+  const weekData = Array.from({length:7}, (_,i) => {
+    const d = new Date(today); d.setDate(today.getDate()-(6-i));
+    const k = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+    return { secs: stats[k]?.totalSecs||0, day: ['Su','Mo','Tu','We','Th','Fr','Sa'][d.getDay()], isToday: i===6 };
   });
-  document.getElementById('btn-cd-reset')?.addEventListener('click', () => {
-    (window as any).cdActive = false;
-    (window as any).cdLeft = 60 * 60;
-    document.getElementById('btn-cd-toggle')!.textContent = "Start";
-    const minInp = document.getElementById('cd-mins') as HTMLInputElement;
-    const secInp = document.getElementById('cd-secs') as HTMLInputElement;
-    if (minInp && secInp) { minInp.value = '60'; secInp.value = '00'; }
+  const maxS = Math.max(...weekData.map(w=>w.secs), 1);
+  const bars = weekData.map(w => {
+    const pct = Math.max(w.secs/maxS*100, w.secs>0?4:0);
+    return `<div class="bar-col">
+      <div class="bar-track" title="${Math.round(w.secs/60)}m">
+        <div class="bar-fill${w.isToday?' today':''}" style="height:${pct}%"></div>
+        <div class="bar-tip">${Math.round(w.secs/60)}m</div>
+      </div>
+      <div class="bar-lbl">${w.day}</div>
+    </div>`;
+  }).join('');
+
+  return `<div class="panel-inner">
+    <div class="panel-hdr" style="flex-direction:row;align-items:center;justify-content:space-between;">
+      <div><div class="panel-label">STATS</div><div class="panel-sub">Activity Overview</div></div>
+      <button class="ctrl-btn secondary" id="btn-share" style="width:auto;padding:8px 14px;">${icons.share}<span>Share</span></button>
+    </div>
+    <div class="stats-grid">
+      <div class="stat-card"><div class="stat-lbl">Today</div><div class="stat-val">${fmtHMS(todaySecs)}</div></div>
+      <div class="stat-card"><div class="stat-lbl">Streak</div><div class="stat-val" style="color:${streakColor(streak)};text-shadow:${streakGlow(streak)};">${streak} days</div></div>
+      <div class="stat-card"><div class="stat-lbl">Level</div><div class="stat-val">${level}</div></div>
+      <div class="stat-card"><div class="stat-lbl">All Time</div><div class="stat-val">${Math.floor(totalAllTimeSecs/3600)}h ${Math.floor((totalAllTimeSecs%3600)/60)}m</div></div>
+    </div>
+    <div class="graph-section">
+      <div class="graph-lbl">Last 7 Days</div>
+      <div class="bar-chart">${bars}</div>
+    </div>
+    <div class="share-overlay hidden" id="share-card">
+      <div class="share-inner">
+        <div class="share-title">Focus Report</div>
+        <div class="share-date">${new Date().toLocaleDateString('en-US',{weekday:'long',year:'numeric',month:'long',day:'numeric'})}</div>
+        <div class="share-row">
+          <div class="share-stat"><span>${fmtHMS(todaySecs)}</span><small>Today</small></div>
+          <div class="share-stat"><span style="color:${streakColor(streak)}">${streak}d</span><small>Streak</small></div>
+          <div class="share-stat"><span>Lvl ${level}</span><small>Rank</small></div>
+        </div>
+      </div>
+      <button class="ctrl-btn secondary" id="btn-share-close" style="width:auto;margin-top:12px;">Close</button>
+    </div>
+  </div>`;
+}
+
+function renderCalendar() {
+  const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  const DAYS = ['Su','Mo','Tu','We','Th','Fr','Sa'];
+  const today = new Date();
+  const firstDay = new Date(calYear, calMonth, 1).getDay();
+  const daysInMonth = new Date(calYear, calMonth+1, 0).getDate();
+  const eventsByDate: Record<string, any[]> = {};
+  for (const ev of calEvents) {
+    if (!eventsByDate[ev.date]) eventsByDate[ev.date] = [];
+    eventsByDate[ev.date].push(ev);
+  }
+  const dayHdrs = DAYS.map(d=>`<div class="cal-day-hdr">${d}</div>`).join('');
+  let cells = Array(firstDay).fill('<div class="cal-cell empty"></div>').join('');
+  for (let d=1; d<=daysInMonth; d++) {
+    const ds = `${calYear}-${String(calMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const isToday = calYear===today.getFullYear() && calMonth===today.getMonth() && d===today.getDate();
+    const evs = eventsByDate[ds]||[];
+    const dots = evs.slice(0,3).map(()=>`<span class="cal-dot"></span>`).join('');
+    cells += `<div class="cal-cell${isToday?' today':''}${evs.length?' has-ev':''}" data-date="${ds}">
+      <span class="cal-num">${d}</span><div class="cal-dots">${dots}</div>
+    </div>`;
+  }
+  const selDate = (window as any)._calSelectedDate || `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
+  const selEvs = eventsByDate[selDate]||[];
+  const selEvHtml = selEvs.length
+    ? selEvs.map(ev=>`<div class="cal-ev-item"><span class="cal-ev-dot"></span><span class="cal-ev-title">${ev.title}</span><button class="ev-del" data-id="${ev.id}">${icons.trash}</button></div>`).join('')
+    : `<div class="cal-empty-msg">No events</div>`;
+
+  return `<div class="cal-layout">
+    <div class="cal-left">
+      <div class="cal-hdr">
+        <button class="icon-btn" id="cal-prev">${icons.chevLeft}</button>
+        <span class="cal-month-title">${MONTHS[calMonth]} ${calYear}</span>
+        <button class="icon-btn" id="cal-next">${icons.chevRight}</button>
+      </div>
+      <div class="cal-grid">${dayHdrs}${cells}</div>
+    </div>
+    <div class="cal-right">
+      <div class="cal-events-sec">
+        <div class="cal-sec-title">${selDate}</div>
+        <div class="cal-evs-list">${selEvHtml}</div>
+      </div>
+      <div class="cal-add-sec">
+        <div class="cal-sec-title">Add Event</div>
+        <input id="cal-new-title" class="cal-inp" type="text" placeholder="Event title..." maxlength="60">
+        <input id="cal-new-date"  class="cal-inp" type="date" value="${selDate}" style="color-scheme:dark;">
+        <button class="ctrl-btn primary" id="btn-cal-add" style="width:100%;justify-content:center;">${icons.plus}<span>Add Event</span></button>
+      </div>
+    </div>
+  </div>`;
+}
+
+// ─── Bind Events ─────────────────────────────────────────────────────────────
+function bindEvents() {
+  // Nav switching
+  document.querySelectorAll('.nav-item').forEach(btn => {
+    btn.addEventListener('click', () => {
+      activeNav = btn.getAttribute('data-nav') || 'lockin';
+      if (ipc) ipc.send('set-setting', 'dashboard-nav', activeNav);
+      document.querySelectorAll('.nav-item').forEach(b => b.classList.toggle('active', b.getAttribute('data-nav')===activeNav));
+      document.querySelectorAll('.panel').forEach(p => p.classList.toggle('active', p.id===`panel-${activeNav}`));
+    });
   });
 
-  document.getElementById('btn-sw-toggle')?.addEventListener('click', () => {
-    (window as any).swActive = !(window as any).swActive;
-    document.getElementById('btn-sw-toggle')!.textContent = (window as any).swActive ? "Pause" : "Resume";
+  // Pomodoro
+  document.getElementById('btn-pomo-toggle')?.addEventListener('click', () => { pomoActive=!pomoActive; if(pomoActive&&pomoLeft===0)pomoLeft=pomoDuration*60; refreshPomodoro(); });
+  document.getElementById('btn-pomo-reset')?.addEventListener('click', () => { pomoActive=false; pomoLeft=pomoDuration*60; refreshPomodoro(); });
+  document.querySelectorAll('.dur-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const dur = parseInt(btn.getAttribute('data-dur')||'25');
+      pomoDuration=dur; if(!pomoActive)pomoLeft=dur*60;
+      if(ipc) ipc.send('set-setting','pomodoro-duration',dur);
+      document.querySelectorAll('.dur-btn').forEach(b=>b.classList.toggle('active',b.getAttribute('data-dur')===String(dur)));
+      const el=document.getElementById('pomo-time'); if(el)el.textContent=fmt(pomoLeft);
+    });
+  });
+
+  // Countdown
+  bindCdEvents();
+
+  // Stopwatch
+  bindSwEvents();
+
+  // Stats
+  document.getElementById('btn-share')?.addEventListener('click', () => document.getElementById('share-card')?.classList.remove('hidden'));
+  document.getElementById('btn-share-close')?.addEventListener('click', () => document.getElementById('share-card')?.classList.add('hidden'));
+
+  // Calendar
+  bindCalendarEvents();
+}
+
+function bindCdEvents() {
+  document.getElementById('btn-cd-toggle')?.addEventListener('click', () => {
+    if (!cdActive) {
+      const m = parseInt((document.getElementById('cd-mins') as HTMLInputElement)?.value)||0;
+      const s = parseInt((document.getElementById('cd-secs') as HTMLInputElement)?.value)||0;
+      cdLeft=m*60+s; cdCustomLeft=cdLeft;
+      if(ipc) ipc.send('set-setting','countdown-last',cdLeft);
+    }
+    cdActive=!cdActive; refreshCountdown();
+  });
+  document.getElementById('btn-cd-reset')?.addEventListener('click', () => { cdActive=false; cdLeft=cdCustomLeft; refreshCountdown(); });
+}
+
+function bindSwEvents() {
+  document.getElementById('btn-sw-toggle')?.addEventListener('click', () => { swActive=!swActive; refreshStopwatch(); });
+  document.getElementById('btn-sw-lap')?.addEventListener('click', () => {
+    const split=swSecs-lastLapElapsed; lastLapElapsed=swSecs;
+    const lap={num:laps.length+1,split,elapsed:swSecs}; laps.push(lap);
+    if(ipc) ipc.send('add-lap',{lap_num:lap.num,split_secs:split,elapsed_secs:swSecs});
+    refreshStopwatch();
   });
   document.getElementById('btn-sw-reset')?.addEventListener('click', () => {
-    (window as any).swActive = false;
-    (window as any).swSecs = 0;
-    document.getElementById('btn-sw-toggle')!.textContent = "Start";
+    swActive=false; swSecs=0; laps=[]; lastLapElapsed=0;
+    if(ipc) ipc.send('clear-laps',todayKey()); refreshStopwatch();
   });
 }
 
-// Timers state
-(window as any).pomoLeft = (window as any).pomoLeft ?? 25 * 60;
-(window as any).pomoActive = (window as any).pomoActive ?? false;
-
-(window as any).cdLeft = (window as any).cdLeft ?? 60 * 60;
-(window as any).cdActive = (window as any).cdActive ?? false;
-
-(window as any).swSecs = (window as any).swSecs ?? 0;
-(window as any).swActive = (window as any).swActive ?? false;
-
-function fmt(s: number) {
-  const m = Math.floor(s / 60);
-  const sc = s % 60;
-  return `${m.toString().padStart(2, '0')}:${sc.toString().padStart(2, '0')}`;
-}
-
-// Tick loop
-if (!(window as any).clockTickInterval) {
-  (window as any).clockTickInterval = setInterval(() => {
-    // Clock
-    const clockEl = document.getElementById('lock-clock-time');
-    const ampmEl = document.getElementById('lock-clock-ampm');
-    if (clockEl && ampmEl) {
-      const now = new Date();
-      let h = now.getHours();
-      const ampm = h >= 12 ? 'PM' : 'AM';
-      h = h % 12;
-      h = h ? h : 12;
-      const m = now.getMinutes().toString().padStart(2, '0');
-      clockEl.textContent = `${h}:${m}`;
-      ampmEl.textContent = ampm;
-    }
-
-    // Pomodoro
-    if ((window as any).pomoActive && (window as any).pomoLeft > 0) {
-      (window as any).pomoLeft--;
-      if (ipc && (window as any).pomoLeft % 10 === 0) ipc.send('add-stats', { count: 0, totalSecs: 10 }); // Sync to DB every 10s
-      if (ipc && (window as any).pomoLeft === 0) ipc.send('add-stats', { count: 1, totalSecs: 0 }); // Session complete
-    }
-    const pEl = document.getElementById('pomo-time');
-    if (pEl) pEl.textContent = fmt((window as any).pomoLeft);
-
-    // Countdown
-    if ((window as any).cdActive && (window as any).cdLeft > 0) {
-      (window as any).cdLeft--;
-      if (ipc && (window as any).cdLeft % 10 === 0) ipc.send('add-stats', { count: 0, totalSecs: 10 });
-      const minInp = document.getElementById('cd-mins') as HTMLInputElement;
-      const secInp = document.getElementById('cd-secs') as HTMLInputElement;
-      if (minInp && secInp) {
-        minInp.value = Math.floor((window as any).cdLeft / 60).toString().padStart(2, '0');
-        secInp.value = ((window as any).cdLeft % 60).toString().padStart(2, '0');
-      }
-    }
-
-    // Stopwatch
-    if ((window as any).swActive) {
-      (window as any).swSecs++;
-      if (ipc && (window as any).swSecs % 10 === 0) ipc.send('add-stats', { count: 0, totalSecs: 10 });
-    }
-    const swEl = document.getElementById('sw-time');
-    if (swEl) swEl.textContent = fmt((window as any).swSecs);
-
-    // Broadcast state to notch
-    if (ipc) {
-      let activeType = 'none';
-      let activeTime = 0;
-      let activeState = false;
-      
-      if ((window as any).pomoActive) {
-        activeType = 'pomodoro'; activeTime = (window as any).pomoLeft; activeState = true;
-      } else if ((window as any).cdActive) {
-        activeType = 'countdown'; activeTime = (window as any).cdLeft; activeState = true;
-      } else if ((window as any).swActive) {
-        activeType = 'stopwatch'; activeTime = (window as any).swSecs; activeState = true;
-      } else if ((window as any).pomoLeft < ((window as any).pomoDuration || 25) * 60) {
-        activeType = 'pomodoro'; activeTime = (window as any).pomoLeft; activeState = false;
-      } else if ((window as any).cdLeft < 60 * 60) {
-        activeType = 'countdown'; activeTime = (window as any).cdLeft; activeState = false;
-      } else if ((window as any).swSecs > 0) {
-        activeType = 'stopwatch'; activeTime = (window as any).swSecs; activeState = false;
-      }
-      
-      ipc.send('sync-timer', { type: activeType, time: activeTime, active: activeState });
-    }
-
-  }, 1000);
-
-  // Listen for toggle commands from notch
-  if (ipc) {
-    ipc.on('toggle-dashboard-timer', () => {
-      // Toggle whatever timer is currently running or paused
-      if ((window as any).pomoActive || (window as any).pomoLeft < ((window as any).pomoDuration || 25) * 60) {
-        document.getElementById('btn-pomo-toggle')?.click();
-      } else if ((window as any).cdActive || (window as any).cdLeft < 60 * 60) {
-        document.getElementById('btn-cd-toggle')?.click();
-      } else if ((window as any).swActive || (window as any).swSecs > 0) {
-        document.getElementById('btn-sw-toggle')?.click();
-      } else {
-        // Default to starting Pomodoro
-        document.getElementById('btn-pomo-toggle')?.click();
-      }
+function bindCalendarEvents() {
+  document.getElementById('cal-prev')?.addEventListener('click', () => { calMonth--; if(calMonth<0){calMonth=11;calYear--;} refreshCalendar(); });
+  document.getElementById('cal-next')?.addEventListener('click', () => { calMonth++; if(calMonth>11){calMonth=0;calYear++;} refreshCalendar(); });
+  document.querySelectorAll('.cal-cell:not(.empty)').forEach(cell => {
+    cell.addEventListener('click', () => { const d=cell.getAttribute('data-date'); if(d){(window as any)._calSelectedDate=d; refreshCalendar();} });
+  });
+  document.getElementById('btn-cal-add')?.addEventListener('click', () => {
+    const title=(document.getElementById('cal-new-title') as HTMLInputElement)?.value?.trim();
+    const date=(document.getElementById('cal-new-date') as HTMLInputElement)?.value;
+    if(!title||!date) return;
+    const ev={id:`ev-${Date.now()}`,title,date}; calEvents.push(ev);
+    if(ipc) ipc.send('add-event',ev);
+    (document.getElementById('cal-new-title') as HTMLInputElement).value='';
+    refreshCalendar();
+  });
+  document.querySelectorAll('.ev-del').forEach(btn => {
+    btn.addEventListener('click', e => {
+      e.stopPropagation();
+      const id=btn.getAttribute('data-id'); calEvents=calEvents.filter(ev=>ev.id!==id);
+      if(ipc) ipc.send('delete-event',id); refreshCalendar();
     });
-  }
+  });
 }
 
-// Controls (moved to bindEvents)
+// ─── Partial Refreshes ────────────────────────────────────────────────────────
+function refreshPomodoro() {
+  const el=document.getElementById('pomo-time'); if(el)el.textContent=fmt(pomoLeft);
+  const btn=document.getElementById('btn-pomo-toggle');
+  if(btn)btn.innerHTML=`${pomoActive?icons.pause:icons.play}<span>${pomoActive?'Pause':pomoLeft<pomoDuration*60?'Resume':'Lock In'}</span>`;
+}
+function refreshCountdown() {
+  const p=document.getElementById('panel-countdown'); if(p){p.innerHTML=renderCountdown();bindCdEvents();}
+}
+function refreshStopwatch() {
+  const p=document.getElementById('panel-stopwatch'); if(p){p.innerHTML=renderStopwatch();bindSwEvents();}
+}
+function refreshCalendar() {
+  const p=document.getElementById('panel-calendar'); if(p){p.innerHTML=renderCalendar();bindCalendarEvents();}
+}
 
-
-async function updateHeatmapLive() {
-  if (!ipc) return;
-  try {
-    const stats = await ipc.invoke('get-stats');
-    const cells = document.querySelectorAll('.heatmap-cell');
-    if (!cells.length) return;
-    
-    const today = new Date();
-    const key = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
-    const dayStats = stats[key];
-    
-    if (dayStats && dayStats.totalSecs) {
-      let level = 0;
-      const mins = dayStats.totalSecs / 60;
-      if (mins > 60) level = 4;
-      else if (mins > 30) level = 3;
-      else if (mins > 10) level = 2;
-      else level = 1;
-      
-      const lastCell = cells[cells.length - 1]; // The last cell is today
-      lastCell.setAttribute('data-level', String(level));
-      lastCell.setAttribute('title', `${key}: ${Math.round(mins)} mins`);
-      
-      const expandedTimer = document.getElementById('expanded-timer');
-      if (expandedTimer) {
-        expandedTimer.textContent = formatTime(dayStats.totalSecs);
-      }
+// ─── Tick Loop ────────────────────────────────────────────────────────────────
+function startTick() {
+  if(tickInterval) clearInterval(tickInterval);
+  tickInterval = setInterval(() => {
+    if(pomoActive && pomoLeft>0) {
+      pomoLeft--;
+      if(ipc && pomoLeft%10===0) ipc.send('add-stats',{count:0,totalSecs:10});
+      if(ipc && pomoLeft===0)    ipc.send('add-stats',{count:1,totalSecs:0});
+      todaySecs++;
     }
-  } catch(e) {}
+    if(activeNav==='lockin') { const el=document.getElementById('pomo-time'); if(el)el.textContent=fmt(pomoLeft); }
+
+    if(cdActive && cdLeft>0) {
+      cdLeft--;
+      if(ipc && cdLeft%10===0) ipc.send('add-stats',{count:0,totalSecs:10});
+    }
+    if(activeNav==='countdown') { const el=document.getElementById('cd-display'); if(el)el.textContent=fmt(cdLeft); }
+
+    if(swActive) {
+      swSecs++;
+      if(ipc && swSecs%10===0) ipc.send('add-stats',{count:0,totalSecs:10});
+    }
+    if(activeNav==='stopwatch') { const el=document.getElementById('sw-time'); if(el)el.textContent=fmtHMS(swSecs); }
+
+    // Sync to notch
+    if(ipc) {
+      let type='none',time=0,active=false;
+      if(pomoActive)              {type='pomodoro'; time=pomoLeft; active=true;}
+      else if(cdActive)           {type='countdown';time=cdLeft;   active=true;}
+      else if(swActive)           {type='stopwatch';time=swSecs;   active=true;}
+      else if(pomoLeft<pomoDuration*60) {type='pomodoro'; time=pomoLeft;  active=false;}
+      else if(cdLeft<cdCustomLeft)      {type='countdown';time=cdLeft;    active=false;}
+      else if(swSecs>0)                 {type='stopwatch';time=swSecs;    active=false;}
+      ipc.send('sync-timer',{type,time,active});
+    }
+
+    (window as any).pomoLeft=pomoLeft; (window as any).pomoActive=pomoActive;
+    (window as any).cdLeft=cdLeft;     (window as any).cdActive=cdActive;
+    (window as any).swSecs=swSecs;     (window as any).swActive=swActive;
+  }, 1000);
 }
 
-render();
-setInterval(updateHeatmapLive, 2000);
+// ─── IPC from notch ──────────────────────────────────────────────────────────
+function bindIPC() {
+  if(!ipc) return;
+  ipc.on('toggle-dashboard-timer', () => {
+    if(pomoActive||pomoLeft<pomoDuration*60)      { pomoActive=!pomoActive; refreshPomodoro(); }
+    else if(cdActive||cdLeft<cdCustomLeft)         { cdActive=!cdActive; refreshCountdown(); }
+    else if(swActive||swSecs>0)                    { swActive=!swActive; refreshStopwatch(); }
+    else { pomoActive=true; pomoLeft=pomoDuration*60; refreshPomodoro(); }
+  });
+}
 
+boot();

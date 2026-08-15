@@ -246,7 +246,13 @@ ipcMain.on('sync-timer', (event, state) => {
 
 ipcMain.on('toggle-dashboard-timer', () => {
   if (dashWindow && !dashWindow.isDestroyed()) {
+    // Dashboard is open — let it handle the toggle and sync back
     dashWindow.webContents.send('toggle-dashboard-timer');
+  } else {
+    // Dashboard is closed — tell the notch to run its own local timer
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.webContents.send('start-local-timer');
+    }
   }
 });
 
@@ -460,6 +466,19 @@ ipcMain.on('add-stats', (_e, { count, totalSecs }) => {
 
 ipcMain.handle('get-stats', () => {
   return db.getStats();
+});
+
+// ─── Lap IPC ──────────────────────────────────────────────────────────────────
+ipcMain.on('add-lap', (_e, lap) => {
+  try { db.addLap(lap); } catch (err) { console.error('DB Add Lap Error:', err); }
+});
+
+ipcMain.handle('get-laps', (_e, date) => {
+  try { return db.getLaps(date); } catch { return []; }
+});
+
+ipcMain.on('clear-laps', (_e, date) => {
+  try { db.clearLaps(date); } catch (err) { console.error('DB Clear Laps Error:', err); }
 });
 
 // Launch Windows Snipping Tool via URI
