@@ -3,6 +3,7 @@ import './style.css';
 import { countMark } from './count/mark';
 import { mountCount, openCountSpace } from './count/panel';
 import { mountExtraTools } from './tools/extra';
+import { mountMoreTools } from './tools/more';
 import plusSvgRaw from './assets/icons/plus.svg?raw';
 import expandSvgRaw from './assets/icons/expand.svg?raw';
 import playSvgRaw from './assets/icons/play.svg?raw';
@@ -24,6 +25,18 @@ import volHighSvgRaw from './assets/icons/vol-high.svg?raw';
 const timerSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="13.5" r="7.5"/><path d="M12 9.5v4l2.5 1.5M9.5 2.75h5"/></svg>`;
 
 const lyricsSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h11M4 11h8M4 16h5"/><circle cx="17" cy="16.5" r="2.5"/><path d="M19.5 16.5V7.5l2-1"/></svg>`;
+
+/** iOS-style battery: outline, terminal, inset fill and a bolt while charging. */
+function batterySvg(pct: number, charging: boolean): string {
+  const fill = charging ? '#34c759' : pct <= 20 ? '#ff453a' : '#f2f2f5';
+  const w = Math.max(1.5, (pct / 100) * 19);
+  return `<svg width="27" height="13" viewBox="0 0 27 13" aria-hidden="true">
+    <rect x="0.6" y="0.6" width="23" height="11.8" rx="3.4" fill="none" stroke="rgba(255,255,255,0.42)" stroke-width="1.2"/>
+    <path d="M25 4.4v4.2a2.1 2.1 0 0 0 0-4.2Z" fill="rgba(255,255,255,0.42)"/>
+    <rect x="2.6" y="2.6" width="${w}" height="7.8" rx="1.9" fill="${fill}"/>
+    ${charging ? '<path d="M13.2 2.1 8.6 7.3h3.1l-1 3.6 4.6-5.2h-3.1l1-3.6Z" fill="#fff" stroke="#000" stroke-width="1.1" stroke-linejoin="round" paint-order="stroke"/>' : ''}
+  </svg>`;
+}
 
 const ico = (d: string) => `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">${d}</svg>`;
 const gridSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linejoin="round"><rect x="4" y="4" width="6.5" height="6.5" rx="1.8"/><rect x="13.5" y="4" width="6.5" height="6.5" rx="1.8"/><rect x="4" y="13.5" width="6.5" height="6.5" rx="1.8"/><rect x="13.5" y="13.5" width="6.5" height="6.5" rx="1.8"/></svg>`;
@@ -248,10 +261,8 @@ document.getElementById('app')!.innerHTML = `
       <h2 id="exp-title">Overview</h2>
       <div class="exp-actions">
         <div id="battery-badge" class="battery" style="display:none">
-          <div class="battery-shell"><div id="bat-fill" class="battery-fill"></div>
-            <svg id="bat-charge-icon" class="battery-bolt" style="display:none" viewBox="0 0 24 24" width="9" height="9"><path d="M13 2 4 14h7l-1 8 9-12h-7l1-8Z" fill="currentColor"/></svg>
-          </div>
           <span id="bat-pct">--</span>
+          <span id="bat-svg"></span>
         </div>
         <button class="ibtn ibtn-sm" id="btn-collapse" title="Close">${chevronUpSvg}</button>
       </div>
@@ -349,6 +360,12 @@ document.getElementById('app')!.innerHTML = `
       <section class="space p-note" data-space="note"></section>
       <section class="space p-clipboard" data-space="clipboard"></section>
       <section class="space p-hardware" data-space="hardware"></section>
+      <section class="space p-weather" data-space="weather"></section>
+      <section class="space p-clocks" data-space="clocks"></section>
+      <section class="space p-calc" data-space="calc"></section>
+      <section class="space p-shelf" data-space="shelf"></section>
+      <section class="space p-colour" data-space="colour"></section>
+      <section class="space p-launcher" data-space="launcher"></section>
     </div>
 
     <nav class="dock" id="space-dots">
@@ -361,6 +378,12 @@ document.getElementById('app')!.innerHTML = `
       <button class="space-dot" data-space="note" data-title="Note" title="Note" style="--tint:#fbbf24">${ico('<path d="M14.5 4.5H7A2.5 2.5 0 0 0 4.5 7v10A2.5 2.5 0 0 0 7 19.5h10a2.5 2.5 0 0 0 2.5-2.5V9.5"/><path d="m18 3.5 2.5 2.5-7.5 7.5-3.25.75.75-3.25Z"/>')}</button>
       <button class="space-dot" data-space="clipboard" data-title="Clipboard" title="Clipboard" style="--tint:#2dd4bf">${ico('<rect x="6" y="4.5" width="12" height="16" rx="2.5"/><path d="M9.5 4.5V4a1 1 0 0 1 1-1h3a1 1 0 0 1 1 1v.5M9.5 10h5M9.5 13.5h5M9.5 17h3"/>')}</button>
       <button class="space-dot" data-space="hardware" data-title="Hardware" title="Hardware" style="--tint:#60a5fa">${ico('<rect x="6.5" y="6.5" width="11" height="11" rx="2"/><path d="M9.5 3.5v3M14.5 3.5v3M9.5 17.5v3M14.5 17.5v3M3.5 9.5h3M3.5 14.5h3M17.5 9.5h3M17.5 14.5h3"/><rect x="10" y="10" width="4" height="4" rx="0.75"/>')}</button>
+      <button class="space-dot" data-space="weather" data-title="Weather" title="Weather" style="--tint:#38bdf8">${ico('<path d="M9 5.25V4M4.6 7.1l-.9-.9M3.25 11.5H2M13.4 7.1l.9-.9"/><path d="M5.3 13.7a4 4 0 1 1 7.1-3.6"/><path d="M9.25 19.5h8.5a3.5 3.5 0 0 0 .4-6.98 5 5 0 0 0-9.6 1.35A2.85 2.85 0 0 0 9.25 19.5Z"/>')}</button>
+      <button class="space-dot" data-space="clocks" data-title="Clocks" title="World clocks" style="--tint:#f472b6">${ico('<circle cx="12" cy="12" r="8.25"/><path d="M3.75 12h16.5M12 3.75c2.3 2.3 3.4 5 3.4 8.25S14.3 17.95 12 20.25M12 3.75C9.7 6.05 8.6 8.75 8.6 12s1.1 5.95 3.4 8.25"/>')}</button>
+      <button class="space-dot" data-space="calc" data-title="Calc" title="Calculator and converter" style="--tint:#a3e635">${ico('<rect x="5" y="3.5" width="14" height="17" rx="2.5"/><path d="M8.5 7.5h7M8.5 12h.01M12 12h.01M15.5 12h.01M8.5 15.5h.01M12 15.5h.01M15.5 15.5h.01" stroke-width="2"/>')}</button>
+      <button class="space-dot" data-space="shelf" data-title="Shelf" title="Shelf" style="--tint:#fb923c">${ico('<path d="M4 13.5 6.5 6a2 2 0 0 1 1.9-1.4h7.2A2 2 0 0 1 17.5 6l2.5 7.5"/><path d="M4 13.5h4.5l1.5 2.5h4l1.5-2.5H20V18a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2Z"/>')}</button>
+      <button class="space-dot" data-space="colour" data-title="Colour" title="Colour picker" style="--tint:#e879f9">${ico('<path d="M16 3.5a2.1 2.1 0 0 1 3 0l1.5 1.5a2.1 2.1 0 0 1 0 3L19 9.5 14.5 5Z"/><path d="m14.5 5 4.5 4.5-9.5 9.5H5v-4.5Z"/>')}</button>
+      <button class="space-dot" data-space="launcher" data-title="Launcher" title="Launch an app" style="--tint:#f87171">${ico('<circle cx="11" cy="11" r="6.5"/><path d="m20 20-4.4-4.4"/>')}</button>
       <span class="dock-sep"></span>
       <button class="dock-btn" id="qbtn-settings" title="Settings">${settingsSvgRaw}</button>
     </nav>
@@ -634,7 +657,7 @@ function setPhase(next: Phase) {
 // ─── Spaces (dot tabs across the top of the expanded notch) ──────────────────
 let currentSpace = 'overview';
 function showSpace(name: string) {
-  const order = ['overview', 'media', 'focus', 'today', 'count', 'todos', 'note', 'clipboard', 'hardware'];
+  const order = ['overview', 'media', 'focus', 'today', 'count', 'todos', 'note', 'clipboard', 'hardware', 'weather', 'clocks', 'calc', 'shelf', 'colour', 'launcher'];
   const from = order.indexOf(currentSpace);
   const to = order.indexOf(name);
   currentSpace = name;
@@ -653,12 +676,16 @@ function showSpace(name: string) {
   });
   if (name === 'count') openCountSpace();
   extra.onSpace(name);
+  more.onSpace(name);
+  document.querySelector<HTMLElement>(`.space-dot[data-space="${name}"]`)?.scrollIntoView({ block: 'nearest', inline: 'nearest', behavior: 'smooth' });
   send('set-setting', 'lastSpace', name);
 }
 document.querySelectorAll<HTMLElement>('.space-dot').forEach((dot) => {
   dot.addEventListener('click', (e) => { e.stopPropagation(); showSpace(dot.dataset.space || 'media'); });
 });
 const extra = mountExtraTools({ invoke, send });
+const more = mountMoreTools({ invoke, send });
+setInterval(() => more.tick(), 15_000);
 
 document.querySelectorAll<HTMLElement>('[data-go]').forEach((card) => {
   card.addEventListener('click', (e) => { e.stopPropagation(); showSpace(card.dataset.go || 'overview'); });
@@ -667,7 +694,7 @@ document.getElementById('btn-collapse')?.addEventListener('click', (e) => { e.st
 invoke('get-setting', 'lastSpace', 'overview').then((v: any) => showSpace(typeof v === 'string' && v ? v : 'overview')).catch(() => showSpace('overview'));
 
 ipc?.on('preview', () => {
-  const order = ['overview', 'media', 'focus', 'today', 'count', 'todos', 'note', 'clipboard', 'hardware'];
+  const order = ['overview', 'media', 'focus', 'today', 'count', 'todos', 'note', 'clipboard', 'hardware', 'weather', 'clocks', 'calc', 'shelf', 'colour', 'launcher'];
   let k = 0;
   setPhase('expanded');
   setTimeout(() => showSpace(order[0]), 400);
@@ -950,31 +977,18 @@ if (ipc) {
   ipc.on('battery-status', (_: any, b: any) => {
     const badge = document.getElementById('battery-badge') as HTMLElement;
     const pctEl = document.getElementById('bat-pct');
-    const fill  = document.getElementById('bat-fill');
-    const chargeIcon = document.getElementById('bat-charge-icon');
-    if (!badge || !pctEl || !fill) return;
-
-    const pct = Math.round((b?.percent ?? 0));
-    const isCharging = b?.acConnected || false;
-
+    const icon = document.getElementById('bat-svg');
+    if (!badge || !pctEl || !icon || !b || b.hasBattery === false) return;
+    const pct = Math.max(0, Math.min(100, Math.round(b.percent ?? 0)));
+    const charging = Boolean(b.isCharging || b.acConnected);
     pctEl.textContent = `${pct}%`;
-    fill.style.width = `${pct}%`;
-
-    // Color based on level
-    let fillBg = '#fff';
-    if (pct <= 20 && !isCharging) fillBg = '#ff453a';
-    else if (pct <= 50 && !isCharging) fillBg = '#ffd60a';
-    else if (isCharging) fillBg = '#30d158';
-
-    fill.style.background = fillBg;
-    badge.style.color = '#fff';
-
-    if (chargeIcon) {
-      chargeIcon.style.display = isCharging ? 'block' : 'none';
-      fill.style.opacity = '1';
-    }
+    icon.innerHTML = batterySvg(pct, charging);
+    badge.dataset.ready = '1';
+    if (badge.dataset.hidden !== '1') badge.style.display = 'flex';
+    badge.classList.toggle('charging', charging);
+    badge.classList.toggle('low', pct <= 20 && !charging);
+    badge.title = charging ? `${pct}% · charging` : `${pct}%${b.timeRemaining > 0 ? ` · about ${Math.floor(b.timeRemaining / 60)} h ${b.timeRemaining % 60} min left` : ''}`;
   });
-
 
   ipc.on('widget-config', (_: any, cfg: any) => {
     if (cfg && cfg.shortcuts) {
@@ -1065,7 +1079,7 @@ if (ipc) {
 
     // Battery badge visibility
     const batteryBadge = document.getElementById('battery-badge') as HTMLElement;
-    if (batteryBadge) batteryBadge.style.display = cfg.showBattery !== false ? 'flex' : 'none';
+    if (batteryBadge) { batteryBadge.dataset.hidden = cfg.showBattery === false ? '1' : ''; batteryBadge.style.display = cfg.showBattery === false ? 'none' : (batteryBadge.dataset.ready ? 'flex' : 'none'); }
   });
 
 } // end if (ipc)
@@ -1272,14 +1286,13 @@ pill.addEventListener('dragleave', e => { e.preventDefault(); pill.classList.rem
 pill.addEventListener('drop', e => {
   e.preventDefault();
   pill.classList.remove('drop-hover');
-  const file = e.dataTransfer?.files?.[0];
-  if (!file) return;
-  const filePath = (file as any).path || file.name;
-  try {
-    if ((window as any).require) (window as any).require('electron').clipboard.writeText(filePath);
-    else navigator.clipboard.writeText(filePath);
-    if (Notification.permission === 'granted') new Notification('Path copied', { body: file.name });
-  } catch {}
+  const files = [...(e.dataTransfer?.files || [])].map((f) => more.pathFor(f)).filter(Boolean);
+  if (!files.length) return;
+  more.addToShelf(files);
+  pill.classList.add('drop-active');
+  setTimeout(() => pill.classList.remove('drop-active'), 900);
+  if (appPhase !== 'expanded') setPhase('expanded');
+  setTimeout(() => showSpace('shelf'), 120);
 });
 
 // ─── Notifications permission ─────────────────────────────────────────────────
