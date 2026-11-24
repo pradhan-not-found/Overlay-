@@ -1,3 +1,4 @@
+import '@fontsource-variable/instrument-sans';
 import './settings.css';
 import appLogoUrl from '../applogo.png';
 

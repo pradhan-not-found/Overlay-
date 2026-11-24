@@ -24,3 +24,5 @@ Trace/
 *.njsproj
 *.sln
 *.sw?
+
+temp/

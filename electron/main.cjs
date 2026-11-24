@@ -7,6 +7,9 @@ const fs     = require('fs');
 const si     = require('systeminformation');
 const { exec, execSync } = require('child_process');
 const db     = require('./db.cjs');
+const count  = require('./count/index.cjs');
+const lyrics = require('./lyrics.cjs');
+const tools  = require('./tools.cjs');
 
 // ─── Auto Updater ─────────────────────────────────────────────────────────────
 let autoUpdater = null;
@@ -124,7 +127,7 @@ let tray = null;
 
 function createTray() {
   if (tray) return;
-  tray = new Tray(nativeImage.createFromPath(path.join(__dirname, '../applogo.png')));
+  tray = new Tray(nativeImage.createFromPath(path.join(__dirname, 'tray.png')).resize({ width: 16, height: 16 }));
   const contextMenu = Menu.buildFromTemplate([
     { label: 'Show Overlay', click: () => { if (mainWindow && !mainWindow.isDestroyed()) { mainWindow.show(); mainWindow.focus(); } else { createPillWindow(); } } },
     { label: 'Dashboard', click: () => createDashWindow() },
@@ -188,16 +191,29 @@ function startMediaPolling() {
     let activeSession = sessions.find(s => s.playbackStatus === 'playing') || sessions[0];
     
     if (activeSession) {
+      const tl = activeSession.timeline || {};
       const info = {
         artist: activeSession.artist || '',
         title: activeSession.title || '',
+        album: activeSession.albumTitle || '',
         isPlaying: activeSession.playbackStatus === 'playing',
         albumArt: activeSession.thumbnail || null,
-        sourceApp: activeSession.sourceAppDisplayName || activeSession.sourceAppUserModelId || 'Unknown'
+        sourceApp: activeSession.sourceAppDisplayName || activeSession.sourceAppUserModelId || 'Unknown',
+        positionMs: typeof tl.positionMs === 'number' ? tl.positionMs : null,
+        durationMs: typeof tl.durationMs === 'number' ? tl.durationMs : null,
+        receivedAt: Date.now(),
       };
+      const trackChanged = !lastMediaInfo || lastMediaInfo.title !== info.title || lastMediaInfo.artist !== info.artist;
       lastMediaInfo = info;
       if (mainWindow && !mainWindow.isDestroyed()) {
         mainWindow.webContents.send('media-info', info);
+      }
+      if (trackChanged && info.title) {
+        lyrics.getLyrics(info).then((res) => {
+          if (!res || !mainWindow || mainWindow.isDestroyed()) return;
+          if (!lastMediaInfo || lastMediaInfo.title !== info.title) return;
+          mainWindow.webContents.send('media-lyrics', { title: info.title, ...res });
+        });
       }
     } else {
       const info = { artist: '', title: '', isPlaying: false, albumArt: null, sourceApp: '' };
@@ -322,15 +338,15 @@ function createPillWindow() {
 
   const primary = screen.getPrimaryDisplay();
   const { bounds } = primary;
-  const W = 280, H = 44;
-  const winW = W + PAD * 2;
-  const winH = H + PAD * 2;
 
+  // One transparent, click-through window over the whole display. The notch
+  // moves, expands and docks inside it with CSS, so nothing ever resizes and
+  // the motion stays smooth. The page asks for the mouse only over the notch.
   mainWindow = new BrowserWindow({
-    width:  winW,
-    height: winH,
-    x: Math.round(bounds.x + (bounds.width - winW) / 2),
-    y: bounds.y - PAD,
+    width:  bounds.width,
+    height: bounds.height,
+    x: bounds.x,
+    y: bounds.y,
     frame:       false,
     transparent: true,
     alwaysOnTop: true,
@@ -347,6 +363,8 @@ function createPillWindow() {
 
   mainWindow.setAlwaysOnTop(true, 'screen-saver');
   mainWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
+  mainWindow.setIgnoreMouseEvents(true, { forward: true });
+  mainWindow.on('blur', () => { if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send('window-blur'); });
 
   const devUrl = process.env.VITE_DEV_SERVER_URL || 'http://localhost:5173';
   if (app.isPackaged) {
@@ -356,6 +374,12 @@ function createPillWindow() {
   }
 
   mainWindow.on('closed', () => { mainWindow = null; });
+  // Dev only: OVERLAY_PREVIEW=cycle opens the notch and steps through its tools.
+  if (process.env.OVERLAY_PREVIEW && !app.isPackaged) {
+    mainWindow.webContents.once('did-finish-load', () => setTimeout(() => {
+      if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send('preview', process.env.OVERLAY_PREVIEW);
+    }, 2500));
+  }
   
   mainWindow.webContents.on('console-message', (event, level, message, line, sourceId) => {
     if (typeof level === 'object') {
@@ -367,6 +391,12 @@ function createPillWindow() {
 }
 
 // ── Drag ──────────────────────────────────────────────────────────────────
+ipcMain.on('set-interactive', (_e, on) => {
+  if (!mainWindow || mainWindow.isDestroyed()) return;
+  mainWindow.setIgnoreMouseEvents(!on, { forward: true });
+  if (on && !mainWindow.isFocused()) mainWindow.focus();
+});
+
 ipcMain.on('start-drag', (_e, origin) => {
   if (!mainWindow || mainWindow.isDestroyed()) return;
   dragStart = origin;
@@ -405,17 +435,11 @@ ipcMain.on('stop-drag', () => {
 });
 
 // ── Resize (expand / collapse) ────────────────────────────────────────────
-ipcMain.on('resize-window', (_e, { width, height }) => {
-  if (!mainWindow || mainWindow.isDestroyed()) return;
-  const winW = width + PAD * 2;
-  const winH = height + PAD * 2;
-  const cur     = mainWindow.getBounds();
-  const primary = screen.getPrimaryDisplay().bounds;
-  const newX    = Math.round(cur.x + (cur.width - winW) / 2);
-  const docked  = cur.y <= primary.y - PAD + 30;
-  const newY    = docked ? (primary.y - PAD) : Math.round(cur.y + (cur.height - winH) / 2);
-  mainWindow.setBounds({ x: newX, y: newY, width: winW, height: winH }, false);
-  mainWindow.webContents.send('docked-state', docked);
+ipcMain.on('resize-window', () => { /* the notch sizes itself with CSS */ });
+
+// ── Count sidebar: the notch unfolds into a full-height panel on the right ──
+ipcMain.on('count-sidebar', (_e, open) => {
+  if (open && mainWindow && !mainWindow.isDestroyed()) mainWindow.focus();
 });
 
 ipcMain.on('toggle-calendar-mode', () => {
@@ -617,6 +641,8 @@ if (!gotTheLock) {
   app.whenReady().then(() => {
     app.setAppUserModelId('com.overlay.app');
     createTray();
+    count.init();
+    tools.init();
     const cfg = readConfig();
     
     if (!cfg.setupComplete) {

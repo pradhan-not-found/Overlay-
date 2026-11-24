@@ -1,4 +1,10 @@
+import '@fontsource-variable/instrument-sans';
 import './style.css';
+import { countMark } from './count/mark';
+import { mountCount, openCountSpace } from './count/panel';
+import { mountExtraTools } from './tools/extra';
+import plusSvgRaw from './assets/icons/plus.svg?raw';
+import expandSvgRaw from './assets/icons/expand.svg?raw';
 import playSvgRaw from './assets/icons/play.svg?raw';
 import pauseSvgRaw from './assets/icons/pause.svg?raw';
 import prevSvgRaw from './assets/icons/prev.svg?raw';
@@ -11,10 +17,17 @@ import settingsSvgRaw from './assets/icons/settings.svg?raw';
 import chevronLeftSvgRaw from './assets/icons/chevron-left.svg?raw';
 import chevronRightSvgRaw from './assets/icons/chevron-right.svg?raw';
 import closeSvgRaw from './assets/icons/close.svg?raw';
-import shortcutSvgRaw from './assets/icons/shortcut.svg?raw';
 import volMuteSvgRaw from './assets/icons/vol-mute.svg?raw';
 import volLowSvgRaw from './assets/icons/vol-low.svg?raw';
 import volHighSvgRaw from './assets/icons/vol-high.svg?raw';
+
+const timerSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="13.5" r="7.5"/><path d="M12 9.5v4l2.5 1.5M9.5 2.75h5"/></svg>`;
+
+const lyricsSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h11M4 11h8M4 16h5"/><circle cx="17" cy="16.5" r="2.5"/><path d="M19.5 16.5V7.5l2-1"/></svg>`;
+
+const ico = (d: string) => `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">${d}</svg>`;
+const gridSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linejoin="round"><rect x="4" y="4" width="6.5" height="6.5" rx="1.8"/><rect x="13.5" y="4" width="6.5" height="6.5" rx="1.8"/><rect x="4" y="13.5" width="6.5" height="6.5" rx="1.8"/><rect x="13.5" y="13.5" width="6.5" height="6.5" rx="1.8"/></svg>`;
+const chevronUpSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="m6 14.5 6-6 6 6"/></svg>`;
 
 // ─── IPC bridge ───────────────────────────────────────────────────────────────
 let ipc: any = null;
@@ -23,7 +36,7 @@ const send = (ch: string, ...a: any[]) => ipc?.send(ch, ...a);
 const invoke = (ch: string, ...a: any[]) => ipc?.invoke(ch, ...a) || Promise.resolve();
 
 // ─── State ────────────────────────────────────────────────────────────────────
-type Phase = 'idle' | 'expanded' | 'calendar';
+type Phase = 'idle' | 'expanded' | 'calendar' | 'count';
 type TimerPhase = 'off' | 'focus' | 'paused' | 'break';
 
 let appPhase: Phase      = 'idle';
@@ -59,9 +72,7 @@ function loadSessions() {
     });
     
     ipc.invoke('get-config').then((cfg: any) => {
-      if (cfg?.shortcuts?.length > 0) {
-        renderShortcuts(cfg.shortcuts);
-      }
+      renderShortcuts(cfg?.shortcuts || []);
     }).catch(() => {});
   }
 }
@@ -88,11 +99,11 @@ function renderHeatmap() {
     box.className = 'heat-box';
     box.title = `${key}: ${count} sessions`;
     
-    if (count === 0) box.style.background = 'rgba(255,255,255,0.08)';
-    else if (count < 3) box.style.background = '#0e4429';
-    else if (count < 5) box.style.background = '#006d32';
-    else if (count < 7) box.style.background = '#26a641';
-    else box.style.background = '#39d353';
+    if (count === 0) box.style.background = 'rgba(255,255,255,0.07)';
+    else if (count < 3) box.style.background = '#16224f';
+    else if (count < 5) box.style.background = '#1d3aa6';
+    else if (count < 7) box.style.background = '#3d6bff';
+    else box.style.background = '#8fa8ff';
     
     container.appendChild(box);
   }
@@ -100,93 +111,68 @@ function renderHeatmap() {
 
 
 
+function shortcutIcon(s: any, size: number): HTMLElement {
+  const wrap = document.createElement('span');
+  wrap.className = 'sc-icon';
+  let primary = s.iconUrl || '';
+  let fallback = '';
+  try {
+    if (s.target?.startsWith('http')) {
+      const u = new URL(s.target);
+      primary = `https://t3.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://${u.hostname}&size=128`;
+      fallback = `${u.origin}/favicon.ico`;
+    }
+  } catch {}
+  const letter = () => { wrap.textContent = String(s.name || '?').trim().charAt(0).toUpperCase(); wrap.classList.add('sc-letter'); };
+  if (!primary && s.target && !s.target.startsWith('http')) {
+    invoke('get-file-icon', s.target).then((data: string | null) => {
+      if (!data) return letter();
+      const img = document.createElement('img');
+      img.src = data; img.width = size; img.height = size;
+      wrap.innerHTML = ''; wrap.appendChild(img);
+    }).catch(letter);
+    letter();
+    return wrap;
+  }
+  if (!primary) { letter(); return wrap; }
+  const img = document.createElement('img');
+  img.src = primary; img.width = size; img.height = size;
+  img.onerror = () => { if (fallback && img.src !== fallback) img.src = fallback; else letter(); };
+  wrap.appendChild(img);
+  return wrap;
+}
+
 function renderShortcuts(shortcuts: any[]) {
+  const real = (shortcuts || []).filter((s) => s && s.target);
   const expContainer = document.getElementById('quick-row-shortcuts');
   const idleContainer = document.getElementById('idle-shortcuts');
 
-  const MAX_SLOTS = 4;
-  const items = [...shortcuts];
-  while (items.length < MAX_SLOTS) {
-    items.push({ isPlaceholder: true, name: 'Add Shortcut' });
-  }
-
-  const addSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>`;
-
   if (expContainer) {
     expContainer.innerHTML = '';
-    items.forEach(s => {
+    real.slice(0, 5).forEach((s) => {
       const btn = document.createElement('button');
-      btn.className = 'qbtn';
+      btn.className = 'qbtn qbtn-app';
       btn.title = s.name;
-      
-      if (s.isPlaceholder) {
-        btn.innerHTML = addSvg.replace('width="14"', 'width="16"').replace('height="14"', 'height="16"');
-        btn.addEventListener('click', e => { e.stopPropagation(); if (ipc) ipc.send('open-settings', 'Shortcuts'); });
-      } else {
-        const fallbackIcon = shortcutSvgRaw.replace('width="14"', 'width="18"').replace('height="14"', 'height="18"');
-        // For web targets, always compute icon fresh from the URL (never trust stale stored iconUrl)
-        let primaryIcon = s.iconUrl || '';
-        let directFavicon = '';
-        try {
-          if (s.target?.startsWith('http')) {
-            const u = new URL(s.target);
-            primaryIcon = `https://t3.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://${u.hostname}&size=128`;
-            directFavicon = `${u.origin}/favicon.ico`;
-          }
-        } catch {}
-        if (primaryIcon) {
-          const img = document.createElement('img');
-          img.src = primaryIcon;
-          img.style.cssText = 'width:18px; height:18px; object-fit:contain; border-radius:3px;';
-          img.onerror = () => { if (directFavicon) { img.onerror = null; img.src = directFavicon; } else { btn.innerHTML = fallbackIcon; } };
-          btn.innerHTML = '';
-          btn.appendChild(img);
-        } else {
-          btn.innerHTML = fallbackIcon;
-        }
-        btn.addEventListener('click', e => { e.stopPropagation(); if (ipc) ipc.send('open-shortcut', s.target); });
-      }
+      btn.appendChild(shortcutIcon(s, 16));
+      btn.addEventListener('click', (e) => { e.stopPropagation(); send('open-shortcut', s.target); });
       expContainer.appendChild(btn);
     });
+    const add = document.createElement('button');
+    add.className = 'qbtn qbtn-add';
+    add.title = 'Add a shortcut';
+    add.innerHTML = plusSvgRaw;
+    add.addEventListener('click', (e) => { e.stopPropagation(); send('open-settings', 'Shortcuts'); });
+    expContainer.appendChild(add);
   }
 
   if (idleContainer) {
     idleContainer.innerHTML = '';
-    items.forEach(s => {
+    real.slice(0, 3).forEach((s) => {
       const btn = document.createElement('button');
-      btn.className = 'ibtn';
-      
-      if (s.isPlaceholder) {
-        btn.style.cssText = 'padding:0; display:flex; align-items:center; justify-content:center; width:22px; height:22px; flex-shrink:0; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12); border-radius: 6px; color: rgba(255,255,255,0.4); transition: 0.15s;';
-        btn.innerHTML = addSvg;
-        btn.onmouseover = () => { btn.style.background = 'rgba(255,255,255,0.1)'; btn.style.color = '#fff'; };
-        btn.onmouseout = () => { btn.style.background = 'rgba(255,255,255,0.06)'; btn.style.color = 'rgba(255,255,255,0.4)'; };
-        btn.addEventListener('click', e => { e.stopPropagation(); if (ipc) ipc.send('open-settings', 'Shortcuts'); });
-      } else {
-        btn.style.cssText = 'padding:0; display:flex; align-items:center; justify-content:center; width:22px; height:22px; flex-shrink:0;';
-        const fallbackIcon = shortcutSvgRaw;
-        // For web targets, always compute icon fresh from the URL
-        let primaryIcon = s.iconUrl || '';
-        let directFavicon = '';
-        try {
-          if (s.target?.startsWith('http')) {
-            const u = new URL(s.target);
-            primaryIcon = `https://t3.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://${u.hostname}&size=128`;
-            directFavicon = `${u.origin}/favicon.ico`;
-          }
-        } catch {}
-        if (primaryIcon) {
-          const img = document.createElement('img');
-          img.src = primaryIcon;
-          img.style.cssText = 'width:14px; height:14px; object-fit:contain; border-radius:2px;';
-          img.onerror = () => { if (directFavicon) { img.onerror = null; img.src = directFavicon; } else { btn.innerHTML = fallbackIcon; } };
-          btn.innerHTML = '';
-          btn.appendChild(img);
-        } else {
-          btn.innerHTML = fallbackIcon;
-        }
-        btn.addEventListener('click', e => { e.stopPropagation(); if (ipc) ipc.send('open-shortcut', s.target); });
-      }
+      btn.className = 'ibtn ibtn-sm ibtn-app';
+      btn.title = s.name;
+      btn.appendChild(shortcutIcon(s, 14));
+      btn.addEventListener('click', (e) => { e.stopPropagation(); send('open-shortcut', s.target); });
       idleContainer.appendChild(btn);
     });
   }
@@ -227,170 +213,163 @@ if (ipc) {
 document.getElementById('app')!.innerHTML = `
 <div class="pill" id="pill" data-docked="true" data-phase="idle">
 
-  <!-- ══ IDLE STATE ══ -->
-  <div class="view view-idle active" id="view-idle" style="width: 100%; display: flex; align-items: center; justify-content: space-between; padding: 0 18px;">
-    <div class="idle-state-default" id="idle-state-default" style="display: flex; align-items: center; justify-content: space-between; width: 100%;">
+  <!-- ══ IDLE ══ -->
+  <div class="view view-idle active" id="view-idle">
+    <div class="idle-state" id="idle-state-default">
+      <button class="count-dot" id="btn-count-idle" title="Count · AI usage">${countMark(13, '#fff')}</button>
       <span class="idle-clock" id="idle-clock">00:00</span>
-      <div style="display: flex; align-items: center; gap: 6px;">
-        <div id="idle-shortcuts" style="display: flex; align-items: center; gap: 6px;"></div>
-        <div style="width: 1px; height: 12px; background: rgba(255,255,255,0.2); margin: 0 4px;"></div>
-        <button class="ibtn" id="btn-close-app" title="Hide Overlay" style="padding: 2px; color: var(--muted); cursor: pointer;">
-          ${closeSvgRaw.replace('width="24"', 'width="14"').replace('height="24"', 'height="14"')}
-        </button>
-      </div>
-    </div>
-    
-    <!-- Media state -->
-    <div class="idle-state-media hidden" id="idle-state-media" style="display: none; align-items: center; width: 100%;">
-      <div class="cd-disc" id="cd-disc">
-        <div class="cd-art-wrapper" id="cd-art-wrapper">
-          <div class="cd-default-art"></div>
-        </div>
-        <div class="cd-grooves"></div>
-        <div class="cd-glare"></div>
-        <div class="cd-center">
-          <div class="cd-hole"></div>
-        </div>
-      </div>
-      <span id="idle-track-name" style="font-size: 13px; font-weight: 600; color: var(--ink); margin-left: 10px; max-width: 180px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"></span>
-      <div class="idle-controls" id="idle-controls" style="margin-left: auto; display: flex; align-items: center; gap: 8px;">
-        <div id="idle-source-logo" style="display: flex; align-items: center; justify-content: center; opacity: 0.8;"></div>
-        <div class="music-bars" id="idle-music-bars" style="display: none; margin-right: 4px;">
-        </div>
-        <button class="ibtn" id="btn-idle-play" title="Play/Pause" style="padding: 4px; display: flex; align-items: center; justify-content: center;">
-          ${playSvgRaw}
-        </button>
-      </div>
-    </div>
-    
-    <!-- Timer state -->
-        <div class="idle-state-timer hidden" id="idle-state-timer" style="display: none; align-items: center; justify-content: center; width: 100%;">
-      <span style="font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.1em; margin-right: 12px;">Lock In</span>
-      <span class="idle-timer-hint" id="idle-timer-hint" style="font-size: 14px; font-weight: 600; font-variant-numeric: tabular-nums; color: var(--ink); margin-right: 12px;"></span>
-      <div style="width: 1px; height: 12px; background: rgba(255,255,255,0.2); margin-right: 12px;"></div>
-      <div style="display: flex; gap: 4px;">
-        <button class="ibtn" id="btn-idle-timer-toggle" title="Pause / Resume" style="padding: 2px; display: flex; align-items: center; justify-content: center; background: transparent; border: none; color: var(--muted); cursor: pointer; transition: 0.2s;">
-          ${playSvgRaw}
-        </button>
-        <button class="ibtn" id="btn-idle-notch-expand" title="Expand Lock Screen" style="padding: 2px; display: flex; align-items: center; justify-content: center; background: transparent; border: none; color: var(--muted); cursor: pointer; transition: 0.2s;">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 3 21 3 21 9"></polyline><polyline points="9 21 3 21 3 15"></polyline><line x1="21" y1="3" x2="14" y2="10"></line><line x1="3" y1="21" x2="10" y2="14"></line></svg>
-        </button>
-      </div>
+      <span class="idle-spacer"></span>
+      <div class="idle-shortcuts" id="idle-shortcuts"></div>
+      <button class="ibtn ibtn-sm" id="btn-close-app" title="Hide Overlay">${closeSvgRaw}</button>
     </div>
 
+    <div class="idle-state" id="idle-state-media" style="display:none">
+      <div class="art-chip" id="cd-art-wrapper"><div class="cd-default-art">${musicSvgRaw}</div></div>
+      <span class="idle-track" id="idle-track-name"></span>
+      <span class="idle-spacer"></span>
+      <div class="src-logo" id="idle-source-logo"></div>
+      <div class="music-bars" id="idle-music-bars" style="display:none"><span class="bar"></span><span class="bar"></span><span class="bar"></span><span class="bar"></span></div>
+      <button class="ibtn ibtn-sm" id="btn-idle-play" title="Play or pause">${playSvgRaw}</button>
+    </div>
+
+    <div class="idle-state" id="idle-state-timer" style="display:none">
+      <span class="focus-dot"></span>
+      <span class="idle-label">Lock In</span>
+      <span class="idle-timer-hint" id="idle-timer-hint"></span>
+      <span class="idle-spacer"></span>
+      <button class="ibtn ibtn-sm" id="btn-idle-timer-toggle" title="Pause or resume">${playSvgRaw}</button>
+      <button class="ibtn ibtn-sm" id="btn-idle-notch-expand" title="Open focus screen">${expandSvgRaw}</button>
+    </div>
   </div>
 
-  <!-- ══ EXPANDED STATE ══ -->
-  <div class="view view-exp" id="view-exp" style="position: relative;">
-    
-    
-
-    <!-- TIMER PANEL -->
-    <section class="panel p-timer">
-      <p class="p-label" id="t-label">Lock In</p>
-      
-      <div class="t-info">
-        <span class="ring-time" id="ring-time">25:00</span>
-      </div>
-
-      <div class="t-stats" style="display: flex; flex-direction: column; align-items: flex-start; gap: 4px; margin-bottom: 8px;">
-        <div style="display: flex; gap: 4px;">
-          <span id="stat-sessions" style="font-size: 10px; font-weight: 600; background: rgba(255,255,255,0.1); padding: 2px 6px; border-radius: 4px; color: #fff;">0 sessions today</span>
-          <span id="stat-time" style="font-size: 10px; font-weight: 600; background: rgba(255,255,255,0.1); padding: 2px 6px; border-radius: 4px; color: #fff;">0m focused</span>
+  <!-- ══ EXPANDED: one tool at a time, with a dock along the bottom ══ -->
+  <div class="view view-exp" id="view-exp">
+    <header class="exp-head">
+      <h2 id="exp-title">Overview</h2>
+      <div class="exp-actions">
+        <div id="battery-badge" class="battery" style="display:none">
+          <div class="battery-shell"><div id="bat-fill" class="battery-fill"></div>
+            <svg id="bat-charge-icon" class="battery-bolt" style="display:none" viewBox="0 0 24 24" width="9" height="9"><path d="M13 2 4 14h7l-1 8 9-12h-7l1-8Z" fill="currentColor"/></svg>
+          </div>
+          <span id="bat-pct">--</span>
         </div>
-        <div id="t-heatmap" style="display: flex; flex-direction: row; align-items: center; gap: 4px; margin-top: 2px;">
-          <!-- Heatmap rendered here -->
-        </div>
+        <button class="ibtn ibtn-sm" id="btn-collapse" title="Close">${chevronUpSvg}</button>
       </div>
+    </header>
 
-            <div class="t-btns" style="display:flex; gap:8px;">
-        <button class="btn btn-p" id="btn-lockin" style="min-width: 90px;">Lock In</button>
-        <button class="btn btn-g" id="btn-reset" style="min-width: 90px;">Reset</button>
-        <button class="btn btn-g" id="btn-exp-notch-expand" style="padding: 0 10px;" title="Expand Lock Screen">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 3 21 3 21 9"></polyline><polyline points="9 21 3 21 3 15"></polyline><line x1="21" y1="3" x2="14" y2="10"></line><line x1="3" y1="21" x2="10" y2="14"></line></svg>
+    <div class="space-stage">
+      <section class="space p-overview" data-space="overview">
+        <div class="ov-top">
+          <div class="ov-time"><span class="ov-clock" id="ov-clock">--:--</span><span class="ov-date" id="ov-date"></span></div>
+          <button class="ov-ai" data-go="count" id="ov-ai" title="AI usage"></button>
+        </div>
+        <button class="ov-card ov-np" data-go="media">
+          <div class="ov-art" id="ov-art">${musicSvgRaw}</div>
+          <div class="ov-np-text"><b id="ov-np-title">Nothing playing</b><span id="ov-np-artist">Play something in any media app</span></div>
+          <div class="music-bars" id="ov-bars" style="display:none"><span class="bar"></span><span class="bar"></span><span class="bar"></span><span class="bar"></span></div>
         </button>
-      </div>
-    </section>
-
-    <div class="div"></div>
-
-    <!-- MEDIA PANEL -->
-    <section class="panel p-media">
-      <div class="media-row">
-        <div class="m-art" id="m-art" style="position: relative;">
-          ${musicSvgRaw}
-          <div id="m-art-logo" style="position: absolute; bottom: -8px; left: -8px; border-radius: 50%; padding: 4px; background: rgba(0,0,0,0.6); backdrop-filter: blur(4px); display: none; align-items: center; justify-content: center; box-shadow: 0 2px 4px rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.1);"></div>
+        <div class="ov-row">
+          <button class="ov-card" data-go="focus"><span class="ov-icon" style="--tint:#ff9f43">${timerSvg}</span><div><b>Focus</b><span id="ov-focus-state">Off</span></div></button>
+          <button class="ov-card" data-go="today"><span class="ov-icon" style="--tint:#3ddc97">${calendarSvgRaw}</span><div><b id="ov-event">Today</b><span id="ov-event-sub">Nothing scheduled</span></div></button>
         </div>
-        <div class="m-info">
-          <div style="display: flex; align-items: center; gap: 8px;">
+      </section>
+
+      <section class="space p-media" data-space="media">
+        <div class="np-head">
+          <div class="m-art" id="m-art">${musicSvgRaw}</div>
+          <div class="m-info">
             <p class="m-track" id="m-track">Nothing playing</p>
-            <div class="music-bars" id="exp-music-bars" style="display: none; margin-bottom: 4px;">
-            </div>
+            <p class="m-artist" id="m-artist">Play something in Spotify or any media app</p>
           </div>
-          <p class="m-artist" id="m-artist">Open Spotify or any media player</p>
-          <div class="m-ctrls">
-            <button class="ibtn" id="btn-prev" title="Previous">
-              ${prevSvgRaw}
-            </button>
-            <button class="ibtn play" id="btn-play" title="Play / Pause">
-              ${playSvgRaw}
-            </button>
-            <button class="ibtn" id="btn-next" title="Next">
-              ${nextSvgRaw}
-            </button>
-            <div class="vol-wrap">
-              <div id="vol-icon-container" style="display: flex; align-items: center; cursor: pointer; flex-shrink: 0; width: 14px;">
-                ${volHighSvgRaw}
-              </div>
-              <input type="range" class="vol-slider" id="vol-slider" min="0" max="1" step="0.01" value="0.5" title="Volume">
-            </div>
+          <div id="m-art-logo" class="m-src"></div>
+          <div class="music-bars" id="exp-music-bars" style="display:none"><span class="bar"></span><span class="bar"></span><span class="bar"></span><span class="bar"></span></div>
+        </div>
+        <div class="np-progress">
+          <span id="m-elapsed">0:00</span>
+          <div class="np-track"><i id="m-prog"></i></div>
+          <span id="m-remain">0:00</span>
+        </div>
+        <div class="m-ctrls">
+          <div class="vol-wrap">
+            <div id="vol-icon-container" class="vol-btn">${volHighSvgRaw}</div>
+            <input type="range" class="vol-slider" id="vol-slider" min="0" max="1" step="0.01" value="0.5" title="Volume">
+          </div>
+          <div class="np-main">
+            <button class="ibtn" id="btn-prev" title="Previous">${prevSvgRaw}</button>
+            <button class="ibtn play" id="btn-play" title="Play or pause">${playSvgRaw}</button>
+            <button class="ibtn" id="btn-next" title="Next">${nextSvgRaw}</button>
+          </div>
+          <div class="np-right"><button class="ibtn ibtn-lyrics" id="btn-lyrics" title="Lyrics">${lyricsSvg}</button></div>
+        </div>
+        <div class="np-lyrics" id="m-lyrics">
+          <p class="ly ly-prev" id="ly-prev"></p>
+          <p class="ly ly-cur m-lyric" id="m-lyric"></p>
+          <p class="ly ly-next" id="ly-next"></p>
+        </div>
+      </section>
+
+      <section class="space p-timer" data-space="focus">
+        <div class="t-main">
+          <p class="p-label" id="t-label">Lock In</p>
+          <span class="ring-time" id="ring-time">25:00</span>
+          <div class="t-stats">
+            <span class="chip" id="stat-sessions">0 sessions today</span>
+            <span class="chip" id="stat-time">0m focused</span>
+          </div>
+          <div class="t-btns">
+            <button class="btn btn-p" id="btn-lockin">Lock In</button>
+            <button class="btn btn-g" id="btn-reset">Reset</button>
+            <button class="btn btn-g btn-icon" id="btn-exp-notch-expand" title="Open focus screen">${expandSvgRaw}</button>
           </div>
         </div>
-      </div>
-    </section>
+        <div class="t-week"><span class="t-week-label">Last 7 days</span><div id="t-heatmap" class="heatmap"></div></div>
+      </section>
 
-    <div class="div"></div>
-
-
-    <section class="panel p-right">
-      <div class="cal-card" id="cal-card-btn">
-        <div class="cal-left">
-          <div class="cal-dow" id="cal-dow">Mon</div>
-          <div class="cal-date"><span id="cal-num">1</span> <span id="cal-month">Jan</span></div>
-        </div>
-        <div class="cal-icon">
-          ${calendarSvgRaw}
-        </div>
-      </div>
-
-      <!-- Battery indicator -->
-      <div id="battery-badge" style="display:none; align-items:center; gap:6px; font-size:11px; font-weight:600; color:var(--text-main); padding:4px 10px; border-radius:20px; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.08); font-family: 'Helvetica', Arial, sans-serif; cursor: default;">
-        <div style="display:flex; align-items:center; gap: 1px;">
-          <div class="battery-wrapper" style="position:relative; width: 22px; height: 11px; border: 1px solid rgba(255,255,255,0.4); border-radius: 3px; padding: 1px; box-sizing: border-box;">
-            <div id="bat-fill" style="height: 100%; width: 50%; background: #fff; border-radius: 1px; transition: width 0.3s ease, background 0.3s ease;"></div>
-            <svg id="bat-charge-icon" style="display:none; position:absolute; left:50%; top:50%; transform:translate(-50%, -50%);" xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="#000" stroke="none"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
+      <section class="space p-right" data-space="today">
+        <div class="cal-card" id="cal-card-btn" title="Open calendar">
+          <div class="cal-left">
+            <div class="cal-dow" id="cal-dow">Mon</div>
+            <div class="cal-date"><span id="cal-num">1</span> <span id="cal-month">Jan</span></div>
           </div>
-          <div style="width: 2px; height: 4px; background: rgba(255,255,255,0.4); border-radius: 0 2px 2px 0;"></div>
+          <div class="cal-icon">${chevronRightSvgRaw}</div>
         </div>
-        <span id="bat-pct" style="margin-top: 1px; color: #fff;">--</span>
-      </div>
+        <div class="today-side">
+          <p class="p-label">Shortcuts</p>
+          <div class="quick-row" id="quick-row"><div id="quick-row-shortcuts" class="quick-shortcuts"></div></div>
+          <p class="p-label">Quick actions</p>
+          <div class="quick-row">
+            <button class="qbtn qbtn-wide" id="qbtn-cam" title="Camera preview">${camSvgRaw}<span>Camera</span></button>
+            <button class="qbtn qbtn-wide" id="qbtn-screenshot" title="Screenshot">${screenshotSvgRaw}<span>Screenshot</span></button>
+          </div>
+        </div>
+      </section>
 
-      <div class="quick-row" id="quick-row">
-        <div id="quick-row-shortcuts" style="display:flex; gap:6px;"></div>
-        <div class="quick-divider"></div>
-        <button class="qbtn" id="qbtn-cam" title="Webcam Preview">
-          ${camSvgRaw}
-        </button>
-        <button class="qbtn" id="qbtn-screenshot" title="Screenshot">
-          ${screenshotSvgRaw}
-        </button>
-        <button class="qbtn" id="qbtn-settings" title="Settings">
-          ${settingsSvgRaw}
-        </button>
-      </div>
-    </section>
+      <section class="space p-count" data-space="count" id="count-space"></section>
+      <section class="space p-todos" data-space="todos"></section>
+      <section class="space p-note" data-space="note"></section>
+      <section class="space p-clipboard" data-space="clipboard"></section>
+      <section class="space p-hardware" data-space="hardware"></section>
+    </div>
+
+    <nav class="dock" id="space-dots">
+      <button class="space-dot" data-space="overview" data-title="Overview" title="Overview" style="--tint:#5b8cff">${gridSvg}</button>
+      <button class="space-dot" data-space="media" data-title="Now Playing" title="Now Playing" style="--tint:#ff5f8f">${musicSvgRaw}</button>
+      <button class="space-dot" data-space="focus" data-title="Focus" title="Focus" style="--tint:#ff9f43">${timerSvg}</button>
+      <button class="space-dot" data-space="today" data-title="Today" title="Today" style="--tint:#3ddc97">${calendarSvgRaw}</button>
+      <button class="space-dot" data-space="count" data-title="AI Usage" title="AI Usage" style="--tint:#7b95ff">${countMark(17, 'currentColor')}</button>
+      <button class="space-dot" data-space="todos" data-title="To-Dos" title="To-Dos" style="--tint:#34d399">${ico('<circle cx="12" cy="12" r="8.25"/><path d="m8.5 12.25 2.4 2.4 4.6-4.9"/>')}</button>
+      <button class="space-dot" data-space="note" data-title="Note" title="Note" style="--tint:#fbbf24">${ico('<path d="M14.5 4.5H7A2.5 2.5 0 0 0 4.5 7v10A2.5 2.5 0 0 0 7 19.5h10a2.5 2.5 0 0 0 2.5-2.5V9.5"/><path d="m18 3.5 2.5 2.5-7.5 7.5-3.25.75.75-3.25Z"/>')}</button>
+      <button class="space-dot" data-space="clipboard" data-title="Clipboard" title="Clipboard" style="--tint:#2dd4bf">${ico('<rect x="6" y="4.5" width="12" height="16" rx="2.5"/><path d="M9.5 4.5V4a1 1 0 0 1 1-1h3a1 1 0 0 1 1 1v.5M9.5 10h5M9.5 13.5h5M9.5 17h3"/>')}</button>
+      <button class="space-dot" data-space="hardware" data-title="Hardware" title="Hardware" style="--tint:#60a5fa">${ico('<rect x="6.5" y="6.5" width="11" height="11" rx="2"/><path d="M9.5 3.5v3M14.5 3.5v3M9.5 17.5v3M14.5 17.5v3M3.5 9.5h3M3.5 14.5h3M17.5 9.5h3M17.5 14.5h3"/><rect x="10" y="10" width="4" height="4" rx="0.75"/>')}</button>
+      <span class="dock-sep"></span>
+      <button class="dock-btn" id="qbtn-settings" title="Settings">${settingsSvgRaw}</button>
+    </nav>
   </div>
-  <div class="view" id="view-cal" style="flex-direction: row; width: 100%; height: 100%; padding: 16px 24px; gap: 24px; background: transparent; box-sizing: border-box; overflow: hidden; align-items: stretch; font-family: 'HelveticaTrace', Helvetica, sans-serif;">
+
+  <!-- ══ COUNT SIDEBAR ══ -->
+  <div class="view view-count" id="view-count"></div>
+
+  <div class="view" id="view-cal" style="flex-direction: row; width: 100%; height: 100%; padding: 16px 24px; gap: 24px; background: transparent; box-sizing: border-box; overflow: hidden; align-items: stretch; font-family: inherit;">
     <!-- Left: Events List -->
     <div style="flex: 1; display: flex; flex-direction: column; overflow: hidden; border-right: 1px solid rgba(255,255,255,0.1); padding-right: 24px;">
       <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
@@ -612,34 +591,32 @@ setInterval(tickClock, 1000);
 })();
 
 // ─── Phase switcher ──────────────────────────────────────────────────────────
+const EXP_W = 540, EXP_H = 360;
+const viewCountEl = document.getElementById('view-count')!;
+
 function setPhase(next: Phase) {
+  const prev = appPhase;
   appPhase = next;
-  
+  if (prev === 'count' && next !== 'count') send('count-sidebar', false);
+  if (next === 'expanded') extra.onSpace(currentSpace); else extra.stop();
+
+  viewIdle.classList.toggle('active', false);
+  viewExp.classList.toggle('active', false);
+  viewCalEl.classList.toggle('active', false);
+  viewCountEl.classList.toggle('active', false);
+  pill.setAttribute('data-phase', next);
+
   if (next === 'idle') {
-    viewExp.classList.remove('active');
-    viewCalEl.classList.remove('active');
-    pill.setAttribute('data-phase', next);
-    // Smoothly transition DOM inside a large transparent window, then shrink it
+    // Let the content fade, then shrink the window around the pill.
     setTimeout(() => {
-      if (appPhase === 'idle') {
-        viewIdle.classList.add('active');
-        send('resize-window', { width: 280, height: 44 });
-      }
-    }, 280);
+      if (appPhase !== 'idle') return;
+      viewIdle.classList.add('active');
+      send('resize-window', { width: 280, height: 44 });
+    }, 260);
   } else if (next === 'expanded') {
-    viewIdle.classList.remove('active');
-    viewCalEl.classList.remove('active');
-    send('resize-window', { width: 840, height: 160 });
-    pill.setAttribute('data-phase', next);
-    
-    setTimeout(() => {
-      if (appPhase === 'expanded') viewExp.classList.add('active');
-    }, 40);
+    send('resize-window', { width: EXP_W, height: EXP_H });
+    setTimeout(() => { if (appPhase === 'expanded') viewExp.classList.add('active'); }, 60);
   } else if (next === 'calendar') {
-    viewIdle.classList.remove('active');
-    viewExp.classList.remove('active');
-    pill.setAttribute('data-phase', next);
-    // Open in the same bar, just replacing content
     send('resize-window', { width: 760, height: 320 });
     setTimeout(() => {
       if (appPhase === 'calendar') {
@@ -647,9 +624,69 @@ function setPhase(next: Phase) {
         renderEvents();
         renderCalendar();
       }
-    }, 40);
+    }, 60);
+  } else if (next === 'count') {
+    send('count-sidebar', true);
+    setTimeout(() => { if (appPhase === 'count') viewCountEl.classList.add('active'); }, 80);
   }
 }
+
+// ─── Spaces (dot tabs across the top of the expanded notch) ──────────────────
+let currentSpace = 'overview';
+function showSpace(name: string) {
+  const order = ['overview', 'media', 'focus', 'today', 'count', 'todos', 'note', 'clipboard', 'hardware'];
+  const from = order.indexOf(currentSpace);
+  const to = order.indexOf(name);
+  currentSpace = name;
+  document.querySelectorAll<HTMLElement>('.space-dot').forEach((dot) => {
+    dot.classList.toggle('active', dot.dataset.space === name);
+    if (dot.dataset.space === name) document.getElementById('exp-title')!.textContent = dot.dataset.title || '';
+  });
+  document.querySelectorAll<HTMLElement>('.space').forEach((el) => {
+    const on = el.dataset.space === name;
+    el.classList.remove('enter-left', 'enter-right');
+    if (on) {
+      el.classList.add(to >= from ? 'enter-right' : 'enter-left');
+      void el.offsetWidth;
+    }
+    el.classList.toggle('active', on);
+  });
+  if (name === 'count') openCountSpace();
+  extra.onSpace(name);
+  send('set-setting', 'lastSpace', name);
+}
+document.querySelectorAll<HTMLElement>('.space-dot').forEach((dot) => {
+  dot.addEventListener('click', (e) => { e.stopPropagation(); showSpace(dot.dataset.space || 'media'); });
+});
+const extra = mountExtraTools({ invoke, send });
+
+document.querySelectorAll<HTMLElement>('[data-go]').forEach((card) => {
+  card.addEventListener('click', (e) => { e.stopPropagation(); showSpace(card.dataset.go || 'overview'); });
+});
+document.getElementById('btn-collapse')?.addEventListener('click', (e) => { e.stopPropagation(); setPhase('idle'); });
+invoke('get-setting', 'lastSpace', 'overview').then((v: any) => showSpace(typeof v === 'string' && v ? v : 'overview')).catch(() => showSpace('overview'));
+
+ipc?.on('preview', () => {
+  const order = ['overview', 'media', 'focus', 'today', 'count', 'todos', 'note', 'clipboard', 'hardware'];
+  let k = 0;
+  setPhase('expanded');
+  setTimeout(() => showSpace(order[0]), 400);
+  const t = setInterval(() => {
+    k += 1;
+    if (k < order.length) showSpace(order[k]);
+    else if (k === order.length) setPhase('count');
+    else { clearInterval(t); setPhase('idle'); }
+  }, 2500);
+});
+document.getElementById('btn-count-idle')?.addEventListener('click', (e) => { e.stopPropagation(); setPhase('count'); });
+mountCount({
+  sidebar: viewCountEl,
+  space: document.getElementById('count-space')!,
+  openSidebar: () => setPhase('count'),
+  close: () => setPhase('idle'),
+  invoke,
+  on: (ch, fn) => ipc?.on(ch, fn),
+});
 
 // ─── Dashboard Timer Sync (IPC) ────────────────────────────────────────────────
 if (ipc) {
@@ -908,9 +945,7 @@ document.getElementById('qbtn-file')?.addEventListener('click', e => {
 
 // ─── IPC listeners ────────────────────────────────────────────────────────────
 if (ipc) {
-  ipc.on('docked-state', (_: any, docked: boolean) => {
-    pill.setAttribute('data-docked', String(docked));
-  });
+  ipc.on('docked-state', () => { /* the page tracks docking itself */ });
 
   ipc.on('battery-status', (_: any, b: any) => {
     const badge = document.getElementById('battery-badge') as HTMLElement;
@@ -953,28 +988,22 @@ if (ipc) {
     idleTrackName.textContent = info.title || 'Nothing playing';
     
     if (info.sourceApp) {
-      const appLower = info.sourceApp.toLowerCase();
-      let iconSvg = '<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg>'; // default monitor
-      
-      if (appLower.includes('spotify')) {
-        iconSvg = '<img src="https://upload.wikimedia.org/wikipedia/commons/1/19/Spotify_logo_without_text.svg" style="width:14px; height:14px; object-fit:contain;" />';
-      } else if (appLower.includes('chrome')) {
-        iconSvg = '<img src="https://upload.wikimedia.org/wikipedia/commons/e/e1/Google_Chrome_icon_%28February_2022%29.svg" style="width:14px; height:14px; object-fit:contain;" />';
-      } else if (appLower.includes('edge')) {
-        iconSvg = '<img src="https://upload.wikimedia.org/wikipedia/commons/9/98/Microsoft_Edge_logo_%282019%29.svg" style="width:14px; height:14px; object-fit:contain;" />';
-      } else if (appLower.includes('apple music') || appLower.includes('music')) {
-        iconSvg = '<img src="https://upload.wikimedia.org/wikipedia/commons/5/5f/Apple_Music_icon.svg" style="width:14px; height:14px; object-fit:contain;" />';
-      }
-
-      mArtLogo.innerHTML = iconSvg;
+      const raw = info.sourceApp.split(/[\\/!]/).filter(Boolean);
+      const app = /spotify/i.test(info.sourceApp) ? 'Spotify'
+        : /chrome/i.test(info.sourceApp) ? 'Chrome'
+        : /msedge|edge/i.test(info.sourceApp) ? 'Edge'
+        : /firefox/i.test(info.sourceApp) ? 'Firefox'
+        : /zunemusic|music/i.test(info.sourceApp) ? 'Media Player'
+        : (raw[raw.length - 1] || info.sourceApp).replace(/\.exe$/i, '');
+      const dot = /spotify/i.test(info.sourceApp) ? '#1ed760' : 'rgba(255,255,255,0.55)';
+      mArtLogo.innerHTML = `<span class="src-dot" style="background:${dot}"></span>${app}`;
       mArtLogo.style.display = 'flex';
-      
-      idleSourceLogo.innerHTML = iconSvg;
+      idleSourceLogo.innerHTML = `<span class="src-dot" style="background:${dot}"></span>`;
     } else {
       mArtLogo.style.display = 'none';
       idleSourceLogo.innerHTML = '';
     }
-    
+
     // Sync playback state and icons
     setPlaying(info.isPlaying);
     
@@ -985,6 +1014,7 @@ if (ipc) {
       if (info.albumArt) {
         cdWrapper.style.backgroundImage = `url(${info.albumArt})`;
         cdWrapper.style.backgroundSize = 'cover';
+        cdWrapper.style.backgroundPosition = 'center';
         cdDefault.classList.add('hidden');
       } else {
         cdWrapper.style.backgroundImage = 'none';
@@ -998,10 +1028,11 @@ if (ipc) {
       if (info.albumArt) {
         mArt.style.backgroundImage = `url(${info.albumArt})`;
         mArt.style.backgroundSize = 'cover';
+        mArt.style.backgroundPosition = 'center';
         mArt.innerHTML = '';
       } else {
         mArt.style.backgroundImage = 'none';
-        mArt.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"></path><circle cx="6" cy="18" r="3"></circle><circle cx="18" cy="16" r="3"></circle></svg>';
+        mArt.innerHTML = musicSvgRaw;
       }
     }
 
@@ -1012,19 +1043,23 @@ if (ipc) {
     if (!cfg) return;
 
     // Re-render shortcuts live when user saves changes from Settings
-    if (cfg.shortcuts && cfg.shortcuts.length > 0) {
-      renderShortcuts(cfg.shortcuts);
-    }
+    renderShortcuts(cfg.shortcuts || []);
 
 
 
     // Panel visibility
-    const pTimer = document.querySelector('.p-timer') as HTMLElement;
-    const pMedia = document.querySelector('.p-media') as HTMLElement;
-    const pRight = document.querySelector('.p-right') as HTMLElement;
-    if (pTimer) pTimer.style.display = cfg.showTimer === false ? 'none' : 'flex';
-    if (pMedia) pMedia.style.display = cfg.showMedia === false ? 'none' : 'flex';
-    if (pRight) pRight.style.display = cfg.showCalendar === false ? 'none' : 'flex';
+    const hideDot = (space: string, hidden: boolean) => {
+      const dot = document.querySelector<HTMLElement>(`.space-dot[data-space="${space}"]`);
+      if (dot) dot.style.display = hidden ? 'none' : '';
+    };
+    hideDot('focus', cfg.showTimer === false);
+    hideDot('media', cfg.showMedia === false);
+    hideDot('today', cfg.showCalendar === false);
+    const active = document.querySelector<HTMLElement>('.space-dot.active');
+    if (active && active.style.display === 'none') {
+      const first = [...document.querySelectorAll<HTMLElement>('.space-dot')].find((d) => d.style.display !== 'none');
+      if (first) showSpace(first.dataset.space || 'count');
+    }
     if (cfg.showTimer === false) idleStateTimer.style.display = 'none';
     if (cfg.showMedia === false) idleStateMedia.style.display = 'none';
 
@@ -1037,45 +1072,199 @@ if (ipc) {
 
 // qbtn-settings handled above (line ~751)
 
-// ─── Drag & Click ─────────────────────────────────────────────────────────────
-let pDown = false, dragged = false, origin = { x: 0, y: 0 };
+// ─── Lyrics ──────────────────────────────────────────────────────────────────
+// Lines come from the main process; position is interpolated from the last
+// timeline report so the current line stays in step between updates.
+const mLyric = document.getElementById('m-lyric')!;
+const btnLyrics = document.getElementById('btn-lyrics')!;
+let lyricLines: { t: number; text: string }[] = [];
+let lyricSynced = false;
+let lyricTitle = '';
+let showLyrics = true;
+let pos = { ms: 0, at: Date.now(), playing: false, title: '', duration: 0 };
+let lastLyric = '';
+
+invoke('get-setting', 'showLyrics', true).then((v: any) => { showLyrics = v !== false && v !== 'false'; btnLyrics.classList.toggle('on', showLyrics); paintLyric(); });
+btnLyrics.addEventListener('click', (e) => {
+  e.stopPropagation();
+  showLyrics = !showLyrics;
+  btnLyrics.classList.toggle('on', showLyrics);
+  send('set-setting', 'showLyrics', showLyrics);
+  paintLyric();
+});
+
+const lyPrev = document.getElementById('ly-prev')!;
+const lyNext = document.getElementById('ly-next')!;
+const mProg = document.getElementById('m-prog') as HTMLElement;
+const mElapsed = document.getElementById('m-elapsed')!;
+const mRemain = document.getElementById('m-remain')!;
+
+const nowMs = () => pos.ms + (pos.playing ? Date.now() - pos.at : 0);
+const clock = (ms: number) => { const t = Math.max(0, Math.floor(ms / 1000)); return `${Math.floor(t / 60)}:${String(t % 60).padStart(2, '0')}`; };
+
+function lyricIndex(): number {
+  if (!lyricSynced || !lyricLines.length || lyricTitle !== pos.title) return -1;
+  const now = nowMs() + 250;
+  let idx = -1;
+  for (let k = 0; k < lyricLines.length; k++) { if (lyricLines[k].t <= now) idx = k; else break; }
+  return idx;
+}
+
+function paintProgress() {
+  const dur = pos.duration || 0;
+  const cur = Math.min(dur || Infinity, nowMs());
+  mProg.style.width = dur ? `${Math.min(100, (cur / dur) * 100)}%` : '0%';
+  mElapsed.textContent = clock(dur ? cur : 0);
+  mRemain.textContent = dur ? `-${clock(dur - cur)}` : '0:00';
+}
+
+function paintLyric() {
+  paintProgress();
+  const idx = showLyrics ? lyricIndex() : -1;
+  const line = idx >= 0 ? (lyricLines[idx].text || '♪') : (showLyrics && lyricSynced && lyricTitle === pos.title && lyricLines.length ? '♪' : '');
+  const key = `${idx}|${line}|${showLyrics}`;
+  if (key === lastLyric) return;
+  lastLyric = key;
+  const box = document.getElementById('m-lyrics')!;
+  box.classList.add('swap');
+  setTimeout(() => {
+    const plainOnly = showLyrics && pos.title && lyricTitle === pos.title && !lyricSynced && lyricLines.length;
+    lyPrev.textContent = idx > 0 ? lyricLines[idx - 1].text : '';
+    mLyric.textContent = line || (plainOnly ? 'Lyrics found, but without timing' : showLyrics ? (pos.title ? 'No synced lyrics for this song' : '') : 'Lyrics hidden');
+    lyNext.textContent = idx >= 0 && idx + 1 < lyricLines.length ? lyricLines[idx + 1].text : '';
+    mLyric.classList.toggle('empty', !line);
+    box.classList.remove('swap');
+  }, 120);
+  // The collapsed notch shows the live line in place of the title.
+  const live = line && line !== '♪' ? line : '';
+  idleTrackName.textContent = live || pos.title || 'Nothing playing';
+  idleTrackName.classList.toggle('lyric', Boolean(live));
+}
+setInterval(paintLyric, 250);
+
+if (ipc) {
+  ipc.on('media-info', (_: any, info: any) => {
+    const duration = typeof info.durationMs === 'number' ? info.durationMs : (info.title === pos.title ? pos.duration : 0);
+    if (typeof info.positionMs === 'number') pos = { ms: info.positionMs, at: info.receivedAt || Date.now(), playing: info.isPlaying, title: info.title, duration };
+    else pos = { ...pos, ms: info.title === pos.title ? nowMs() : 0, playing: info.isPlaying, title: info.title, at: Date.now(), duration };
+    if (info.title !== lyricTitle) { lyricLines = []; lyricSynced = false; }
+    paintLyric();
+  });
+  ipc.on('media-lyrics', (_: any, res: any) => {
+    lyricTitle = res.title;
+    lyricLines = res.lines || [];
+    lyricSynced = Boolean(res.synced);
+    lastLyric = '__';
+    paintLyric();
+  });
+}
+
+// ─── Overview ────────────────────────────────────────────────────────────────
+function paintOverview() {
+  const d = new Date();
+  const ovClock = document.getElementById('ov-clock');
+  if (!ovClock) return;
+  ovClock.textContent = d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+  document.getElementById('ov-date')!.textContent = d.toLocaleDateString([], { weekday: 'long', day: 'numeric', month: 'long' });
+  document.getElementById('ov-np-title')!.textContent = mTrack.textContent || 'Nothing playing';
+  document.getElementById('ov-np-artist')!.textContent = mArtist.textContent || '';
+  const art = document.getElementById('ov-art')!;
+  const bg = (document.getElementById('m-art') as HTMLElement).style.backgroundImage;
+  art.style.backgroundImage = bg || 'none';
+  art.classList.toggle('has-art', Boolean(bg && bg !== 'none'));
+  (document.getElementById('ov-bars') as HTMLElement).style.display = mediaPlaying ? 'flex' : 'none';
+  document.getElementById('ov-focus-state')!.textContent =
+    timerPhase === 'focus' ? `${ringTime.textContent} left` : timerPhase === 'paused' ? 'Paused' : timerPhase === 'break' ? 'On a break' : `${sessionCountToday} today`;
+}
+setInterval(paintOverview, 1000);
+paintOverview();
+
+// ─── Position, hover and drag ─────────────────────────────────────────────────
+// The window covers the screen; the notch is placed with CSS. We only take the
+// mouse while the pointer is over the notch, so the rest stays click-through.
+let pillX = window.innerWidth / 2;
+let pillY = 0;
+let docked = true;
+let interactive = false;
+
+function applyPos() {
+  pill.style.setProperty('--x', `${Math.round(pillX)}px`);
+  pill.style.setProperty('--y', `${docked ? 0 : Math.round(pillY)}px`);
+  pill.setAttribute('data-docked', String(docked));
+}
+invoke('get-setting', 'pillPos', null).then((v: any) => {
+  try {
+    const p = typeof v === 'string' ? JSON.parse(v) : v;
+    if (p && typeof p.x === 'number') { pillX = Math.min(Math.max(p.x, 160), window.innerWidth - 160); pillY = p.y || 0; docked = p.docked !== false; }
+  } catch {}
+  applyPos();
+});
+applyPos();
+
+function setInteractive(on: boolean) {
+  if (on === interactive) return;
+  interactive = on;
+  send('set-interactive', on);
+}
+document.addEventListener('mousemove', (e) => {
+  if (dragging) return;
+  const over = Boolean((e.target as HTMLElement).closest?.('.pill, .cam-popup'));
+  setInteractive(over);
+});
+document.documentElement.addEventListener('mouseleave', () => { if (!dragging) setInteractive(false); });
+
+let pDown = false, dragging = false, origin = { x: 0, y: 0 }, start = { x: 0, y: 0 };
 
 pill.addEventListener('pointerdown', e => {
   const t = e.target as HTMLElement;
-  if (t.closest('button') || t.tagName === 'INPUT' || t.closest('.cam-popup')) return;
-  if (t.closest('#cal-card-btn') || t.closest('#view-cal') || t.closest('.vol-wrap')) return;
+  if (e.button !== 0) return;
+  if (t.closest('button') || ['INPUT', 'SELECT', 'TEXTAREA'].includes(t.tagName) || t.closest('.cam-popup')) return;
+  if (t.closest('#cal-card-btn') || t.closest('#view-cal') || t.closest('.vol-wrap') || t.closest('#view-count') || t.closest('.np-track')) return;
   pDown = true;
-  dragged = false;
-  origin = { x: e.screenX, y: e.screenY };
+  dragging = false;
+  origin = { x: e.clientX, y: e.clientY };
+  start = { x: pillX, y: docked ? 0 : pillY };
   pill.setPointerCapture(e.pointerId);
 });
 
 pill.addEventListener('pointermove', e => {
-  if (!pDown) return;
-  if (!dragged && (Math.abs(e.screenX - origin.x) > 12 || Math.abs(e.screenY - origin.y) > 12)) {
-    dragged = true;
-    send('start-drag', origin);
-  }
+  if (!pDown || appPhase === 'count') return;
+  const dx = e.clientX - origin.x, dy = e.clientY - origin.y;
+  if (!dragging && Math.hypot(dx, dy) < 8) return;
+  if (!dragging) { dragging = true; pill.classList.add('dragging'); }
+  const half = pill.offsetWidth / 2;
+  pillX = Math.min(Math.max(start.x + dx, half + 8), window.innerWidth - half - 8);
+  pillY = Math.min(Math.max(start.y + dy, 0), window.innerHeight - pill.offsetHeight - 8);
+  docked = pillY < 28;
+  applyPos();
 });
 
 pill.addEventListener('pointerup', e => {
   if (!pDown) return;
   pDown = false;
   pill.releasePointerCapture(e.pointerId);
-  
-  if (dragged) {
-    send('stop-drag');
-    dragged = false;
-    return; // NEVER expand if we were dragging
-  } 
-  
-  // It was a click!
+  if (dragging) {
+    dragging = false;
+    pill.classList.remove('dragging');
+    if (docked) pillY = 0;
+    applyPos();
+    send('set-setting', 'pillPos', JSON.stringify({ x: pillX, y: pillY, docked }));
+    return; // a drag never toggles the notch
+  }
   const t = e.target as HTMLElement;
-  if (t.closest('button') || t.tagName === 'INPUT' || t.closest('.cam-popup')) return;
-  if (t.closest('.cal-card') || t.closest('#view-cal')) return;
+  if (t.closest('button') || t.tagName === 'INPUT') return;
+  if (t.closest('.cal-card') || t.closest('#view-cal') || t.closest('#view-count') || t.closest('.dock')) return;
+  if (appPhase === 'count') return;
+  if (appPhase === 'expanded' && (t.closest('.space-stage') || t.closest('.exp-head'))) return;
   if (!camPopup.classList.contains('hidden')) { closeCamera(); return; }
   setPhase(appPhase === 'idle' ? 'expanded' : 'idle');
 });
+
+// Clicking anywhere else on the screen tucks an open notch away.
+ipc?.on('window-blur', () => {
+  if (appPhase === 'expanded' || appPhase === 'calendar') setPhase('idle');
+});
+window.addEventListener('resize', () => { pillX = Math.min(pillX, window.innerWidth - 160); applyPos(); });
 
 // ─── File drop ────────────────────────────────────────────────────────────────
 pill.addEventListener('dragover',  e => { e.preventDefault(); pill.classList.add('drop-hover'); });

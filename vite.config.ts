@@ -6,6 +6,12 @@ const __dirname = fileURLToPath(new URL('.', import.meta.url));
 
 export default defineConfig({
   base: './',
+  server: {
+    watch: { ignored: ['**/temp/**', '**/release/**', '**/landing-page/**'] },
+  },
+  optimizeDeps: {
+    entries: ['index.html', 'dashboard.html', 'settings.html'],
+  },
   build: {
     rollupOptions: {
       input: {

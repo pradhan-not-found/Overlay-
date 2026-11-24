@@ -1,3 +1,4 @@
+import '@fontsource-variable/instrument-sans';
 import './dashboard.css';
 
 // ─── IPC ────────────────────────────────────────────────────────────────────
