@@ -1,6 +1,6 @@
 /* The Overlay notch, sized in the app's own pixels on a 1000px-wide screen.
    1u = 1px in the app, so every measurement below matches src/style.css. */
-.display { --u: calc(100cqw / 1000); }
+.display { --u: calc(100cqw / 860); }
 
 .ov {
   position: absolute;
@@ -345,3 +345,103 @@
 .ov-exp { position: absolute; }
 .ov-toast { position: absolute; left: 50%; bottom: calc(var(--u) * 68); transform: translateX(-50%); padding: calc(var(--u) * 8) calc(var(--u) * 14); border-radius: 999px; background: #1f1f26; border: 1px solid rgba(255, 255, 255, 0.1); font-size: calc(var(--u) * 12); font-weight: 500; white-space: nowrap; animation: ov-toast 0.35s cubic-bezier(0.2, 0.9, 0.25, 1.05); z-index: 3; }
 @keyframes ov-toast { from { opacity: 0; transform: translate(-50%, calc(var(--u) * 8)); } to { opacity: 1; transform: translate(-50%, 0); } }
+
+/* ── Dock: scrolls sideways, edges fade ─────────────────────────────── */
+.ov-dock {
+  justify-content: flex-start;
+  gap: calc(var(--u) * 2);
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+  scroll-snap-type: x proximity;
+  -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 calc(var(--u) * 14), #000 calc(100% - var(--u) * 14), transparent 100%);
+  mask-image: linear-gradient(90deg, transparent 0, #000 calc(var(--u) * 14), #000 calc(100% - var(--u) * 14), transparent 100%);
+}
+.ov-dock::-webkit-scrollbar { display: none; }
+.ov-dot { flex: 0 0 calc(var(--u) * 34); scroll-snap-align: center; }
+.ov-dock-gap { flex: 0 0 1px; margin: 0 calc(var(--u) * 4); }
+.ov-muted { font-size: calc(var(--u) * 11.5); color: #85858f; }
+
+/* Weather */
+.ov-wnow { display: flex; align-items: center; gap: calc(var(--u) * 16); }
+.ov-wicon { width: calc(var(--u) * 52); height: calc(var(--u) * 52); color: #fcd34d; }
+.ov-wnow > div:nth-child(2) { display: flex; flex-direction: column; }
+.ov-wnow > div:nth-child(2) span { font-size: calc(var(--u) * 13); color: #a9a9b4; margin-top: calc(var(--u) * 4); }
+.ov-wside { margin-left: auto; display: flex; flex-direction: column; align-items: flex-end; gap: calc(var(--u) * 3); }
+.ov-wside b { font-size: calc(var(--u) * 13); }
+.ov-wside span { font-size: calc(var(--u) * 11.5); color: #a9a9b4; }
+.ov-wdays { display: grid; grid-template-columns: repeat(5, 1fr); gap: calc(var(--u) * 6); }
+.ov-wdays div { display: flex; flex-direction: column; align-items: center; gap: calc(var(--u) * 5); padding: calc(var(--u) * 9) 0; border-radius: calc(var(--u) * 12); background: #121215; border: 1px solid rgba(255, 255, 255, 0.07); font-size: calc(var(--u) * 11); color: #a9a9b4; }
+.ov-wdays svg { width: calc(var(--u) * 18); height: calc(var(--u) * 18); color: #f2f2f5; }
+.ov-wdays b { font-size: calc(var(--u) * 13); color: #f2f2f5; }
+.ov-wdays small { font-size: calc(var(--u) * 10.5); color: #85858f; margin-top: calc(var(--u) * -3); }
+
+/* Clocks */
+.sp-clocks { display: grid; grid-template-columns: 1fr 1fr; gap: calc(var(--u) * 8); }
+.ov-clockcard { display: flex; align-items: center; gap: calc(var(--u) * 12); padding: calc(var(--u) * 10) calc(var(--u) * 12); border-radius: calc(var(--u) * 14); background: #121215; border: 1px solid rgba(255, 255, 255, 0.07); }
+.ov-dial { width: calc(var(--u) * 40); height: calc(var(--u) * 40); flex-shrink: 0; }
+.ov-clockcard div { display: flex; flex-direction: column; }
+.ov-clockcard b { font-size: calc(var(--u) * 16); font-weight: 600; letter-spacing: -0.02em; }
+.ov-clockcard span { font-size: calc(var(--u) * 12); color: #a9a9b4; }
+
+/* Calc */
+.ov-calc { display: flex; flex-direction: column; gap: calc(var(--u) * 4); padding: calc(var(--u) * 12) calc(var(--u) * 14); border-radius: calc(var(--u) * 14); background: #121215; border: 1px solid rgba(255, 255, 255, 0.07); }
+.ov-calc:focus-within { border-color: rgba(163, 230, 53, 0.45); }
+.ov-calc input { background: transparent; border: none; outline: none; color: #f2f2f5; font-family: var(--sans); font-size: calc(var(--u) * 17); font-weight: 500; }
+.ov-calc b { font-size: calc(var(--u) * 26); font-weight: 600; letter-spacing: -0.03em; color: #a3e635; min-height: calc(var(--u) * 32); font-variant-numeric: tabular-nums; }
+.ov-hist { display: flex; flex-direction: column; gap: calc(var(--u) * 4); }
+.ov-hist div { display: flex; justify-content: space-between; padding: calc(var(--u) * 6) calc(var(--u) * 10); border-radius: calc(var(--u) * 8); font-size: calc(var(--u) * 12.5); }
+.ov-hist div span { color: #a9a9b4; }
+
+/* Shelf */
+.ov-files { display: grid; grid-template-columns: repeat(3, 1fr); gap: calc(var(--u) * 8); }
+.ov-file { position: relative; display: flex; flex-direction: column; align-items: center; gap: calc(var(--u) * 6); padding: calc(var(--u) * 14) calc(var(--u) * 8) calc(var(--u) * 10); border-radius: calc(var(--u) * 14); background: #121215; border: 1px solid rgba(255, 255, 255, 0.07); }
+.ov-ext { display: grid; place-items: center; width: calc(var(--u) * 34); height: calc(var(--u) * 40); border-radius: calc(var(--u) * 6); background: #2a2a31; font-size: calc(var(--u) * 9); font-weight: 700; letter-spacing: 0.04em; color: #f2f2f5; }
+.ov-ext.pdf { background: #b91c1c; } .ov-ext.fig { background: #7c3aed; } .ov-ext.png, .ov-ext.jpg { background: #0369a1; }
+.ov-fname { font-size: calc(var(--u) * 11.5); max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ov-file .ov-x { position: absolute; top: calc(var(--u) * 4); right: calc(var(--u) * 4); width: calc(var(--u) * 20); height: calc(var(--u) * 20); padding: calc(var(--u) * 4); border: none; border-radius: 50%; background: transparent; color: #85858f; cursor: pointer; opacity: 0; transition: opacity 0.2s ease; }
+.ov-file:hover .ov-x { opacity: 1; }
+.ov-file .ov-x:hover { color: #ff5a4e; }
+
+/* Colour */
+.ov-colrow { display: grid; grid-template-columns: calc(var(--u) * 170) 1fr; gap: calc(var(--u) * 10); }
+.ov-pick { height: calc(var(--u) * 120); border-radius: calc(var(--u) * 16); border: 1px solid rgba(255, 255, 255, 0.14); cursor: pointer; display: grid; place-items: end center; padding-bottom: calc(var(--u) * 12); }
+.ov-pick span { padding: calc(var(--u) * 4) calc(var(--u) * 10); border-radius: 999px; background: rgba(0, 0, 0, 0.5); font-family: var(--sans); font-size: calc(var(--u) * 11.5); font-weight: 600; color: #fff; }
+.ov-formats { display: flex; flex-direction: column; justify-content: center; gap: calc(var(--u) * 6); }
+.ov-format { display: flex; justify-content: space-between; padding: calc(var(--u) * 10) calc(var(--u) * 12); border-radius: calc(var(--u) * 10); border: 1px solid rgba(255, 255, 255, 0.07); background: #121215; color: #f2f2f5; cursor: pointer; font-family: var(--sans); }
+.ov-format span { font-size: calc(var(--u) * 11.5); color: #a9a9b4; }
+.ov-format b { font-family: ui-monospace, 'Cascadia Code', Consolas, monospace; font-size: calc(var(--u) * 12); font-weight: 500; }
+.ov-format.copied { border-color: rgba(232, 121, 249, 0.6); }
+.ov-swatches { display: flex; gap: calc(var(--u) * 6); }
+.ov-swatches button { width: calc(var(--u) * 26); height: calc(var(--u) * 26); border-radius: calc(var(--u) * 8); border: 1px solid rgba(255, 255, 255, 0.12); cursor: pointer; transition: transform 0.2s ease; }
+.ov-swatches button:hover { transform: scale(1.1); }
+.ov-swatches button.on { outline: 2px solid #f2f2f5; outline-offset: 2px; }
+
+/* Launcher */
+.ov-apps { display: flex; flex-direction: column; gap: calc(var(--u) * 2); }
+.ov-app { display: flex; align-items: center; gap: calc(var(--u) * 12); padding: calc(var(--u) * 7) calc(var(--u) * 10); border: none; border-radius: calc(var(--u) * 10); background: transparent; color: #f2f2f5; cursor: pointer; font-family: var(--sans); font-size: calc(var(--u) * 13); text-align: left; }
+.ov-app:hover, .ov-app.on { background: rgba(255, 255, 255, 0.07); }
+.ov-app i { width: calc(var(--u) * 24); height: calc(var(--u) * 24); border-radius: calc(var(--u) * 6); display: grid; place-items: center; font-style: normal; font-size: calc(var(--u) * 11); font-weight: 700; color: #fff; }
+.ov-app span { flex: 1; }
+.ov-app kbd { font-family: var(--sans); font-size: calc(var(--u) * 10); color: #a9a9b4; padding: calc(var(--u) * 2) calc(var(--u) * 6); border-radius: calc(var(--u) * 5); border: 1px solid rgba(255, 255, 255, 0.14); }
+
+/* GitHub */
+.ov-ghhead { display: flex; align-items: center; gap: calc(var(--u) * 8); }
+.ov-ghhead svg { background: #fff; border-radius: 50%; padding: calc(var(--u) * 1); }
+.ov-ghhead b { font-size: calc(var(--u) * 14); }
+.ov-ghhead span { margin-left: auto; font-size: calc(var(--u) * 12); color: #a9a9b4; }
+.ov-contrib { display: grid; grid-template-rows: repeat(7, 1fr); grid-auto-flow: column; gap: calc(var(--u) * 3); }
+.ov-contrib i { width: 100%; aspect-ratio: 1; border-radius: calc(var(--u) * 2.5); background: #1c1c21; }
+.ov-contrib i.l1 { background: #0e4429; } .ov-contrib i.l2 { background: #006d32; } .ov-contrib i.l3 { background: #26a641; } .ov-contrib i.l4 { background: #39d353; }
+
+/* Closed notch: one live activity at a time, with a soft blur between them. */
+.ov-act { display: flex; align-items: center; gap: calc(var(--u) * 8); width: 100%; height: 100%; animation: act-in 0.6s cubic-bezier(0.22, 1, 0.36, 1) both; }
+@keyframes act-in { from { opacity: 0; filter: blur(6px); transform: translateY(calc(var(--u) * 3)); } to { opacity: 1; filter: blur(0); transform: none; } }
+.ov-line b { font-weight: 600; color: #fff; margin-left: calc(var(--u) * 3); }
+.ov-act-meta { font-size: calc(var(--u) * 11.5); font-weight: 500; color: #a9a9b4; white-space: nowrap; }
+.ov-act-ring { position: relative; width: calc(var(--u) * 24); height: calc(var(--u) * 24); flex-shrink: 0; display: grid; place-items: center; }
+.ov-act-ring .ov-ring { position: absolute; inset: 0; width: 100%; height: 100%; }
+.ov-act-logo { width: calc(var(--u) * 24); height: calc(var(--u) * 24); border-radius: calc(var(--u) * 7); background: #fff; display: grid; place-items: center; flex-shrink: 0; }
+.ov-act-dot { width: calc(var(--u) * 8); height: calc(var(--u) * 8); margin: 0 calc(var(--u) * 8); border-radius: 50%; background: #ff9f43; box-shadow: 0 0 calc(var(--u) * 10) #ff9f43; animation: breathe 2.2s ease-in-out infinite; flex-shrink: 0; }
+@keyframes breathe { 0%, 100% { opacity: 1; } 50% { opacity: 0.45; } }
+.ov-idle { padding: 0 calc(var(--u) * 12) 0 calc(var(--u) * 10); }

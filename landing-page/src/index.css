@@ -240,62 +240,53 @@ main {
 
 .hinge {
   position: absolute;
-  left: 11%;
-  width: 78%;
+  left: 10.5%;
+  width: 79%;
   top: calc(1.5% + 81% * 10.35 / 16 * 100 / 58);
   height: 0.8%;
-  background: linear-gradient(180deg, #1c1d20, #2e3035);
-  border-radius: 0 0 2px 2px;
+  background: linear-gradient(180deg, #0f1012 0%, #2a2c31 70%, #3a3d43 100%);
+  border-radius: 0 0 3px 3px;
 }
 
 .deck {
   position: absolute;
-  left: 6.5%;
-  width: 87%;
+  left: 6%;
+  width: 88%;
   top: calc(2.3% + 81% * 10.35 / 16 * 100 / 58);
-  height: 2.9%;
-  border-radius: 1px 1px 9px 9px / 1px 1px 7px 7px;
-  background: linear-gradient(180deg, #f1f2f4 0%, #d6d8dc 30%, #b4b7bd 72%, #8a8d94 100%);
+  height: 3.1%;
+  border-radius: 2px 2px 26px 26px / 2px 2px 18px 18px;
+  background:
+    linear-gradient(90deg, rgba(0, 0, 0, 0.12) 0%, transparent 6%, transparent 94%, rgba(0, 0, 0, 0.12) 100%),
+    linear-gradient(180deg, #fafbfc 0%, #e3e5e9 18%, #c9ccd2 55%, #a3a7ae 85%, #7f838b 100%);
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.95),
-    inset 0 -1px 0 rgba(0, 0, 0, 0.12),
-    0 1px 1px rgba(0, 0, 0, 0.08);
+    inset 0 1px 0 #fff,
+    inset 0 -1.5px 1px rgba(0, 0, 0, 0.16),
+    0 1px 1.5px rgba(10, 12, 20, 0.18);
 }
 
-.deck::before, .deck::after {
-  content: '';
-  position: absolute;
-  bottom: -1px;
-  width: 4%;
-  height: 22%;
-  border-radius: 0 0 4px 4px;
-  background: #6e7178;
-}
 
-.deck::before { left: 6%; }
-.deck::after { right: 6%; }
 
 .groove {
   position: absolute;
   left: 50%;
   top: 0;
-  width: 12%;
-  height: 42%;
+  width: 13%;
+  height: 44%;
   transform: translateX(-50%);
-  border-radius: 0 0 10px 10px / 0 0 8px 8px;
-  background: linear-gradient(180deg, #9da0a7, #c3c6cc);
-  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.25);
+  border-radius: 0 0 14px 14px / 0 0 9px 9px;
+  background: linear-gradient(180deg, #a2a6ad 0%, #c7cad0 100%);
+  box-shadow: inset 0 1.5px 2px rgba(0, 0, 0, 0.28), 0 1px 0 rgba(255, 255, 255, 0.7);
 }
 
 .floor {
   position: absolute;
-  left: 10%;
-  width: 80%;
-  top: calc(4.6% + 81% * 10.35 / 16 * 100 / 58);
-  height: 3%;
+  left: 9%;
+  width: 82%;
+  top: calc(4.8% + 81% * 10.35 / 16 * 100 / 58);
+  height: 3.4%;
   border-radius: 50%;
-  background: radial-gradient(closest-side, rgba(20, 22, 34, 0.32), transparent);
-  filter: blur(5px);
+  background: radial-gradient(closest-side, rgba(15, 18, 30, 0.34), rgba(15, 18, 30, 0.08) 70%, transparent);
+  filter: blur(6px);
 }
 
 /* ── Actions under the laptop ────────────────────────────────────────── */

@@ -1,9 +1,9 @@
-import { Fragment, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import './index.css';
 import './notch.css';
 import './pages.css';
 import NotchDemo from './NotchDemo';
-import { CLAUDE, OPENAI, SPOTIFY } from './brand/marks';
+import { CLAUDE, DISCORD, GCAL, GITHUB, OPENAI, SPOTIFY } from './brand/marks';
 
 // The source repo is private, so installers live in the public overlay-releases
 // repo. GitHub's latest/download URL always points at the newest release and
@@ -36,28 +36,49 @@ const ICON = {
   shield: 'M12 3.5 19 6v5.5c0 4.4-2.9 8-7 9-4.1-1-7-4.6-7-9V6Z',
 };
 
-// What the right side cycles through: real app logos where there is one.
+const tint = (d: string, color: string) => <i className="tint" style={{ color }}><Stroke d={d} /></i>;
+const EXTRA = {
+  note: 'M14.5 4.5H7A2.5 2.5 0 0 0 4.5 7v10A2.5 2.5 0 0 0 7 19.5h10a2.5 2.5 0 0 0 2.5-2.5V9.5M18 3.5l2.5 2.5-7.5 7.5-3.25.75.75-3.25Z',
+  weather: 'M9 5.25V4M4.6 7.1l-.9-.9M3.25 11.5H2M13.4 7.1l.9-.9M5.3 13.7a4 4 0 1 1 7.1-3.6M9.25 19.5h8.5a3.5 3.5 0 0 0 .4-6.98 5 5 0 0 0-9.6 1.35A2.85 2.85 0 0 0 9.25 19.5Z',
+  globe: 'M12 20.25a8.25 8.25 0 1 0 0-16.5 8.25 8.25 0 0 0 0 16.5ZM3.75 12h16.5M12 3.75c2.3 2.3 3.4 5 3.4 8.25S14.3 17.95 12 20.25M12 3.75C9.7 6.05 8.6 8.75 8.6 12s1.1 5.95 3.4 8.25',
+  calc: 'M7.5 3.5h9a2.5 2.5 0 0 1 2.5 2.5v12a2.5 2.5 0 0 1-2.5 2.5h-9A2.5 2.5 0 0 1 5 18V6a2.5 2.5 0 0 1 2.5-2.5ZM8.5 7.5h7M8.5 12h.01M12 12h.01M15.5 12h.01M8.5 15.5h.01M12 15.5h.01M15.5 15.5h.01',
+  tray: 'M4 13.5 6.5 6a2 2 0 0 1 1.9-1.4h7.2A2 2 0 0 1 17.5 6l2.5 7.5M4 13.5h4.5l1.5 2.5h4l1.5-2.5H20V18a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2Z',
+  pipette: 'M16 3.5a2.1 2.1 0 0 1 3 0l1.5 1.5a2.1 2.1 0 0 1 0 3L19 9.5 14.5 5ZM14.5 5l4.5 4.5-9.5 9.5H5v-4.5Z',
+  search: 'M11 17.5a6.5 6.5 0 1 0 0-13 6.5 6.5 0 0 0 0 13ZM20 20l-4.4-4.4',
+  terminal: 'M5.5 4.5h13a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2h-13a2 2 0 0 1-2-2v-11a2 2 0 0 1 2-2ZM7.5 9.5l3 2.5-3 2.5M12.5 15h4',
+};
 const TAGS: { label: string; node: React.ReactNode }[] = [
-  { label: 'Spotify, with lyrics', node: <Mark m={SPOTIFY} /> },
+  { label: 'Spotify, with live lyrics', node: <Mark m={SPOTIFY} /> },
   { label: 'Claude and ChatGPT limits', node: <span className="duo"><Mark m={CLAUDE} /><Mark m={{ ...OPENAI, color: '#0d0f16' }} /></span> },
-  { label: 'Focus sessions', node: <i className="tint" style={{ color: '#ff9f43' }}><Stroke d={ICON.timer} /></i> },
-  { label: 'Your day, at a glance', node: <i className="tint" style={{ color: '#22b07d' }}><Stroke d={ICON.calendar} /></i> },
-  { label: 'Clipboard history', node: <i className="tint" style={{ color: '#14b8a6' }}><Stroke d={ICON.clipboard} /></i> },
+  { label: 'Google Calendar, at a glance', node: <Mark m={GCAL} /> },
+  { label: 'Clipboard history', node: tint(ICON.clipboard, '#14b8a6') },
+  { label: 'Focus sessions', node: tint(ICON.timer, '#ff9f43') },
+  { label: 'To-dos and notes', node: tint(ICON.check, '#10b981') },
+  { label: 'GitHub activity', node: <Mark m={GITHUB} /> },
+  { label: 'Discord, one click away', node: <Mark m={DISCORD} /> },
+  { label: 'Weather and world clocks', node: tint(EXTRA.weather, '#0ea5e9') },
+  { label: 'Calculator and converter', node: tint(EXTRA.calc, '#65a30d') },
+  { label: 'A shelf for your files', node: tint(EXTRA.tray, '#f97316') },
+  { label: 'Colour picker', node: tint(EXTRA.pipette, '#c026d3') },
+  { label: 'App launcher', node: tint(EXTRA.search, '#ef4444') },
+  { label: 'CPU, memory and GPU', node: tint(ICON.chip, '#3b82f6') },
 ];
 
-const LINES = ['The notch, for Windows.', 'Your music, up top.', 'AI limits, at a glance.', 'Focus, one click away.'];
+const LINES = ['The notch, for Windows.', 'Your music, up top.', 'AI limits, at a glance.', 'Your day, in one place.', 'Focus, one click away.'];
 
-/** Reveals a phrase word by word, each word rising out of a mask. */
-function Words({ text, delay = 0 }: { text: string; delay?: number }) {
+/** Shows one item at a time; the previous one blurs out as the next blurs in. */
+function Rotator({ index, render, className }: { index: number; render: (i: number) => React.ReactNode; className: string }) {
+  const [shown, setShown] = useState({ cur: index, prev: -1 });
+  useEffect(() => {
+    setShown((s) => (s.cur === index ? s : { cur: index, prev: s.cur }));
+    const t = window.setTimeout(() => setShown((s) => ({ ...s, prev: -1 })), 700);
+    return () => window.clearTimeout(t);
+  }, [index]);
   return (
-    <>
-      {text.split(' ').map((w, k, all) => (
-        <Fragment key={k}>
-          <span className="word"><span style={{ animationDelay: `${delay + k * 70}ms` }}>{w}</span></span>
-          {k < all.length - 1 ? ' ' : null}
-        </Fragment>
-      ))}
-    </>
+    <div className={`rotator ${className}`}>
+      {shown.prev >= 0 && <div className="rot-item out" key={`p${shown.prev}`}>{render(shown.prev)}</div>}
+      <div className="rot-item in" key={`c${shown.cur}`}>{render(shown.cur)}</div>
+    </div>
   );
 }
 
@@ -130,8 +151,8 @@ export default function App() {
   const [risen, setRisen] = useState(false);
   // #zoom opens straight into the notch, so the close-up can be linked.
   const [zoomed, setZoomed] = useState(() => window.location.hash === '#zoom');
-  const line = useCycle(LINES.length, 3200);
-  const tag = useCycle(TAGS.length, 2600);
+  const line = useCycle(LINES.length, 3400);
+  const tag = useCycle(TAGS.length, 2400);
 
   useEffect(() => {
     const id = requestAnimationFrame(() => setRisen(true));
@@ -169,7 +190,7 @@ export default function App() {
         {view === 'home' && (
           <div className="hero">
             <aside className="side side-left" aria-live="polite">
-              <h1 key={line}><Words text={LINES[line]} /></h1>
+              <Rotator className="left" index={line} render={(i) => <h1>{LINES[i]}</h1>} />
             </aside>
 
             <div className="center">
@@ -201,10 +222,9 @@ export default function App() {
             </div>
 
             <aside className="side side-right" aria-live="polite">
-              <div key={tag} className="tag">
-                <span className="tag-logo">{TAGS[tag].node}</span>
-                <span className="tag-text"><Words text={TAGS[tag].label} delay={120} /></span>
-              </div>
+              <Rotator className="right" index={tag} render={(i) => (
+                <div className="tag"><span className="tag-logo">{TAGS[i].node}</span><span>{TAGS[i].label}</span></div>
+              )} />
             </aside>
           </div>
         )}
@@ -293,7 +313,7 @@ export default function App() {
       </main>
 
       <footer>
-        <p>© {new Date().getFullYear()} Overlay · Built by <a href="https://souradeep.me" target="_blank" rel="noreferrer">Shohri</a></p>
+        <p>© {new Date().getFullYear()} Overlay · Built by <a href="https://souradeep.me" target="_blank" rel="noreferrer">Souradeep</a></p>
         <div className="legal-links">
           <button type="button" className={view === 'privacy' ? 'on' : ''} onClick={() => go('privacy')}>Privacy Policy</button>
           <button type="button" className={view === 'terms' ? 'on' : ''} onClick={() => go('terms')}>Terms of Service</button>

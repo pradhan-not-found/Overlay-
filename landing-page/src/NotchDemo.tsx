@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { CLAUDE, OPENAI } from './brand/marks';
+import { CLAUDE, GCAL, GITHUB, OPENAI } from './brand/marks';
 
 /**
  * The Overlay notch as it looks after you install it, in the app's own pixel
@@ -77,7 +77,7 @@ function createPad() {
   };
 }
 
-type Space = 'overview' | 'media' | 'focus' | 'today' | 'ai' | 'todos' | 'note' | 'clipboard' | 'hardware' | 'settings';
+type Space = 'overview' | 'media' | 'focus' | 'today' | 'ai' | 'todos' | 'note' | 'clipboard' | 'hardware' | 'weather' | 'clocks' | 'calc' | 'shelf' | 'colour' | 'launcher' | 'github' | 'settings';
 
 const I = (d: string, fill = false) => (
   <svg viewBox="0 0 24 24" aria-hidden="true" {...(fill ? { fill: 'currentColor' } : { fill: 'none', stroke: 'currentColor', strokeWidth: 2, strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const })}>
@@ -100,7 +100,56 @@ const DOCK: { id: Space; title: string; tint: string; d: string; fill?: boolean 
   { id: 'note', title: 'Note', tint: '#fbbf24', d: 'M14.5 4.5H7A2.5 2.5 0 0 0 4.5 7v10A2.5 2.5 0 0 0 7 19.5h10a2.5 2.5 0 0 0 2.5-2.5V9.5M18 3.5l2.5 2.5-7.5 7.5-3.25.75.75-3.25Z' },
   { id: 'clipboard', title: 'Clipboard', tint: '#2dd4bf', d: 'M8.5 4.5h7a2.5 2.5 0 0 1 2.5 2.5v11a2.5 2.5 0 0 1-2.5 2.5h-7A2.5 2.5 0 0 1 6 18V7a2.5 2.5 0 0 1 2.5-2.5ZM9.5 10h5M9.5 13.5h5M9.5 17h3' },
   { id: 'hardware', title: 'Hardware', tint: '#60a5fa', d: 'M8.5 6.5h7a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2h-7a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2ZM9.5 3.5v3M14.5 3.5v3M9.5 17.5v3M14.5 17.5v3M3.5 9.5h3M3.5 14.5h3M17.5 9.5h3M17.5 14.5h3' },
+  { id: 'weather', title: 'Weather', tint: '#38bdf8', d: 'M9 5.25V4M4.6 7.1l-.9-.9M3.25 11.5H2M13.4 7.1l.9-.9M5.3 13.7a4 4 0 1 1 7.1-3.6M9.25 19.5h8.5a3.5 3.5 0 0 0 .4-6.98 5 5 0 0 0-9.6 1.35A2.85 2.85 0 0 0 9.25 19.5Z' },
+  { id: 'clocks', title: 'Clocks', tint: '#f472b6', d: 'M12 20.25a8.25 8.25 0 1 0 0-16.5 8.25 8.25 0 0 0 0 16.5ZM3.75 12h16.5M12 3.75c2.3 2.3 3.4 5 3.4 8.25S14.3 17.95 12 20.25M12 3.75C9.7 6.05 8.6 8.75 8.6 12s1.1 5.95 3.4 8.25' },
+  { id: 'calc', title: 'Calc', tint: '#a3e635', d: 'M7.5 3.5h9a2.5 2.5 0 0 1 2.5 2.5v12a2.5 2.5 0 0 1-2.5 2.5h-9A2.5 2.5 0 0 1 5 18V6a2.5 2.5 0 0 1 2.5-2.5ZM8.5 7.5h7M8.5 12h.01M12 12h.01M15.5 12h.01M8.5 15.5h.01M12 15.5h.01M15.5 15.5h.01' },
+  { id: 'shelf', title: 'Shelf', tint: '#fb923c', d: 'M4 13.5 6.5 6a2 2 0 0 1 1.9-1.4h7.2A2 2 0 0 1 17.5 6l2.5 7.5M4 13.5h4.5l1.5 2.5h4l1.5-2.5H20V18a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2Z' },
+  { id: 'colour', title: 'Colour', tint: '#e879f9', d: 'M16 3.5a2.1 2.1 0 0 1 3 0l1.5 1.5a2.1 2.1 0 0 1 0 3L19 9.5 14.5 5ZM14.5 5l4.5 4.5-9.5 9.5H5v-4.5Z' },
+  { id: 'launcher', title: 'Launcher', tint: '#f87171', d: 'M11 17.5a6.5 6.5 0 1 0 0-13 6.5 6.5 0 0 0 0 13ZM20 20l-4.4-4.4' },
+  { id: 'github', title: 'GitHub', tint: '#e5e7eb', d: GITHUB.d, fill: true },
 ];
+
+const APPS = ['Google Chrome', 'Visual Studio Code', 'Spotify', 'Figma', 'Discord', 'Windows Terminal', 'Notion', 'Slack', 'File Explorer', 'Photoshop', 'OBS Studio', 'Microsoft Teams'];
+const ZONES: [string, string][] = [['Local', Intl.DateTimeFormat().resolvedOptions().timeZone], ['London', 'Europe/London'], ['New York', 'America/New_York'], ['Tokyo', 'Asia/Tokyo']];
+
+/** A small calculator parser, so nothing is passed to eval. */
+function calculate(src: string): number | null {
+  const s = src.replace(/×/g, '*').replace(/÷/g, '/').replace(/\s+/g, '');
+  if (!s) return null;
+  let i = 0;
+  const num = (): number => {
+    if (s[i] === '(') { i++; const v = add(); if (s[i++] !== ')') throw new Error('('); return v; }
+    if (s[i] === '-') { i++; return -num(); }
+    const m = /^\d+\.?\d*|^\.\d+/.exec(s.slice(i));
+    if (!m) throw new Error('n');
+    i += m[0].length;
+    let v = parseFloat(m[0]);
+    while (s[i] === '%') { i++; v /= 100; }
+    return v;
+  };
+  const pow = (): number => { const b = num(); if (s[i] === '^') { i++; return Math.pow(b, pow()); } return b; };
+  const mul = (): number => { let v = pow(); while (s[i] === '*' || s[i] === '/') { const o = s[i++]; const r = pow(); v = o === '*' ? v * r : v / r; } return v; };
+  const add = (): number => { let v = mul(); while (s[i] === '+' || s[i] === '-') { const o = s[i++]; const r = mul(); v = o === '+' ? v + r : v - r; } return v; };
+  try { const v = add(); return i === s.length && Number.isFinite(v) ? v : null; } catch { return null; }
+}
+
+function Dial({ tz, now }: { tz: string; now: Date }) {
+  const parts = new Intl.DateTimeFormat('en-GB', { timeZone: tz, hour: 'numeric', minute: 'numeric', hour12: false }).formatToParts(now);
+  const h = Number(parts.find((p) => p.type === 'hour')?.value || 0);
+  const m = Number(parts.find((p) => p.type === 'minute')?.value || 0);
+  const day = h >= 7 && h < 19;
+  const hand = (a: number, len: number, w: number) => {
+    const r = ((a - 90) * Math.PI) / 180;
+    return <line x1="20" y1="20" x2={20 + Math.cos(r) * len} y2={20 + Math.sin(r) * len} stroke={day ? '#000' : '#fff'} strokeWidth={w} strokeLinecap="round" />;
+  };
+  return (
+    <svg viewBox="0 0 40 40" className="ov-dial">
+      <circle cx="20" cy="20" r="19.5" fill={day ? '#f2f2f5' : '#1c1c21'} />
+      {hand(((h % 12) + m / 60) * 30, 9.5, 2.2)}{hand(m * 6, 14, 1.5)}
+      <circle cx="20" cy="20" r="1.7" fill="#ff9f43" />
+    </svg>
+  );
+}
 
 const clock = (s: number) => `${Math.floor(Math.max(0, s) / 60)}:${String(Math.floor(Math.max(0, s) % 60)).padStart(2, '0')}`;
 const Brand = ({ m, size }: { m: { d: string; color: string }; size: string }) => (
@@ -128,7 +177,15 @@ export default function NotchDemo({ open, onOpen, onClose }: { open: boolean; on
   const [now, setNow] = useState(() => new Date());
   const [focusLeft, setFocusLeft] = useState(25 * 60);
   const [focusOn, setFocusOn] = useState(false);
+  const [act, setAct] = useState(0);
   const [volume, setVolume] = useState(0.62);
+  const [expr, setExpr] = useState('12 × (3 + 4)');
+  const [history, setHistory] = useState<{ e: string; r: string }[]>([]);
+  const [files, setFiles] = useState(['Design review.fig', 'Q4 report.pdf', 'Cover art.png']);
+  const [colour, setColour] = useState('#0027c4');
+  const [swatches, setSwatches] = useState(['#0027c4', '#ff5f8f', '#fbbf24', '#34d399', '#1d1c21']);
+  const [query, setQuery] = useState('');
+  const dockRef = useRef<HTMLElement | null>(null);
   const [lyricsOn, setLyricsOn] = useState(true);
   const [note, setNote] = useState('Landing page: bigger laptop, smoother zoom, real notch.\nNext: Mac build, then Linux.');
   const [draft, setDraft] = useState('');
@@ -185,6 +242,14 @@ export default function NotchDemo({ open, onOpen, onClose }: { open: boolean; on
 
   useEffect(() => () => { audio.current?.pause(); pad.current?.close(); }, []);
 
+  // Closed, the notch rotates through what is live: music, AI limits, the next
+  // event and focus. While music plays it stays on the song.
+  useEffect(() => {
+    if (open || playing) { setAct(0); return; }
+    const t = window.setInterval(() => setAct((a) => (a + 1) % 4), 3200);
+    return () => window.clearInterval(t);
+  }, [open, playing]);
+
   const toggle = (e?: React.MouseEvent) => {
     e?.stopPropagation();
     if (mode === 'file') {
@@ -210,6 +275,32 @@ export default function NotchDemo({ open, onOpen, onClose }: { open: boolean; on
     if (mode === 'loop') loopStarted.current = performance.now() - t * 1000;
   };
   const go = (e: React.MouseEvent, s: Space) => { e.stopPropagation(); setSpace(s); };
+  useEffect(() => {
+    const dock = dockRef.current;
+    const btn = dock?.querySelector<HTMLElement>(`[data-space="${space}"]`);
+    if (dock && btn) dock.scrollTo({ left: btn.offsetLeft - dock.clientWidth / 2 + btn.clientWidth / 2, behavior: 'smooth' });
+  }, [space]);
+  useEffect(() => {
+    const dock = dockRef.current;
+    if (!dock) return;
+    const wheel = (e: WheelEvent) => {
+      if (Math.abs(e.deltaY) <= Math.abs(e.deltaX)) return;
+      e.preventDefault();
+      dock.scrollBy({ left: e.deltaY, behavior: 'smooth' });
+    };
+    dock.addEventListener('wheel', wheel, { passive: false });
+    return () => dock.removeEventListener('wheel', wheel);
+  }, []);
+  const pickColour = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    const ED = (window as any).EyeDropper;
+    if (!ED) { say('Your browser has no screen picker. In the app it picks any pixel.'); return; }
+    try {
+      const r = await new ED().open();
+      setColour(r.sRGBHex);
+      setSwatches((w) => [r.sRGBHex, ...w.filter((c) => c !== r.sRGBHex)].slice(0, 8));
+    } catch { /* cancelled */ }
+  };
   const applyVolume = (v: number) => {
     const x = Math.max(0, Math.min(1, v));
     setVolume(x);
@@ -243,12 +334,39 @@ export default function NotchDemo({ open, onOpen, onClose }: { open: boolean; on
         role={open ? undefined : 'button'}
         aria-label={open ? undefined : 'Open the notch'}
       >
-        {/* Closed: the live activity, like the app with music playing */}
+        {/* Closed: the live activity, cycling like the app */}
         <div className="ov-idle">
-          <i className="ov-art sm" style={art} />
-          <span className="ov-line">{track.title} · {track.artist}</span>
-          <span className="ov-bars"><i /><i /><i /><i /></span>
-          <button className="ov-btn" onClick={toggle} aria-label={playing ? 'Pause' : 'Play'}>{I(playing ? PAUSE : PLAY, true)}</button>
+          <div className="ov-act" key={act}>
+            {act === 0 && (
+              <>
+                <i className="ov-art sm" style={art} />
+                <span className="ov-line">{track.title} · {track.artist}</span>
+                <span className="ov-bars"><i /><i /><i /><i /></span>
+                <button className="ov-btn" onClick={toggle} aria-label={playing ? 'Pause' : 'Play'}>{I(playing ? PAUSE : PLAY, true)}</button>
+              </>
+            )}
+            {act === 1 && (
+              <>
+                <span className="ov-act-ring"><Ring pct={87} color="#ffb340" /><Brand m={CLAUDE} size="calc(var(--u) * 11)" /></span>
+                <span className="ov-line">Claude session <b>87%</b></span>
+                <span className="ov-act-meta">resets in 1h 49m</span>
+              </>
+            )}
+            {act === 2 && (
+              <>
+                <span className="ov-act-logo"><Brand m={GCAL} size="calc(var(--u) * 16)" /></span>
+                <span className="ov-line">Design review</span>
+                <span className="ov-act-meta">in 25 min</span>
+              </>
+            )}
+            {act === 3 && (
+              <>
+                <span className="ov-act-dot" />
+                <span className="ov-line">Lock In <b>{clock(focusLeft)}</b></span>
+                <span className="ov-act-meta">2 sessions today</span>
+              </>
+            )}
+          </div>
         </div>
 
         {/* Open: one tool at a time, with the dock along the bottom */}
@@ -373,6 +491,109 @@ export default function NotchDemo({ open, onOpen, onClose }: { open: boolean; on
               </div>
             )}
 
+
+            {space === 'weather' && (
+              <div className="sp sp-weather">
+                <div className="ov-wnow">
+                  <span className="ov-wicon">{I(DOCK.find((d) => d.id === 'weather')!.d)}</span>
+                  <div><b className="ov-big">24°</b><span>Partly cloudy</span></div>
+                  <div className="ov-wside"><b>Kolkata</b><span>Feels 26° · H 27° L 19°</span><span>Wind 9 km/h · Humidity 62%</span></div>
+                </div>
+                <div className="ov-wdays">
+                  {['Today', 'Thu', 'Fri', 'Sat', 'Sun'].map((d, k) => (
+                    <div key={d}><span>{d}</span>{I(k === 2 ? 'M7.25 14.5h10a4 4 0 0 0 .5-7.97 5.75 5.75 0 0 0-11.1 1.55A3.25 3.25 0 0 0 7.25 14.5ZM8.5 17.5l-1 2.5M12.5 17.5l-1 2.5M16.5 17.5l-1 2.5' : DOCK.find((x) => x.id === 'weather')!.d)}<b>{[27, 26, 22, 25, 28][k]}°</b><small>{[19, 18, 17, 18, 20][k]}°</small></div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {space === 'clocks' && (
+              <div className="sp sp-clocks">
+                {ZONES.map(([name, tz]) => (
+                  <div className="ov-clockcard" key={name}>
+                    <Dial tz={tz} now={now} />
+                    <div><b>{now.toLocaleTimeString([], { timeZone: tz, hour: 'numeric', minute: '2-digit' })}</b><span>{name}</span></div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {space === 'calc' && (
+              <div className="sp sp-calc">
+                <form className="ov-calc" onClick={(e) => e.stopPropagation()} onSubmit={(e) => { e.preventDefault(); const r = calculate(expr); if (r !== null) { setHistory([{ e: expr, r: String(Number(r.toPrecision(12))) }, ...history].slice(0, 3)); } }}>
+                  <input value={expr} onChange={(e) => setExpr(e.target.value)} spellCheck={false} aria-label="Expression" />
+                  <b>{(() => { const r = calculate(expr); return r === null ? '' : `= ${Number(r.toPrecision(12)).toLocaleString()}`; })()}</b>
+                </form>
+                <div className="ov-hist">{history.length ? history.map((h, k) => <div key={k}><span>{h.e}</span><b>= {h.r}</b></div>) : <span className="ov-muted">Press Enter to keep a result here.</span>}</div>
+              </div>
+            )}
+
+            {space === 'shelf' && (
+              <div className="sp sp-shelf" onClick={(e) => e.stopPropagation()}
+                onDragOver={(e) => e.preventDefault()}
+                onDrop={(e) => { e.preventDefault(); const names = [...e.dataTransfer.files].map((f) => f.name); if (names.length) setFiles((f) => [...names, ...f].slice(0, 8)); }}>
+                <div className="ov-files">
+                  {files.map((f) => (
+                    <div className="ov-file" key={f}>
+                      <span className={`ov-ext ${f.split('.').pop()}`}>{f.split('.').pop()?.toUpperCase()}</span>
+                      <span className="ov-fname">{f}</span>
+                      <button className="ov-x" onClick={() => setFiles(files.filter((x) => x !== f))} aria-label={`Remove ${f}`}>{I('M17 7 7 17M7 7l10 10')}</button>
+                    </div>
+                  ))}
+                </div>
+                <span className="ov-muted">Drop files here. In the app you drag them back out into any window.</span>
+              </div>
+            )}
+
+            {space === 'colour' && (
+              <div className="sp sp-colour">
+                <div className="ov-colrow">
+                  <button className="ov-pick" style={{ background: colour }} onClick={pickColour}><span>Pick from screen</span></button>
+                  <div className="ov-formats">
+                    {(() => {
+                      const n = parseInt(colour.slice(1), 16); const r = (n >> 16) & 255; const g = (n >> 8) & 255; const b = n & 255;
+                      return [['HEX', colour.toUpperCase()], ['RGB', `rgb(${r}, ${g}, ${b})`]].map(([k, v]) => (
+                        <button key={k} className={`ov-format${copied === v ? ' copied' : ''}`} onClick={(e) => { e.stopPropagation(); void navigator.clipboard?.writeText(v); setCopied(v); window.setTimeout(() => setCopied(''), 1200); }}>
+                          <span>{k}</span><b>{copied === v ? 'Copied' : v}</b>
+                        </button>
+                      ));
+                    })()}
+                  </div>
+                </div>
+                <div className="ov-swatches">{swatches.map((c) => <button key={c} className={c === colour ? 'on' : ''} style={{ background: c }} onClick={(e) => { e.stopPropagation(); setColour(c); }} aria-label={c} />)}</div>
+              </div>
+            )}
+
+            {space === 'launcher' && (
+              <div className="sp sp-launcher" onClick={(e) => e.stopPropagation()}>
+                <form className="ov-add" onSubmit={(e) => { e.preventDefault(); const hit = APPS.find((a) => a.toLowerCase().includes(query.toLowerCase().trim())); if (hit && query.trim()) say(`In the app, this opens ${hit}.`); }}>
+                  <span>{I('M11 17.5a6.5 6.5 0 1 0 0-13 6.5 6.5 0 0 0 0 13ZM20 20l-4.4-4.4')}</span>
+                  <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search your apps" />
+                </form>
+                <div className="ov-apps">
+                  {APPS.filter((a) => a.toLowerCase().includes(query.toLowerCase().trim())).slice(0, 5).map((a, k) => (
+                    <button key={a} className={`ov-app${k === 0 && query ? ' on' : ''}`} onClick={() => say(`In the app, this opens ${a}.`)}>
+                      <i style={{ background: `hsl(${(a.length * 47) % 360} 70% 55%)` }}>{a[0]}</i><span>{a}</span>{k === 0 && query ? <kbd>Enter</kbd> : null}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {space === 'github' && (
+              <div className="sp sp-github">
+                <div className="ov-ghhead"><Brand m={{ ...GITHUB, color: '#0d0f16' }} size="calc(var(--u) * 18)" /><b>souradeep</b><span>12 day streak · 3 open PRs</span></div>
+                <div className="ov-contrib">
+                  {Array.from({ length: 26 * 7 }, (_, k) => {
+                    const v = (Math.sin(k * 12.9898) * 43758.5453) % 1;
+                    const lvl = v < 0.35 ? 0 : v < 0.6 ? 1 : v < 0.8 ? 2 : v < 0.93 ? 3 : 4;
+                    return <i key={k} className={`l${lvl}`} />;
+                  })}
+                </div>
+                <span className="ov-muted">Contributions over the last six months</span>
+              </div>
+            )}
+
             {space === 'settings' && (
               <div className="sp sp-settings">
                 {([['login', 'Start Overlay with Windows'], ['lyrics', 'Show lyrics while music plays'], ['autoswitch', 'Hand off when an AI limit runs out'], ['battery', 'Show battery in the notch']] as [keyof typeof prefs, string][]).map(([k, label]) => (
@@ -393,9 +614,9 @@ export default function NotchDemo({ open, onOpen, onClose }: { open: boolean; on
           </div>
 
           {toast && <div className="ov-toast">{toast}</div>}
-          <nav className="ov-dock">
+          <nav className="ov-dock" ref={dockRef}>
             {DOCK.map((d) => (
-              <button key={d.id} className={`ov-dot${d.id === space ? ' on' : ''}`} style={{ color: d.tint }} onClick={(e) => go(e, d.id)} aria-label={d.title} title={d.title}>{I(d.d, d.fill)}</button>
+              <button key={d.id} data-space={d.id} className={`ov-dot${d.id === space ? ' on' : ''}`} style={{ color: d.tint }} onClick={(e) => go(e, d.id)} aria-label={d.title} title={d.title}>{I(d.d, d.fill)}</button>
             ))}
             <span className="ov-dock-gap" />
             <button className={`ov-dot gear${space === 'settings' ? ' on' : ''}`} onClick={(e) => go(e, 'settings')} aria-label="Settings" title="Settings">{I(GEAR)}</button>
