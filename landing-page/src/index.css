@@ -1,11 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Rethink+Sans:ital,wght@0,400..800;1,400..800&display=swap');
-
-@font-face {
-  font-family: "Helvetica";
-  src: url('/fonts/Helvetica.ttf') format('truetype');
-  font-weight: 100 900;
-  font-display: block;
-}
+@import url('https://fonts.googleapis.com/css2?family=Instrument+Sans:ital,wdth,wght@0,75..100,400..700;1,75..100,400..700&display=swap');
 
 *, *::before, *::after {
   box-sizing: border-box;
@@ -21,7 +14,7 @@
 html, body {
   width: 100vw;
   height: 100vh;
-  font-family: "Helvetica", -apple-system, sans-serif;
+  font-family: 'Instrument Sans', system-ui, sans-serif;
   background-color: #ffffff;
   color: #000000;
   -webkit-font-smoothing: antialiased;
@@ -101,7 +94,7 @@ body::before {
 }
 
 .brand-name {
-  font-family: 'Rethink Sans', sans-serif;
+  font-family: 'Instrument Sans', system-ui, sans-serif;
   font-size: 20px;
   font-weight: 700;
   color: #000000;
@@ -109,7 +102,7 @@ body::before {
 }
 
 .beta-tag {
-  font-family: 'Rethink Sans', sans-serif;
+  font-family: 'Instrument Sans', system-ui, sans-serif;
   font-weight: 700;
   font-size: 11px;
   padding: 1px 6px;
@@ -129,7 +122,7 @@ body::before {
 }
 
 .nav-link {
-  font-family: 'Rethink Sans', sans-serif;
+  font-family: 'Instrument Sans', system-ui, sans-serif;
   font-weight: 600;
   font-size: 15px;
   color: #666666;
@@ -142,7 +135,7 @@ body::before {
 }
 
 .nav-button {
-  font-family: 'Rethink Sans', sans-serif;
+  font-family: 'Instrument Sans', system-ui, sans-serif;
   font-weight: 700;
   font-size: 15px;
   background-color: #000000;
@@ -446,7 +439,7 @@ body::before {
 .pricing-row h3 {
   font-size: 20px;
   margin: 0 0 8px 0;
-  font-family: 'Rethink Sans', sans-serif;
+  font-family: 'Instrument Sans', system-ui, sans-serif;
   font-weight: 700;
   display: flex;
   align-items: center;
@@ -580,7 +573,7 @@ body::before {
   gap: 12px;
   padding: 12px 24px;
   border-radius: 8px;
-  font-family: 'Inter', sans-serif;
+  font-family: 'Instrument Sans', system-ui, sans-serif;
   font-weight: 600;
   font-size: 16px;
   text-decoration: none;
