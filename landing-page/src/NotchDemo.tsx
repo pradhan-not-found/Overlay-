@@ -2,22 +2,37 @@ import { useEffect, useRef, useState } from 'react';
 
 /**
  * The Overlay notch as it looks after you install it, laid out in the app's own
- * pixel sizes (scaled to the laptop screen). Play actually plays: a short ambient
- * loop is generated in the browser, so there is no recording to license.
+ * pixel sizes (scaled to the laptop screen). Play opens YouTube's official player
+ * in a small window on the desktop, and the notch follows it, as the app does
+ * with any media player.
  */
 
-const LYRICS = [
-  'Streetlights fold into the rearview',
-  'Every signal turning blue',
-  'Keep the engine humming low',
-  'Nowhere that we have to go',
-  'City breathing in the dark',
-  'Windows open, radio on',
-  'Every light says keep on going',
-  'Night drive till the dawn',
-];
-const LINE_MS = 4000;
-const LENGTH_S = 235;
+const TRACK = {
+  id: 'q8bP3DW8EpY',
+  start: 18,
+  title: 'Just a Boy',
+  artist: 'DrINsaNE',
+  art: 'https://i.ytimg.com/vi/q8bP3DW8EpY/hqdefault.jpg',
+};
+
+declare global {
+  interface Window { YT?: any; onYouTubeIframeAPIReady?: () => void }
+}
+
+let apiReady: Promise<void> | null = null;
+function loadYouTube(): Promise<void> {
+  if (window.YT?.Player) return Promise.resolve();
+  if (!apiReady) {
+    apiReady = new Promise((resolve) => {
+      const prev = window.onYouTubeIframeAPIReady;
+      window.onYouTubeIframeAPIReady = () => { prev?.(); resolve(); };
+      const tag = document.createElement('script');
+      tag.src = 'https://www.youtube.com/iframe_api';
+      document.head.appendChild(tag);
+    });
+  }
+  return apiReady;
+}
 
 const ico = (d: string, fill = false) => (
   <svg viewBox="0 0 24 24" aria-hidden="true" {...(fill ? { fill: 'currentColor' } : { fill: 'none', stroke: 'currentColor', strokeWidth: 2, strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const })}>
@@ -42,67 +57,14 @@ const DOCK: { tint: string; d: string; active?: boolean; star?: boolean }[] = [
 ];
 const GEAR = 'M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2zM12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z';
 
-/** A gentle four-chord pad, scheduled ahead in the Web Audio clock. */
-function createPad() {
-  const ctx = new AudioContext();
-  const master = ctx.createGain();
-  master.gain.value = 0;
-  const filter = ctx.createBiquadFilter();
-  filter.type = 'lowpass';
-  filter.frequency.value = 1400;
-  filter.Q.value = 0.4;
-  master.connect(filter).connect(ctx.destination);
-  const chords = [[57, 60, 64, 69], [53, 57, 60, 65], [48, 52, 55, 60], [55, 59, 62, 67]];
-  const hz = (m: number) => 440 * Math.pow(2, (m - 69) / 12);
-  const BAR = 2.4;
-  let next = ctx.currentTime + 0.05;
-  let step = 0;
-  const schedule = () => {
-    while (next < ctx.currentTime + 1.2) {
-      const chord = chords[step % chords.length];
-      chord.forEach((note, k) => {
-        const osc = ctx.createOscillator();
-        const g = ctx.createGain();
-        osc.type = k === 0 ? 'triangle' : 'sine';
-        osc.frequency.value = hz(k === 0 ? note - 12 : note);
-        g.gain.setValueAtTime(0, next);
-        g.gain.linearRampToValueAtTime(k === 0 ? 0.12 : 0.06, next + 0.35);
-        g.gain.linearRampToValueAtTime(0.0001, next + BAR + 0.6);
-        osc.connect(g).connect(master);
-        osc.start(next);
-        osc.stop(next + BAR + 0.7);
-      });
-      // A soft pluck on the off-beat keeps it moving.
-      [0.6, 1.8].forEach((off, k) => {
-        const osc = ctx.createOscillator();
-        const g = ctx.createGain();
-        osc.type = 'sine';
-        osc.frequency.value = hz(chord[(k + step) % 4] + 12);
-        g.gain.setValueAtTime(0.05, next + off);
-        g.gain.exponentialRampToValueAtTime(0.0001, next + off + 0.5);
-        osc.connect(g).connect(master);
-        osc.start(next + off);
-        osc.stop(next + off + 0.55);
-      });
-      next += BAR;
-      step += 1;
-    }
-  };
-  const timer = window.setInterval(schedule, 250);
-  schedule();
-  return {
-    play() { void ctx.resume(); master.gain.cancelScheduledValues(ctx.currentTime); master.gain.linearRampToValueAtTime(0.9, ctx.currentTime + 0.4); },
-    pause() { master.gain.cancelScheduledValues(ctx.currentTime); master.gain.linearRampToValueAtTime(0, ctx.currentTime + 0.25); window.setTimeout(() => void ctx.suspend(), 300); },
-    close() { window.clearInterval(timer); void ctx.close(); },
-  };
-}
-
 const clock = (s: number) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
 
 export default function NotchDemo({ open, onClose }: { open: boolean; onClose: () => void }) {
   const [playing, setPlaying] = useState(false);
-  const [ms, setMs] = useState(84_000);
-  const pad = useRef<ReturnType<typeof createPad> | null>(null);
+  const [shown, setShown] = useState(false);
+  const [pos, setPos] = useState({ t: TRACK.start, d: 0 });
+  const host = useRef<HTMLDivElement | null>(null);
+  const player = useRef<any>(null);
   const [time, setTime] = useState(() => new Date());
 
   useEffect(() => {
@@ -110,39 +72,67 @@ export default function NotchDemo({ open, onClose }: { open: boolean; onClose: (
     return () => window.clearInterval(t);
   }, []);
 
+  // Follow the player's clock while it plays.
   useEffect(() => {
     if (!playing) return;
-    const started = performance.now() - ms;
-    const t = window.setInterval(() => setMs((performance.now() - started) % (LENGTH_S * 1000)), 200);
+    const t = window.setInterval(() => {
+      const p = player.current;
+      if (p?.getCurrentTime) setPos({ t: p.getCurrentTime() || 0, d: p.getDuration() || 0 });
+    }, 250);
     return () => window.clearInterval(t);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [playing]);
 
-  useEffect(() => () => pad.current?.close(), []);
+  useEffect(() => () => player.current?.destroy?.(), []);
+
+  const create = async () => {
+    await loadYouTube();
+    if (player.current || !host.current) return;
+    player.current = new window.YT.Player(host.current, {
+      videoId: TRACK.id,
+      width: '100%',
+      height: '100%',
+      playerVars: { start: TRACK.start, autoplay: 1, playsinline: 1, rel: 0, modestbranding: 1 },
+      events: {
+        onStateChange: (e: any) => {
+          const YT = window.YT;
+          if (e.data === YT.PlayerState.PLAYING) setPlaying(true);
+          if (e.data === YT.PlayerState.PAUSED || e.data === YT.PlayerState.ENDED) setPlaying(false);
+        },
+      },
+    });
+  };
 
   const toggle = (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (!pad.current) pad.current = createPad();
-    if (playing) pad.current.pause(); else pad.current.play();
-    setPlaying(!playing);
+    setShown(true);
+    if (!player.current) { void create(); return; }
+    if (playing) player.current.pauseVideo(); else player.current.playVideo();
   };
   const skip = (e: React.MouseEvent, dir: number) => {
     e.stopPropagation();
-    setMs((v) => Math.max(0, Math.min(LENGTH_S * 1000 - 1, Math.floor(v / LINE_MS + dir) * LINE_MS)));
+    const p = player.current;
+    if (!p?.seekTo) return;
+    p.seekTo(dir < 0 ? TRACK.start : Math.min((p.getDuration() || 0) - 1, (p.getCurrentTime() || 0) + 15), true);
+  };
+  const closeWindow = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    player.current?.pauseVideo?.();
+    setShown(false);
   };
 
-  const line = Math.floor(ms / LINE_MS) % LYRICS.length;
-  const s = ms / 1000;
+  const s = pos.t;
+  const len = pos.d || 0;
   const hhmm = time.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
 
   return (
+    <>
     <div className={`ov${open ? ' open' : ''}${playing ? ' playing' : ''}`} onClick={(e) => open && e.stopPropagation()}>
       {/* Closed: the bar along the top edge */}
       <div className="ov-idle">
         {playing ? (
           <>
-            <i className="ov-art sm" />
-            <span className="ov-line">{LYRICS[line]}</span>
+            <i className="ov-art sm" style={{ backgroundImage: `url(${TRACK.art})` }} />
+            <span className="ov-line">{TRACK.title} · {TRACK.artist}</span>
             <span className="ov-bars"><i /><i /><i /><i /></span>
             <button className="ov-btn" onClick={toggle} aria-label="Pause">{ico(PAUSE, true)}</button>
           </>
@@ -169,11 +159,11 @@ export default function NotchDemo({ open, onClose }: { open: boolean; onClose: (
           </div>
         </header>
         <div className="ov-np">
-          <i className="ov-art" />
-          <div className="ov-np-text"><b>Night Drive</b><span>Overlay Sessions</span></div>
+          <i className="ov-art" style={{ backgroundImage: `url(${TRACK.art})` }} />
+          <div className="ov-np-text"><b>{TRACK.title}</b><span>{TRACK.artist}</span></div>
           <span className="ov-bars"><i /><i /><i /><i /></span>
         </div>
-        <div className="ov-progress"><span>{clock(s)}</span><div><i style={{ width: `${(s / LENGTH_S) * 100}%` }} /></div><span>-{clock(LENGTH_S - s)}</span></div>
+        <div className="ov-progress"><span>{clock(s)}</span><div><i style={{ width: `${len ? (s / len) * 100 : 0}%` }} /></div><span>{len ? `-${clock(len - s)}` : '0:00'}</span></div>
         <div className="ov-ctrls">
           <span className="ov-vol">{ico('M4.5 9.5h2.8L11.6 6a.6.6 0 0 1 .9.5v11a.6.6 0 0 1-.9.5l-4.3-3.5H4.5a1 1 0 0 1-1-1v-3a1 1 0 0 1 1-1ZM15.8 9a4.2 4.2 0 0 1 0 6M18.6 6.4a8 8 0 0 1 0 11.2')}<i><b /></i></span>
           <div className="ov-main">
@@ -184,9 +174,8 @@ export default function NotchDemo({ open, onClose }: { open: boolean; onClose: (
           <span className="ov-ly">{ico('M4 6h11M4 11h8M4 16h5M17 19a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5ZM19.5 16.5V7.5l2-1')}</span>
         </div>
         <div className="ov-lyrics">
-          <p>{LYRICS[(line + LYRICS.length - 1) % LYRICS.length]}</p>
-          <p className="cur" key={line}>{LYRICS[line]}</p>
-          <p>{LYRICS[(line + 1) % LYRICS.length]}</p>
+          <p className="cur">{playing ? 'Playing from YouTube' : 'Press play'}</p>
+          <p>In the app, the lyrics scroll here line by line.</p>
         </div>
         <nav className="ov-dock" aria-hidden="true">
           {DOCK.map((d, k) => (
@@ -197,5 +186,15 @@ export default function NotchDemo({ open, onClose }: { open: boolean; onClose: (
         </nav>
       </div>
     </div>
+
+    {/* The official YouTube player, visible on the desktop while it plays. */}
+    <div className={`yt-window${shown ? ' show' : ''}`} onClick={(e) => e.stopPropagation()}>
+      <div className="yt-bar">
+        <span>{TRACK.title} · YouTube</span>
+        <button onClick={closeWindow} aria-label="Close player">{ico('M17 7 7 17M7 7l10 10')}</button>
+      </div>
+      <div className="yt-frame"><div ref={host} /></div>
+    </div>
+    </>
   );
 }

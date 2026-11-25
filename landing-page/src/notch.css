@@ -96,6 +96,7 @@
   box-shadow: 0 calc(var(--u) * 10) calc(var(--u) * 28) rgba(0, 0, 0, 0.55);
 }
 .ov-art.sm { width: calc(var(--u) * 24); height: calc(var(--u) * 24); border-radius: calc(var(--u) * 7); box-shadow: none; }
+.ov-art[style] { background-size: cover; background-position: center; }
 
 .ov-bars { display: inline-flex; align-items: center; gap: calc(var(--u) * 2); height: calc(var(--u) * 14); }
 .ov-bars i { width: calc(var(--u) * 3); height: 100%; border-radius: calc(var(--u) * 2); background: #32d27a; transform: scaleY(0.25); }
@@ -219,3 +220,38 @@
   .ov, .ov-exp, .ov-idle { transition: none !important; }
   .ov-bars i, .ov-lyrics p.cur { animation: none !important; }
 }
+
+/* A small desktop window holding YouTube's player while it plays. */
+.yt-window {
+  position: absolute;
+  right: 3cqw;
+  bottom: 4cqw;
+  z-index: 1;
+  width: 46cqw;
+  border-radius: 1.4cqw;
+  overflow: hidden;
+  background: #0e0e11;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 2cqw 5cqw rgba(0, 0, 0, 0.5);
+  opacity: 0;
+  transform: translateY(2cqw) scale(0.96);
+  pointer-events: none;
+  transition: opacity 0.3s ease, transform 0.45s cubic-bezier(0.2, 0.9, 0.25, 1);
+}
+.yt-window.show { opacity: 1; transform: none; pointer-events: auto; }
+.yt-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 3.6cqw;
+  padding: 0 0.8cqw 0 1.4cqw;
+  font-family: var(--sans);
+  font-size: 1.4cqw;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.85);
+}
+.yt-bar button { width: 2.6cqw; height: 2.6cqw; padding: 0.5cqw; border: none; border-radius: 0.6cqw; background: transparent; color: rgba(255, 255, 255, 0.7); cursor: pointer; }
+.yt-bar button:hover { background: rgba(255, 255, 255, 0.1); color: #fff; }
+.yt-bar svg { width: 100%; height: 100%; }
+.yt-frame { aspect-ratio: 16 / 9; background: #000; }
+.yt-frame > *, .yt-frame iframe { width: 100%; height: 100%; display: block; border: 0; }
