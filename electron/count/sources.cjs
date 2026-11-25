@@ -357,9 +357,12 @@ async function latestSession(kind) {
       if (typeof r.cwd === 'string') ctx.cwd = r.cwd;
       const m = rec(r.message);
       if (!m) continue;
-      if (r.type === 'user' && m.role === 'user' && !r.isMeta) {
-        const t = textOf(m.content);
-        if (t && !t.startsWith('<') && !t.includes('tool_use_id')) ctx.prompts.push(clean(t));
+      if (r.type === 'user' && m.role === 'user' && !r.isMeta && !r.toolUseResult) {
+        // Only what the person typed: a plain string or text blocks, never tool results.
+        const blocks = Array.isArray(m.content) ? m.content : [m.content];
+        if (blocks.some((x) => rec(x) && x.type === 'tool_result')) continue;
+        const t = blocks.map((x) => (typeof x === 'string' ? x : rec(x) && x.type === 'text' ? x.text : '')).join(' ').trim();
+        if (t && !t.startsWith('<') && !/^\[Request interrupted/.test(t)) ctx.prompts.push(clean(t));
       }
       if (r.type === 'assistant' && Array.isArray(m.content)) {
         for (const part of m.content) {

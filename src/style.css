@@ -67,7 +67,7 @@ button { -webkit-app-region: no-drag; }
 .pill[data-docked='true']::before { left: -16px; background: radial-gradient(circle at 0 100%, transparent 15.5px, #000 16px); }
 .pill[data-docked='true']::after { right: -16px; background: radial-gradient(circle at 100% 100%, transparent 15.5px, #000 16px); }
 .pill[data-docked='true'] { border: none; border-top-left-radius: 0; border-top-right-radius: 0; }
-.pill[data-phase='expanded'] { --w: 560px; height: 360px; border-radius: 30px; }
+.pill[data-phase='expanded'] { --w: 600px; height: 360px; border-radius: 30px; }
 .pill[data-phase='calendar'] { --w: 760px; height: 320px; border-radius: 30px; }
 .pill[data-phase='count'] { --w: 400px; height: calc(100vh - 60px); border-radius: 28px; }
 .pill[data-docked='true'][data-phase] { border-top-left-radius: 0; border-top-right-radius: 0; }
@@ -536,10 +536,11 @@ button { -webkit-app-region: no-drag; }
 .hw-spark, .hw-net { border-radius: 14px; background: var(--raise); border: 1px solid var(--line); padding: 10px 12px; display: flex; flex-direction: column; gap: 6px; }
 .hw-spark svg { flex: 1; width: 100%; min-height: 30px; }
 .hw-net b { font-size: 13px; font-weight: 600; font-variant-numeric: tabular-nums; }
-.dock { overflow-x: auto; scrollbar-width: none; }
-.dock::-webkit-scrollbar { display: none; }
-.space-dot, .dock-btn { flex-shrink: 0; width: 34px; height: 36px; }
-.dock { gap: 2px; scroll-padding: 0 40px; }
+.dock { gap: 1px; padding: 0 7px; justify-content: space-between; overflow: hidden; }
+.space-dot, .dock-btn { flex: 0 0 32px; width: 32px; height: 36px; border-radius: 10px; }
+.space-dot svg, .dock-btn svg { width: 17px; height: 17px; }
+.space-dot .count-mark { width: 16px; height: 16px; }
+.dock-sep { flex: 0 0 1px; width: 1px; height: 20px; background: var(--line-2); margin: 0 3px; }
 
 /* ── Weather, Clocks, Calc, Shelf, Colour, Launcher ───────────────────── */
 .p-weather, .p-clocks, .p-calc, .p-shelf, .p-colour, .p-launcher { flex-direction: column; gap: 10px; }

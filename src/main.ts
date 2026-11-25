@@ -614,7 +614,7 @@ setInterval(tickClock, 1000);
 })();
 
 // ─── Phase switcher ──────────────────────────────────────────────────────────
-const EXP_W = 540, EXP_H = 360;
+const EXP_W = 600, EXP_H = 360;
 const viewCountEl = document.getElementById('view-count')!;
 
 function setPhase(next: Phase) {
@@ -677,7 +677,6 @@ function showSpace(name: string) {
   if (name === 'count') openCountSpace();
   extra.onSpace(name);
   more.onSpace(name);
-  document.querySelector<HTMLElement>(`.space-dot[data-space="${name}"]`)?.scrollIntoView({ block: 'nearest', inline: 'nearest', behavior: 'smooth' });
   send('set-setting', 'lastSpace', name);
 }
 document.querySelectorAll<HTMLElement>('.space-dot').forEach((dot) => {

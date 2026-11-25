@@ -179,7 +179,9 @@ async function handoff(from, to, reason, launch) {
   const name = CONTEXT_FILE[target];
   const cwd = ctx && ctx.cwd && fs.existsSync(ctx.cwd) ? ctx.cwd : os.homedir();
   let file = null;
-  if (settings.writeContextFile && ctx && ctx.cwd && name && fs.existsSync(ctx.cwd)) {
+  // Only a switch you start yourself writes into the project. Automatic ones
+  // prepare the context and wait for your click, so nothing lands in a repo unasked.
+  if (launch && settings.writeContextFile && ctx && ctx.cwd && name && fs.existsSync(ctx.cwd)) {
     file = path.join(ctx.cwd, name);
     writeManaged(file, text);
   }

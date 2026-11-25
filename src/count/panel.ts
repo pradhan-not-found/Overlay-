@@ -253,7 +253,7 @@ function renderSidebar(s: Snapshot) {
         <p class="p-label">Automatic switching</p>
         <label class="cnt-toggle"><span><b>Hand off when a limit runs out</b><small>Prepares your context for the tool with the most headroom, then notifies you.</small></span>
           <input type="checkbox" data-set="autoSwitch" ${s.settings.autoSwitch ? 'checked' : ''}><i></i></label>
-        <label class="cnt-toggle"><span><b>Write it into the project</b><small>A marked block in CLAUDE.md or AGENTS.md, replaced each time.</small></span>
+        <label class="cnt-toggle"><span><b>Write it into the project</b><small>When you click Continue, a marked block goes into CLAUDE.md or AGENTS.md, replaced each time.</small></span>
           <input type="checkbox" data-set="writeContextFile" ${s.settings.writeContextFile ? 'checked' : ''}><i></i></label>
         <label class="cnt-select"><span>Switch at</span>
           <select data-set="switchAt">${[80, 85, 90, 95, 100].map((v) => `<option value="${v}" ${v === s.settings.switchAt ? 'selected' : ''}>${v}% used</option>`).join('')}</select></label>
