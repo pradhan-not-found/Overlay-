@@ -179,9 +179,9 @@ function renderSidebar(s: Snapshot) {
     <header class="cnt-head">
       ${countTile(28)}
       <div class="cnt-title"><b>Count</b><span>AI usage on this PC</span></div>
-      <button class="ibtn ibtn-sm" data-act="refresh" title="Rescan">${s.syncing ? countMark(14, 'currentColor', true) : '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12a8 8 0 1 1-2.34-5.66M20 4v4.5h-4.5"/></svg>'}</button>
+      <button class="ibtn ibtn-sm" data-act="refresh" title="Rescan">${s.syncing ? countMark(14, 'currentColor', true) : '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12a8 8 0 1 1-2.34-5.66M20 4v4.5h-4.5"/></svg>'}</button>
       <button class="ibtn ibtn-sm" data-act="close" title="Close">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"><path d="M17 7 7 17M7 7l10 10"/></svg>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M17 7 7 17M7 7l10 10"/></svg>
       </button>
     </header>
 

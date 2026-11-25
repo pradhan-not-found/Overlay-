@@ -4,7 +4,7 @@ type Invoke = (ch: string, ...a: any[]) => Promise<any>;
 type Send = (ch: string, ...a: any[]) => void;
 
 const esc = (v: string) => v.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
-const stroke = (d: string, size = 16, sw = 1.75) =>
+const stroke = (d: string, size = 16, sw = 2) =>
   `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${sw}" stroke-linecap="round" stroke-linejoin="round">${d}</svg>`;
 const getJSON = async <T,>(invoke: Invoke, key: string, fallback: T): Promise<T> => {
   try { const v = await invoke('get-setting', key, ''); return v ? JSON.parse(v) as T : fallback; } catch { return fallback; }

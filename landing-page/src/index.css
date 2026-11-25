@@ -7,7 +7,7 @@
 }
 
 ::selection {
-  background-color: #fef08a; /* light yellow */
+  background-color: #d6defe; /* brand blue, light */
   color: #000000;
 }
 
@@ -18,7 +18,7 @@ html, body {
   background-color: #ffffff;
   color: #000000;
   -webkit-font-smoothing: antialiased;
-  letter-spacing: -0.02em;
+  letter-spacing: -0.011em;
   overflow: hidden;
   position: relative;
 }
@@ -89,21 +89,19 @@ body::before {
   height: 24px;
   border-radius: 6px;
   box-shadow: 0 4px 12px -2px rgba(0,0,0,0.1), 0 1px 3px -1px rgba(0,0,0,0.05);
-  /* The logo is white by default in the main app, so we invert it for the white background */
-  filter: invert(1);
 }
 
 .brand-name {
   font-family: 'Instrument Sans', system-ui, sans-serif;
   font-size: 20px;
-  font-weight: 700;
+  font-weight: 600;
   color: #000000;
-  letter-spacing: -0.04em;
+  letter-spacing: -0.025em;
 }
 
 .beta-tag {
   font-family: 'Instrument Sans', system-ui, sans-serif;
-  font-weight: 700;
+  font-weight: 600;
   font-size: 11px;
   padding: 1px 6px;
   background-color: #e5e5e5;
@@ -136,7 +134,7 @@ body::before {
 
 .nav-button {
   font-family: 'Instrument Sans', system-ui, sans-serif;
-  font-weight: 700;
+  font-weight: 600;
   font-size: 15px;
   background-color: #000000;
   color: #ffffff;
@@ -189,12 +187,12 @@ body::before {
 }
 
 .bold-claim {
-  font-size: 48px;
-  font-weight: 800;
-  color: #000000;
-  line-height: 1.1;
-  margin-bottom: 24px;
-  letter-spacing: -0.05em;
+  font-size: 52px;
+  font-weight: 600;
+  color: #0a0a0b;
+  line-height: 1.06;
+  margin-bottom: 22px;
+  letter-spacing: -0.035em;
 }
 
 .rotating-text-wrapper {
@@ -440,7 +438,7 @@ body::before {
   font-size: 20px;
   margin: 0 0 8px 0;
   font-family: 'Instrument Sans', system-ui, sans-serif;
-  font-weight: 700;
+  font-weight: 600;
   display: flex;
   align-items: center;
   gap: 12px;
@@ -604,7 +602,7 @@ body::before {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-weight: 800;
+  font-weight: 600;
   font-size: 18px;
 }
 
@@ -616,14 +614,14 @@ body::before {
 
 .ph-sub {
   font-size: 9px;
-  font-weight: 700;
+  font-weight: 600;
   color: rgba(255,255,255,0.7);
   letter-spacing: 0.5px;
 }
 
 .ph-main {
   font-size: 16px;
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .ph-votes {
@@ -632,7 +630,7 @@ body::before {
   align-items: center;
   margin-left: 12px;
   font-size: 12px;
-  font-weight: 700;
+  font-weight: 600;
   color: rgba(255,255,255,0.7);
 }
 

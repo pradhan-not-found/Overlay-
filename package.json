@@ -33,7 +33,9 @@
       "dist/**/*",
       "electron/**/*",
       "package.json",
-      "applogo.png"
+      "applogo.png",
+      "build/icon.png",
+      "build/icon.ico"
     ],
     "win": {
       "target": [

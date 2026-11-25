@@ -22,14 +22,14 @@ function App() {
         <header style={{ position: 'absolute', top: '32px', left: '32px', display: 'flex', alignItems: 'center', gap: '8px', zIndex: 110 }}>
           <img src="/logo.png" alt="Overlay Logo" style={{ width: '24px', height: '24px', borderRadius: '6px' }} />
           <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-            <span style={{ color: '#fff', fontWeight: 800, fontSize: '18px' }}>Overlay</span>
+            <span style={{ color: '#fff', fontWeight: 600, fontSize: '18px' }}>Overlay</span>
             <span className="beta-tag" style={{ background: 'rgba(255, 255, 255, 0.2)', color: '#fff' }}>beta</span>
           </div>
         </header>
 
         {/* Centered Download Content */}
         <div style={{ maxWidth: '800px', width: '100%', padding: '40px', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
-          <h2 style={{ fontSize: '56px', fontWeight: 800, marginBottom: '24px', color: '#fff', letterSpacing: '-0.04em', lineHeight: '1.1' }}>
+          <h2 style={{ fontSize: '56px', fontWeight: 600, marginBottom: '24px', color: '#fff', letterSpacing: '-0.04em', lineHeight: '1.1' }}>
             Welcome to Overlay <span className="beta-tag" style={{ display: 'inline-flex', verticalAlign: 'middle', background: 'rgba(255,255,255,0.15)', color: '#fff', marginLeft: '12px', fontSize: '28px', padding: '4px 16px', borderRadius: '16px', position: 'relative', top: '-6px' }}>beta</span>
           </h2>
           <p style={{ fontSize: '20px', color: 'rgba(255,255,255,0.7)', marginBottom: '48px', lineHeight: '1.6', maxWidth: '640px' }}>
@@ -147,7 +147,7 @@ function App() {
                 </form>
               ) : (
                 <div className="fade-in" style={{ marginTop: '32px', padding: '16px 24px', background: 'rgba(0, 0, 0, 0.05)', borderRadius: '12px', border: '1px solid rgba(0, 0, 0, 0.1)', display: 'inline-block' }}>
-                  <p style={{ color: '#000', margin: 0, fontWeight: 500 }}>🎉 Thanks for joining the waitlist! We'll be in touch soon.</p>
+                  <p style={{ color: '#000', margin: 0, fontWeight: 500 }}>You're on the waitlist. We'll email you when your invite is ready.</p>
                 </div>
               )}
             </>

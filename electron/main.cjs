@@ -65,7 +65,7 @@ function initAutoUpdater() {
       const notif = new Notification({
         title: `Overlay ${info.version} is available`,
         body: 'Downloading update in the background…',
-        icon: path.join(__dirname, '../applogo.png')
+        icon: path.join(__dirname, '../build/icon.png')
       });
       notif.on('click', () => {
         if (settingsWindow && !settingsWindow.isDestroyed()) {
@@ -98,7 +98,7 @@ function initAutoUpdater() {
       const notif = new Notification({
         title: `Overlay ${info.version} ready to install`,
         body: 'Click to restart and apply the update.',
-        icon: path.join(__dirname, '../applogo.png')
+        icon: path.join(__dirname, '../build/icon.png')
       });
       notif.on('click', () => {
         autoUpdater.quitAndInstall(false, true);
@@ -623,6 +623,33 @@ ipcMain.on('save-config', (_e, cfg) => {
   if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send('widget-config', finalCfg);
 });
 
+// ─── App identity ─────────────────────────────────────────────────────────────
+// Windows names a notification after the Start menu shortcut that carries the
+// app's ID. The installer makes one; when running from source we make our own,
+// so notifications say "Overlay" with the Overlay icon instead of "Electron".
+const APP_ID = 'com.pradhan.overlay';
+app.setName('Overlay');
+
+function registerDevIdentity() {
+  if (process.platform !== 'win32' || app.isPackaged) return;
+  try {
+    const link = path.join(app.getPath('appData'), 'Microsoft', 'Windows', 'Start Menu', 'Programs', 'Overlay.lnk');
+    const icon = path.join(__dirname, '../build/icon.ico');
+    const options = {
+      target: process.execPath,
+      args: `"${path.join(__dirname, '..')}"`,
+      cwd: path.join(__dirname, '..'),
+      description: 'Overlay',
+      icon,
+      iconIndex: 0,
+      appUserModelId: APP_ID,
+    };
+    shell.writeShortcutLink(link, fs.existsSync(link) ? 'replace' : 'create', options);
+  } catch (e) {
+    console.warn('[Overlay] Could not register the notification identity:', e.message);
+  }
+}
+
 // ─── Lifecycle ────────────────────────────────────────────────────────────────
 const gotTheLock = app.requestSingleInstanceLock();
 if (!gotTheLock) {
@@ -639,7 +666,8 @@ if (!gotTheLock) {
   });
 
   app.whenReady().then(() => {
-    app.setAppUserModelId('com.overlay.app');
+    app.setAppUserModelId(APP_ID);
+    registerDevIdentity();
     createTray();
     count.init();
     tools.init();

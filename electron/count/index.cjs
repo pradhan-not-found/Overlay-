@@ -195,7 +195,7 @@ async function handoff(from, to, reason, launch) {
     const note = new Notification({
       title: canLaunch ? `Continue in ${src.NAMES[target]}` : `Switch to ${src.NAMES[target]}`,
       body: canLaunch ? `${reason} Click to open ${src.NAMES[target]} in ${path.basename(cwd)} with your context.` : `${reason} Your context is on the clipboard.`,
-      icon: path.join(__dirname, '../../applogo.png'),
+      icon: path.join(__dirname, '../../build/icon.png'),
     });
     note.on('click', () => {
       if (!canLaunch) return;

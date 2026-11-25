@@ -22,25 +22,35 @@ import volMuteSvgRaw from './assets/icons/vol-mute.svg?raw';
 import volLowSvgRaw from './assets/icons/vol-low.svg?raw';
 import volHighSvgRaw from './assets/icons/vol-high.svg?raw';
 
-const timerSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="13.5" r="7.5"/><path d="M12 9.5v4l2.5 1.5M9.5 2.75h5"/></svg>`;
+const timerSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="13.5" r="7.5"/><path d="M12 9.5v4l2.5 1.5M9.5 2.75h5"/></svg>`;
 
-const lyricsSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h11M4 11h8M4 16h5"/><circle cx="17" cy="16.5" r="2.5"/><path d="M19.5 16.5V7.5l2-1"/></svg>`;
+const lyricsSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h11M4 11h8M4 16h5"/><circle cx="17" cy="16.5" r="2.5"/><path d="M19.5 16.5V7.5l2-1"/></svg>`;
 
-/** iOS-style battery: outline, terminal, inset fill and a bolt while charging. */
+/** Battery like the macOS menu bar: outline, terminal, inset fill, and a bolt
+ *  cut cleanly out of the fill (with a hairline gap) while charging. */
+let batteryMaskId = 0;
 function batterySvg(pct: number, charging: boolean): string {
+  const id = `bat-cut-${++batteryMaskId}`;
   const fill = charging ? '#34c759' : pct <= 20 ? '#ff453a' : '#f2f2f5';
-  const w = Math.max(1.5, (pct / 100) * 19);
-  return `<svg width="27" height="13" viewBox="0 0 27 13" aria-hidden="true">
-    <rect x="0.6" y="0.6" width="23" height="11.8" rx="3.4" fill="none" stroke="rgba(255,255,255,0.42)" stroke-width="1.2"/>
-    <path d="M25 4.4v4.2a2.1 2.1 0 0 0 0-4.2Z" fill="rgba(255,255,255,0.42)"/>
-    <rect x="2.6" y="2.6" width="${w}" height="7.8" rx="1.9" fill="${fill}"/>
-    ${charging ? '<path d="M13.2 2.1 8.6 7.3h3.1l-1 3.6 4.6-5.2h-3.1l1-3.6Z" fill="#fff" stroke="#000" stroke-width="1.1" stroke-linejoin="round" paint-order="stroke"/>' : ''}
+  const w = Math.max(2, (pct / 100) * 19.4);
+  const bolt = 'M13.1 2.4 8.9 7.1h2.9l-1 3.5 4.2-4.7h-2.9l1-3.5Z';
+  return `<svg width="28" height="13" viewBox="0 0 28 13" aria-hidden="true">
+    ${charging ? `<defs><mask id="${id}" maskUnits="userSpaceOnUse" x="0" y="0" width="28" height="13">
+      <rect width="28" height="13" fill="#fff"/>
+      <path d="${bolt}" fill="#000" stroke="#000" stroke-width="1.6" stroke-linejoin="round"/>
+    </mask></defs>` : ''}
+    <g ${charging ? `mask="url(#${id})"` : ''}>
+      <rect x="0.65" y="0.65" width="23.2" height="11.7" rx="3.6" fill="none" stroke="rgba(255,255,255,0.45)" stroke-width="1.3"/>
+      <rect x="2.4" y="2.4" width="${w}" height="8.2" rx="2" fill="${fill}"/>
+    </g>
+    <path d="M25.2 4.5v4a2 2 0 0 0 0-4Z" fill="rgba(255,255,255,0.45)"/>
+    ${charging ? `<path d="${bolt}" fill="#fff"/>` : ''}
   </svg>`;
 }
 
-const ico = (d: string) => `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">${d}</svg>`;
-const gridSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linejoin="round"><rect x="4" y="4" width="6.5" height="6.5" rx="1.8"/><rect x="13.5" y="4" width="6.5" height="6.5" rx="1.8"/><rect x="4" y="13.5" width="6.5" height="6.5" rx="1.8"/><rect x="13.5" y="13.5" width="6.5" height="6.5" rx="1.8"/></svg>`;
-const chevronUpSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="m6 14.5 6-6 6 6"/></svg>`;
+const ico = (d: string) => `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${d}</svg>`;
+const gridSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><rect x="4" y="4" width="6.5" height="6.5" rx="1.8"/><rect x="13.5" y="4" width="6.5" height="6.5" rx="1.8"/><rect x="4" y="13.5" width="6.5" height="6.5" rx="1.8"/><rect x="13.5" y="13.5" width="6.5" height="6.5" rx="1.8"/></svg>`;
+const chevronUpSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 14.5 6-6 6 6"/></svg>`;
 
 // ─── IPC bridge ───────────────────────────────────────────────────────────────
 let ipc: any = null;

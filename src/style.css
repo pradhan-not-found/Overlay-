@@ -203,9 +203,8 @@ button { -webkit-app-region: no-drag; }
 .space-dot.active::after { width: 14px; }
 .dock-sep { flex: 1; }
 
-.battery { display: flex; align-items: center; gap: 6px; font-size: 11.5px; font-weight: 600; color: var(--ink); font-variant-numeric: tabular-nums; }
+.battery { display: flex; align-items: center; gap: 7px; font-size: 12px; font-weight: 500; color: var(--ink); letter-spacing: 0; font-variant-numeric: tabular-nums; }
 .battery #bat-svg { display: flex; }
-.battery.charging #bat-pct { color: #34c759; }
 .battery.low #bat-pct { color: #ff453a; }
 
 .space-stage { position: relative; flex: 1; margin-top: 10px; min-height: 0; }
@@ -628,3 +627,16 @@ kbd { font: 600 10px var(--font); color: var(--muted); padding: 2px 6px; border-
 .l-row.on, .l-row:hover { background: rgba(255, 255, 255, 0.07); }
 .l-icon { width: 24px; height: 24px; border-radius: 6px; display: flex; align-items: center; justify-content: center; background: var(--raise-2); flex-shrink: 0; overflow: hidden; }
 .l-icon img { object-fit: contain; }
+
+/* Icon weight: solid 2px strokes and brighter idle colours so icons read clearly on black. */
+.ibtn { color: rgba(255, 255, 255, 0.72); }
+.ibtn:hover { color: #fff; }
+.qbtn, .dock-btn, .vol-btn, .cal-icon, .todo-plus, .tool-search { color: rgba(255, 255, 255, 0.72); }
+.space-dot { color: color-mix(in srgb, var(--tint) 88%, #fff); }
+.space-dot svg, .dock-btn svg { width: 18px; height: 18px; }
+.space-dot:not(.active) { opacity: 0.92; }
+.ov-icon { background: color-mix(in srgb, var(--tint) 20%, transparent); }
+.ov-icon svg { width: 17px; height: 17px; }
+.np-main .ibtn:not(.play) { color: #fff; }
+.np-main .ibtn:not(.play) svg { width: 18px; height: 18px; }
+.ibtn.play, .ibtn.play:hover { color: #000; }
