@@ -445,3 +445,7 @@
 .ov-act-dot { width: calc(var(--u) * 8); height: calc(var(--u) * 8); margin: 0 calc(var(--u) * 8); border-radius: 50%; background: #ff9f43; box-shadow: 0 0 calc(var(--u) * 10) #ff9f43; animation: breathe 2.2s ease-in-out infinite; flex-shrink: 0; }
 @keyframes breathe { 0%, 100% { opacity: 1; } 50% { opacity: 0.45; } }
 .ov-idle { padding: 0 calc(var(--u) * 12) 0 calc(var(--u) * 10); }
+
+.ov-name { font-weight: 600; color: #fff; margin: 0 calc(var(--u) * 7) 0 0 !important; }
+.ov-act > svg:first-child { margin-left: calc(var(--u) * 2); }
+.ov-act-ring { width: calc(var(--u) * 18); height: calc(var(--u) * 18); }

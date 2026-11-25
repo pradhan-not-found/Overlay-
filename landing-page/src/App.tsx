@@ -3,6 +3,7 @@ import './index.css';
 import './notch.css';
 import './pages.css';
 import NotchDemo from './NotchDemo';
+import changelog from 'virtual:changelog';
 import { CLAUDE, DISCORD, GCAL, GITHUB, OPENAI, SPOTIFY } from './brand/marks';
 
 // The source repo is private, so installers live in the public overlay-releases
@@ -11,12 +12,12 @@ import { CLAUDE, DISCORD, GCAL, GITHUB, OPENAI, SPOTIFY } from './brand/marks';
 const WINDOWS = import.meta.env.VITE_DOWNLOAD_URL
   || 'https://github.com/pradhan-not-found/overlay-releases/releases/latest/download/Overlay-Setup.exe';
 
-type View = 'home' | 'features' | 'pricing' | 'now' | 'privacy' | 'terms';
+type View = 'home' | 'features' | 'pricing' | 'changelog' | 'privacy' | 'terms';
 
 const NAV: { id: View; label: string }[] = [
   { id: 'features', label: 'Features' },
   { id: 'pricing', label: 'Pricing' },
-  { id: 'now', label: 'Now' },
+  { id: 'changelog', label: 'Changelog' },
 ];
 
 const Stroke = ({ d }: { d: string }) => (
@@ -119,15 +120,19 @@ function Download({ wide = false }: { wide?: boolean }) {
   );
 }
 
-const FEATURES = [
-  { icon: ICON.music, tint: '#ff5f8f', title: 'Now Playing', body: 'The song, its cover and the line being sung, from Spotify or any player. Play, skip and set the volume without leaving your work.' },
-  { icon: ICON.spark, tint: '#5b6cff', title: 'AI Usage', body: 'Session and weekly limits for Claude Code, Codex and Cursor, read on your PC. When one runs low, carry on in another with your context.' },
-  { icon: ICON.timer, tint: '#ff9f43', title: 'Focus', body: 'A Lock In timer with breaks, streaks and a week of history, right in the notch.' },
-  { icon: ICON.calendar, tint: '#22b07d', title: 'Today', body: 'Your next event, the date and your shortcuts, one glance away.' },
-  { icon: ICON.check, tint: '#10b981', title: 'To-Dos and Note', body: 'A short list and a scratch note that stay in sync with the Dashboard.' },
-  { icon: ICON.clipboard, tint: '#14b8a6', title: 'Clipboard', body: 'The last things you copied, kept in memory only and never written to disk.' },
-  { icon: ICON.chip, tint: '#3b82f6', title: 'Hardware', body: 'CPU, memory, GPU, disk and network, live while the notch is open.' },
-  { icon: ICON.shield, tint: '#64748b', title: 'Private by default', body: 'No account. Your data stays on your PC; nothing is sent anywhere you did not ask for.' },
+const FEATURES: { title: string; body: string; logo: React.ReactNode }[] = [
+  { title: 'Now Playing', body: 'The song, its cover and the line being sung, from Spotify or any player. Play, skip and set the volume without leaving your work.', logo: <Mark m={SPOTIFY} /> },
+  { title: 'AI Usage', body: 'Session and weekly limits for Claude Code, Codex and Cursor, read on your PC. When one runs low, carry on in another with your context.', logo: <span className="duo"><Mark m={CLAUDE} /><Mark m={{ ...OPENAI, color: '#0d0f16' }} /></span> },
+  { title: 'Calendar', body: 'Your next event and the day ahead from Google Calendar, a glance away.', logo: <Mark m={GCAL} /> },
+  { title: 'Focus', body: 'A Lock In timer with breaks, streaks and a week of history, right in the notch.', logo: tint(ICON.timer, '#ff9f43') },
+  { title: 'Discord', body: 'Your voice call in the notch: who is speaking, with mute, deafen and hang up.', logo: <Mark m={DISCORD} /> },
+  { title: 'GitHub', body: 'Today\'s contributions and your streak, without opening a browser.', logo: <Mark m={GITHUB} /> },
+  { title: 'To-Dos and Note', body: 'A short list and a scratch note that stay in sync with the Dashboard.', logo: tint(ICON.check, '#10b981') },
+  { title: 'Clipboard', body: 'The last things you copied, kept in memory only and never written to disk.', logo: tint(ICON.clipboard, '#14b8a6') },
+  { title: 'Weather and Clocks', body: 'The forecast where you are and the time where your team is.', logo: tint(EXTRA.weather, '#0ea5e9') },
+  { title: 'Calculator', body: 'Sums and unit conversions as you type, with a short history.', logo: tint(EXTRA.calc, '#65a30d') },
+  { title: 'Shelf and Launcher', body: 'Park files to drag out later, and open any app by typing its name.', logo: tint(EXTRA.search, '#ef4444') },
+  { title: 'Hardware', body: 'CPU, memory, GPU, disk and network, live while the notch is open.', logo: tint(ICON.chip, '#3b82f6') },
 ];
 
 const PLANS = [
@@ -136,17 +141,11 @@ const PLANS = [
   { name: 'Lifetime', price: '$149', per: 'once', note: 'Pay once, keep it', items: ['Everything in Pro', 'Every future update', 'Early builds'], cta: 'Download' },
 ];
 
-const NOW = [
-  { when: 'November 2026', title: 'The Overlay notch', body: 'The new notch with a tool dock, Now Playing with lyrics, AI Usage and a single Dashboard that keeps everything in sync.' },
-  { when: 'Next', title: 'Mac build', body: 'The same notch on macOS, built for the camera housing.' },
-  { when: 'Later', title: 'Your own tools', body: 'Pin the tools you use and hide the rest, and add widgets of your own.' },
-];
-
 export default function App() {
-  // Each page has a link: #features, #pricing, #now, #privacy, #terms.
+  // Each page has a link: #features, #pricing, #changelog, #privacy, #terms.
   const [view, setView] = useState<View>(() => {
     const h = window.location.hash.slice(1) as View;
-    return (['features', 'pricing', 'now', 'privacy', 'terms'] as View[]).includes(h) ? h : 'home';
+    return (['features', 'pricing', 'changelog', 'privacy', 'terms'] as View[]).includes(h) ? h : 'home';
   });
   const [risen, setRisen] = useState(false);
   // #zoom opens straight into the notch, so the close-up can be linked.
@@ -239,7 +238,7 @@ export default function App() {
             <div className="feature-grid">
               {FEATURES.map((f) => (
                 <article className="feature" key={f.title}>
-                  <i style={{ color: f.tint }}><Stroke d={f.icon} /></i>
+                  <span className="feature-logo">{f.logo}</span>
                   <h3>{f.title}</h3>
                   <p>{f.body}</p>
                 </article>
@@ -270,18 +269,25 @@ export default function App() {
           </section>
         )}
 
-        {view === 'now' && (
+        {view === 'changelog' && (
           <section className="page narrow">
             <header className="page-head">
-              <span className="kicker">Now</span>
-              <h2>What we are building.</h2>
+              <span className="kicker">Changelog</span>
+              <h2>What's new in Overlay.</h2>
+              <p>Every change that ships, newest first.</p>
             </header>
-            <ol className="timeline">
-              {NOW.map((n) => (
-                <li key={n.title}><span className="when">{n.when}</span><div><h3>{n.title}</h3><p>{n.body}</p></div></li>
+            <ol className="changelog">
+              {changelog.map((c, k) => (
+                <li key={k}>
+                  <time>{new Date(`${c.date}T12:00`).toLocaleDateString([], { day: 'numeric', month: 'short', year: 'numeric' })}</time>
+                  <div>
+                    <h3>{c.title}</h3>
+                    {c.points.length > 0 && <ul>{c.points.map((pt, j) => <li key={j}>{pt}</li>)}</ul>}
+                  </div>
+                </li>
               ))}
             </ol>
-            <div className="page-cta"><Download /></div>
+            {changelog.length === 0 && <p className="fine">No entries yet.</p>}
           </section>
         )}
 

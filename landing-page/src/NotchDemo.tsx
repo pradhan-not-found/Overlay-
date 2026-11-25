@@ -347,9 +347,9 @@ export default function NotchDemo({ open, onOpen, onClose }: { open: boolean; on
             )}
             {act === 1 && (
               <>
-                <span className="ov-act-ring"><Ring pct={87} color="#ffb340" /><Brand m={CLAUDE} size="calc(var(--u) * 11)" /></span>
-                <span className="ov-line">Claude session <b>87%</b></span>
-                <span className="ov-act-meta">resets in 1h 49m</span>
+                <Brand m={CLAUDE} size="calc(var(--u) * 17)" />
+                <span className="ov-line"><b className="ov-name">Claude</b>Session 87% used · in 1 h 49 min</span>
+                <span className="ov-act-ring"><Ring pct={87} color="#d97757" /></span>
               </>
             )}
             {act === 2 && (
