@@ -140,35 +140,6 @@ main {
   white-space: nowrap;
 }
 
-.tagline {
-  list-style: none;
-  display: inline-flex;
-  align-items: center;
-  gap: 18px;
-  white-space: nowrap;
-}
-
-.tagline li {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  font-size: 13.5px;
-  font-weight: 500;
-  letter-spacing: -0.01em;
-  color: #4a4f5c;
-}
-
-.tagline svg {
-  width: 15px;
-  height: 15px;
-  fill: none;
-  stroke: #0027c4;
-  stroke-width: 1.9;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  flex: 0 0 15px;
-}
-
 /* ── The laptop ─────────────────────────────────────────────────────────
    A front view built in CSS so it stays crisp at any size. Everything inside
    the screen uses container units, so the notch scales with the laptop. */
@@ -189,11 +160,13 @@ main {
   inset: 0;
   transform: translateY(105%);
   transform-origin: 50% 0%;
+  will-change: transform;
   transition: transform 1.1s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .device.risen { transform: translateY(0); }
-.device.risen.zoomed { transform: scale(1.8); transition-duration: 0.95s; }
+.device.risen { transition: transform 0.9s cubic-bezier(0.65, 0, 0.35, 1) 0.42s; }
+.device.risen.zoomed { transform: scale(1.8); transition: transform 0.85s cubic-bezier(0.65, 0, 0.35, 1) 0s; }
 
 .lid {
   position: absolute;
@@ -370,49 +343,6 @@ h1 {
   text-align: left;
 }
 
-h2 {
-  font-family: var(--hand);
-  font-weight: 650;
-  font-size: clamp(40px, 6vh, 64px);
-  letter-spacing: -0.03em;
-  line-height: 1;
-}
-
-.panel {
-  width: 100%;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  text-align: center;
-}
-
-.panel ul {
-  list-style: none;
-  margin-top: 22px;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  color: #1a1a1c;
-  font-size: 16px;
-  font-weight: 500;
-}
-
-.prices {
-  width: min(420px, 100%);
-}
-
-.prices li {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 24px;
-  padding-bottom: 10px;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.12);
-}
-
-.prices b { font-weight: 650; }
-.prices span { font-variant-numeric: tabular-nums; }
-
 .download {
   flex: 0 0 auto;
   display: inline-flex;
@@ -456,14 +386,6 @@ h2 {
 .download-note a { color: #0027c4; font-weight: 600; text-decoration: none; }
 .download-note a:hover { text-decoration: underline; }
 
-.legal-copy p {
-  max-width: 36em;
-  margin-top: 14px;
-  font-size: 16px;
-  line-height: 1.45;
-  color: #1a1a1c;
-}
-
 footer {
   height: 32px;
   display: flex;
@@ -475,25 +397,6 @@ footer {
 }
 
 footer a { color: #2a1828; }
-
-.legal {
-  display: flex;
-  align-items: center;
-  gap: 18px;
-  flex: 0 0 auto;
-}
-
-.legal button {
-  border: none;
-  background: none;
-  padding: 0;
-  color: #2a1828;
-  font-size: 13px;
-  font-weight: 560;
-  cursor: pointer;
-}
-
-.legal button.on { text-decoration: underline; text-underline-offset: 3px; }
 
 @media (max-width: 1180px) {
   .hero { grid-template-columns: 1fr; grid-template-rows: auto minmax(0, 1fr) auto; gap: 12px; justify-items: center; }
