@@ -331,4 +331,12 @@ function init() {
   setInterval(() => tick(true), 45_000);
 }
 
-module.exports = { init, snapshot };
+/** Rescan every AI tool and refresh plan limits now. */
+async function refreshAll() {
+  await sync();
+  await refreshLimits(true);
+  broadcast();
+  return snapshot();
+}
+
+module.exports = { init, snapshot, refreshAll };

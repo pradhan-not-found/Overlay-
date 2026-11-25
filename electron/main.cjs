@@ -23,15 +23,15 @@ try {
   autoUpdater.allowDowngrade = false;
   autoUpdater.channel = 'latest';           // Use 'latest' release channel
 
-  // Private repo with PUBLIC releases — no token needed for release downloads.
-  // GitHub allows making individual releases publicly visible even on private repos.
-  // Just mark each release as "Public" when you publish it on GitHub.
+  // The source repo is private, and GitHub never serves a private repo's release
+  // files to the public. Installers are published to a separate public repo,
+  // overlay-releases, which both the updater and the website download from.
   autoUpdater.setFeedURL({
     provider: 'github',
     owner: 'pradhan-not-found',
-    repo: 'Overlay-',
+    repo: 'overlay-releases',
     releaseType: 'release',
-    private: false  // Releases are publicly accessible
+    private: false
   });
 
   if (!app.isPackaged) {
@@ -43,8 +43,7 @@ try {
 }
 
 function sendUpdateStatus(event, data) {
-  // Broadcast to all relevant windows
-  [settingsWindow].forEach(win => {
+  [mainWindow, settingsWindow, dashWindow].forEach(win => {
     if (win && !win.isDestroyed()) {
       win.webContents.send('update-status', { event, ...data });
     }
@@ -260,6 +259,24 @@ function broadcastExcept(sender, channel, ...args) {
     w.webContents.send(channel, ...args);
   }
 }
+
+// One click on the Overlay mark: rescan AI usage, refresh limits, then tell
+// every window (notch and Dashboard) to reload everything from the database.
+let syncing = null;
+ipcMain.handle('sync:all', async () => {
+  if (!syncing) {
+    syncing = (async () => {
+      const started = Date.now();
+      let ai = null;
+      try { ai = await count.refreshAll(); } catch (e) { console.warn('[Sync] AI usage:', e.message); }
+      for (const w of BrowserWindow.getAllWindows()) {
+        if (!w.isDestroyed()) w.webContents.send('sync-all');
+      }
+      return { at: Date.now(), ms: Date.now() - started, sources: ai ? ai.sources.length : 0, today: ai ? ai.today : 0 };
+    })().finally(() => { syncing = null; });
+  }
+  return syncing;
+});
 
 ipcMain.on('set-setting', (event, key, value) => {
   try { db.setSetting(key, value); } catch (err) { console.error('DB Set Setting Error:', err); }
@@ -536,19 +553,30 @@ ipcMain.on('take-screenshot', () => {
 
 ipcMain.on('save-shortcuts', (_e, shortcuts) => {
   db.clearShortcuts();
-  shortcuts.forEach(s => db.addShortcut(s));
+  (shortcuts || []).forEach(s => db.addShortcut(s));
+  const saved = db.getShortcuts();
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    mainWindow.webContents.send('widget-config', { shortcuts: saved });
+  }
 });
 
 ipcMain.on('open-shortcut', (_e, target) => {
   if (!target) return;
-  if (target.startsWith('http://') || target.startsWith('https://')) {
-    shell.openExternal(target);
-  } else {
-    // Execute local app path or command
-    exec(`start "" "${target}"`, (err) => {
+  const value = String(target);
+  if (/^[a-z][a-z0-9+.-]*:/i.test(value)) {
+    shell.openExternal(value).catch((err) => console.error('Failed to open shortcut:', err));
+    return;
+  }
+  const looksLikePath = /[\\/]/.test(value) || /\.[a-z0-9]{1,8}$/i.test(value);
+  if (looksLikePath) {
+    shell.openPath(value).then((err) => {
       if (err) console.error('Failed to open shortcut:', err);
     });
+    return;
   }
+  exec(`start "" "${value.replace(/"/g, '')}"`, (err) => {
+    if (err) console.error('Failed to open shortcut:', err);
+  });
 });
 
 ipcMain.handle('get-file-icon', async (_e, path) => {
@@ -563,6 +591,11 @@ ipcMain.handle('get-file-icon', async (_e, path) => {
 
 // ─── Dashboard window ─────────────────────────────────────────────────────────
 function createDashWindow(options) {
+  const nav = options && typeof options.nav === 'string' ? options.nav.replace(/[^a-z]/g, '') : '';
+  if (nav) { try { db.setSetting('dashboard-nav', nav); } catch {} }
+  if (nav && dashWindow && !dashWindow.isDestroyed()) {
+    dashWindow.webContents.executeJavaScript(`document.querySelector('.nav-item[data-nav="${nav}"]')?.click()`).catch(() => {});
+  }
   if (dashWindow && !dashWindow.isDestroyed()) { 
     if (options && options.expand) dashWindow.webContents.executeJavaScript('window.location.search = "?expand=true";');
     presentWindow(dashWindow);

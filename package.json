@@ -39,15 +39,22 @@
     ],
     "win": {
       "target": [
-        "nsis",
-        "portable"
+        "nsis"
       ],
       "icon": "build/icon.png"
+    },
+    "nsis": {
+      "artifactName": "Overlay-Setup.${ext}",
+      "shortcutName": "Overlay",
+      "uninstallDisplayName": "Overlay",
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true
     },
     "publish": {
       "provider": "github",
       "owner": "pradhan-not-found",
-      "repo": "Overlay-"
+      "repo": "overlay-releases",
+      "releaseType": "release"
     }
   },
   "dependencies": {

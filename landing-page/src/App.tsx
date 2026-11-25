@@ -1,7 +1,13 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import './index.css';
+import './notch.css';
+import NotchDemo from './NotchDemo';
 
-const WINDOWS = 'https://github.com/pradhan-not-found/Overlay-/releases/download/v1.0.2/Overlay-Setup-1.0.2.exe';
+// The source repo is private, so installers live in the public overlay-releases
+// repo. GitHub's latest/download URL always points at the newest release and
+// answers with an attachment, so the click starts the download straight away.
+const WINDOWS = import.meta.env.VITE_DOWNLOAD_URL
+  || 'https://github.com/pradhan-not-found/overlay-releases/releases/latest/download/Overlay-Setup.exe';
 
 type View = 'home' | 'features' | 'pricing' | 'now' | 'privacy' | 'terms';
 
@@ -21,6 +27,29 @@ function WindowsMark() {
 
 export default function App() {
   const [view, setView] = useState<View>('home');
+  const [risen, setRisen] = useState(false);
+  const [dl, setDl] = useState<'idle' | 'starting' | 'started'>('idle');
+
+  // The link itself starts the download; the button just says what is happening.
+  const startDownload = () => {
+    if (dl !== 'idle') return;
+    setDl('starting');
+    window.setTimeout(() => setDl('started'), 1400);
+    window.setTimeout(() => setDl('idle'), 9000);
+  };
+  // #zoom opens straight into the notch, so the close-up can be linked.
+  const [zoomed, setZoomed] = useState(() => window.location.hash === '#zoom');
+
+  useEffect(() => {
+    const id = requestAnimationFrame(() => setRisen(true));
+    return () => cancelAnimationFrame(id);
+  }, []);
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setZoomed(false); };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, []);
 
   return (
     <div className="sheet">
@@ -49,11 +78,67 @@ export default function App() {
       <main id="top">
         {view === 'home' && (
           <div className="hero">
-            <h1>the whole desk, in one notch.</h1>
-            <a className="download" href={WINDOWS}>
-              <WindowsMark />
-              Download for Windows
-            </a>
+            <aside className="side side-left">
+              <h1>The notch, for Windows.</h1>
+            </aside>
+            <div className="center">
+            <div className="stage" onClick={() => setZoomed((open) => !open)} title={zoomed ? 'Click to zoom out' : 'Click to zoom into the notch'}>
+              <div className={`device${risen ? ' risen' : ''}${zoomed ? ' zoomed' : ''}`}>
+                <div className="lid">
+                  <span className="cam" aria-hidden="true" />
+                  <div className="display">
+                    <div className="wall" aria-hidden="true" />
+                    <div className="glare" aria-hidden="true" />
+                    <NotchDemo open={zoomed} onClose={() => setZoomed(false)} />
+                  </div>
+                </div>
+                <div className="hinge" />
+                <div className="deck"><span className="groove" /></div>
+                <div className="floor" />
+              </div>
+            </div>
+            <div className="actions">
+              <button type="button" className={zoomed ? 'zoom on' : 'zoom'} onClick={() => setZoomed((open) => !open)} aria-pressed={zoomed}>
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <circle cx="11" cy="11" r="6.5" />
+                  <path d={zoomed ? 'm20 20-4.4-4.4M8.5 11h5' : 'm20 20-4.4-4.4M8.5 11h5M11 8.5v5'} />
+                </svg>
+                {zoomed ? 'Zoom out' : 'Zoom into the notch'}
+              </button>
+              <a
+                className={`download ${dl}`}
+                href={WINDOWS}
+                download="Overlay-Setup.exe"
+                rel="noopener"
+                onClick={startDownload}
+                aria-live="polite"
+              >
+                {dl === 'starting' ? <span className="spinner" aria-hidden="true" /> : dl === 'started' ? (
+                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" /></svg>
+                ) : <WindowsMark />}
+                {dl === 'starting' ? 'Starting download…' : dl === 'started' ? 'Download started' : 'Download for Windows'}
+              </a>
+            </div>
+            <p className={`download-note${dl === 'started' ? ' show' : ''}`}>
+              Didn’t start? <a href={WINDOWS} rel="noopener">Try again</a> · Windows 10 and 11
+            </p>
+            </div>
+            <aside className="side side-right">
+              <ul className="tagline">
+                <li>
+                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 17.5V6.2a1 1 0 0 1 .78-.98l9-2a1 1 0 0 1 1.22.98V15.5" /><circle cx="6.5" cy="17.5" r="2.5" /><circle cx="17.5" cy="15.5" r="2.5" /></svg>
+                  Music
+                </li>
+                <li>
+                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.5 13.9 10l6.6 2-6.6 2L12 20.5 10.1 14 3.5 12l6.6-2Z" /></svg>
+                  AI limits
+                </li>
+                <li>
+                  <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="13.5" r="7.5" /><path d="M12 9.5v4l2.5 1.5M9.5 2.75h5" /></svg>
+                  Focus
+                </li>
+              </ul>
+            </aside>
           </div>
         )}
 

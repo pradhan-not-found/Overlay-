@@ -247,6 +247,7 @@ document.getElementById('app')!.innerHTML = `
       <div class="idle-links">
         <button class="link-chip" id="btn-idle-github" title="GitHub">${marks.github}<span id="gh-idle-count"></span></button>
         <button class="link-chip" id="btn-idle-discord" title="Discord">${marks.discord}<i id="dc-idle-dot"></i></button>
+        <button class="update-chip" id="update-chip" type="button">Update available</button>
       </div>
       <div class="idle-shortcuts" id="idle-shortcuts"></div>
       <button class="ibtn ibtn-sm" id="btn-close-app" title="Hide Overlay">${closeSvgRaw}</button>
@@ -760,15 +761,25 @@ ipc?.on('preview', () => {
   const t = setInterval(() => {
     k += 1;
     if (k < order.length) showSpace(order[k]);
-    else if (k === order.length) setPhase('count');
     else { clearInterval(t); setPhase('idle'); }
   }, 2500);
 });
-document.getElementById('btn-count-idle')?.addEventListener('click', (e) => {
+document.getElementById('btn-count-idle')?.addEventListener('click', async (e) => {
   e.stopPropagation();
+  const mark = e.currentTarget as HTMLElement;
   setPhase('expanded');
   showSpace('overview');
+  if (mark.classList.contains('syncing')) return;
+  mark.classList.add('syncing');
+  mark.title = 'Syncing…';
+  try { await invoke('sync:all'); } catch {}
+  mark.classList.remove('syncing');
+  mark.classList.add('synced');
+  mark.title = 'Overlay · synced just now';
+  setTimeout(() => mark.classList.remove('synced'), 1600);
 });
+// Another window asked for a full sync: reload what the notch shows.
+ipc?.on('sync-all', () => { loadSessions(); });
 document.getElementById('btn-idle-github')?.addEventListener('click', (e) => {
   e.stopPropagation();
   setPhase('expanded');
@@ -781,7 +792,7 @@ document.getElementById('btn-idle-discord')?.addEventListener('click', (e) => {
 mountCount({
   sidebar: viewCountEl,
   space: document.getElementById('count-space')!,
-  openSidebar: () => setPhase('count'),
+  openSidebar: () => { send('open-dashboard', { nav: 'ai' }); setPhase('idle'); },
   close: () => setPhase('idle'),
   invoke,
   on: (ch, fn) => ipc?.on(ch, fn),
@@ -1066,6 +1077,31 @@ if (ipc) {
     if (cfg && cfg.shortcuts) {
       renderShortcuts(cfg.shortcuts);
     }
+  });
+
+  const updateChip = document.getElementById('update-chip') as HTMLButtonElement | null;
+  ipc.on('update-status', (_: any, status: any) => {
+    if (!updateChip || !status) return;
+    const event = status.event;
+    if (event === 'available') {
+      updateChip.classList.add('show');
+      updateChip.dataset.action = 'wait';
+      updateChip.textContent = status.version ? `Update ${status.version}` : 'Update available';
+    } else if (event === 'downloading') {
+      updateChip.classList.add('show');
+      updateChip.dataset.action = 'wait';
+      updateChip.textContent = `Updating ${status.percent ?? 0}%`;
+    } else if (event === 'downloaded') {
+      updateChip.classList.add('show');
+      updateChip.dataset.action = 'install';
+      updateChip.textContent = 'Restart to update';
+    } else if (event === 'not-available' || event === 'error') {
+      updateChip.classList.remove('show');
+    }
+  });
+  updateChip?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    if (updateChip.dataset.action === 'install') send('install-update');
   });
 
   ipc.on('media-info', (_: any, info: { title: string; artist: string; isPlaying: boolean; albumArt?: string; sourceApp?: string }) => {

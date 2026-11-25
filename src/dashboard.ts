@@ -489,6 +489,12 @@ function startTick() {
 // ─── IPC from notch ──────────────────────────────────────────────────────────
 function bindIPC() {
   if(!ipc) return;
+  ipc.on('sync-all', async () => {
+    stats = await ipc.invoke('get-stats') || {};
+    calEvents = await ipc.invoke('get-events') || [];
+    computeStats();
+    render();
+  });
   // Focus time added from the notch shows up here straight away.
   ipc.on('stats-changed', async () => {
     stats = await ipc.invoke('get-stats') || {};

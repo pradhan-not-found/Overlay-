@@ -13,7 +13,6 @@ const LOGOS: Record<Kind, { src: string; invert: boolean }> = {
   'claude-code': { src: claudeCode, invert: false }, codex: { src: openai, invert: true }, cursor: { src: cursorMark, invert: false },
   'gemini-cli': { src: gemini, invert: false }, opencode: { src: opencode, invert: true }, copilot: { src: github, invert: true },
 };
-const COLORS: Record<Kind, string> = { 'claude-code': '#d97757', codex: '#10a37f', cursor: '#9a9aa6', 'gemini-cli': '#8e75b2', opencode: '#f5a524', copilot: '#8b5cf6' };
 
 const ipc: any = (() => { try { return (window as any).require('electron').ipcRenderer; } catch { return null; } })();
 const invoke = (ch: string, ...a: any[]) => (ipc ? ipc.invoke(ch, ...a) : Promise.resolve(null));
@@ -54,97 +53,88 @@ async function loadAI() {
   paintAI();
 }
 
-function limitSpark(kind: Kind, label: string): string {
-  const pts = (hist?.limitHistory || []).filter((r: any) => r.kind === kind && r.label === label);
-  if (pts.length < 2) return '';
-  const t0 = Date.now() - 7 * 86_400_000;
-  const line = pts.map((p: any) => `${(((p.ts - t0) / (7 * 86_400_000)) * 100).toFixed(2)},${(24 - (p.pct / 100) * 22).toFixed(2)}`).join(' ');
-  return `<svg class="dx-spark" viewBox="0 0 100 26" preserveAspectRatio="none"><polyline points="${line}" fill="none" stroke="currentColor" stroke-width="1.5" vector-effect="non-scaling-stroke"/></svg>`;
-}
-
 function paintAI() {
   const el = document.getElementById('panel-ai');
   if (!el) return;
-  if (!snap || !hist) { el.innerHTML = '<div class="dx-wrap"><p class="dx-muted">Reading your AI tools…</p></div>'; return; }
+  if (!snap || !hist) {
+    el.innerHTML = `<div class="panel-inner"><div class="panel-hdr"><div class="panel-label">AI USAGE</div><div class="panel-sub">Reading your AI tools…</div></div></div>`;
+    return;
+  }
   const at = snap.settings.switchAt;
-  const tone = (p: number) => (p >= at ? '#ff5a4e' : p >= at - 20 ? '#ffb340' : '#6f8dff');
-  const groups = new Map<Kind, any[]>();
-  for (const l of snap.limits) groups.set(l.kind, [...(groups.get(l.kind) || []), l]);
   const total = hist.kinds.reduce((a: number, k: any) => a + k.tokens, 0);
   const usd = hist.kinds.reduce((a: number, k: any) => a + k.usd, 0);
-  const peak = Math.max(1, ...hist.daily.map((d: any) => Object.values(d.parts).reduce((a: number, b: any) => a + b, 0) as number));
-  const ready = snap.tools.find((t: any) => t.kind === snap.next)?.ready;
-  const sinceText = hist.since ? new Date(`${hist.since}T12:00`).toLocaleDateString([], { day: 'numeric', month: 'short', year: 'numeric' }) : '';
 
-  el.innerHTML = `<div class="dx-wrap">
-    <header class="dx-head">
-      <div><h1>AI Usage</h1><p class="dx-muted">Read from your tools' local logs and stored on this PC${sinceText ? ` since ${sinceText}` : ''}.</p></div>
-      <div class="dx-actions">
-        <div class="dx-seg">${[7, 30, 90].map((d) => `<button class="${d === range ? 'on' : ''}" data-range="${d}">${d} days</button>`).join('')}</div>
-        <button class="dx-icon-btn" data-refresh title="Rescan now">${ico('<path d="M20 12a8 8 0 1 1-2.34-5.66M20 4v4.5h-4.5"/>')}</button>
-      </div>
-    </header>
+  // The chart keeps the Stats page look: one bar a day, today in white.
+  // Ninety days fold into weeks so the bars stay readable.
+  const days = hist.daily.map((d: any) => ({ day: d.day, t: Object.values(d.parts).reduce((a: number, b: any) => a + b, 0) as number }));
+  const bars = range > 30
+    ? Array.from({ length: Math.ceil(days.length / 7) }, (_, w) => {
+        const chunk = days.slice(w * 7, w * 7 + 7);
+        return { label: new Date(`${chunk[0].day}T12:00`).toLocaleDateString([], { day: 'numeric', month: 'short' }), t: chunk.reduce((a: number, c: any) => a + c.t, 0), today: w === Math.ceil(days.length / 7) - 1 };
+      })
+    : days.map((d: any, k: number) => ({
+        label: range === 7 ? ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'][new Date(`${d.day}T12:00`).getDay()] : (k % 5 === 4 || k === days.length - 1 ? String(new Date(`${d.day}T12:00`).getDate()) : ''),
+        t: d.t, today: k === days.length - 1,
+      }));
+  const max = Math.max(1, ...bars.map((b: any) => b.t));
+  const chart = bars.map((b: any) => `<div class="bar-col">
+      <div class="bar-track" title="${tokens(b.t)}"><div class="bar-fill${b.today ? ' today' : ''}" style="height:${Math.max((b.t / max) * 100, b.t > 0 ? 4 : 0)}%"></div><div class="bar-tip">${tokens(b.t)}</div></div>
+      <div class="bar-lbl">${b.label}</div>
+    </div>`).join('');
 
-    <section class="dx-kpis">
-      <div class="dx-kpi"><span>Today</span><b>${tokens(snap.today)}</b><small>tokens</small></div>
-      <div class="dx-kpi"><span>Last 7 days</span><b>${tokens(snap.week)}</b><small>${snap.prevWeek ? `${snap.week >= snap.prevWeek ? '↑' : '↓'} ${Math.abs(Math.round(((snap.week - snap.prevWeek) / snap.prevWeek) * 100))}% vs the week before` : 'tokens'}</small></div>
-      <div class="dx-kpi"><span>Last ${range} days</span><b>${tokens(total)}</b><small>tokens</small></div>
-      <div class="dx-kpi"><span>Est. cost, ${range} days</span><b>${money(usd)}</b><small>at API list prices</small></div>
-    </section>
+  const groups = new Map<Kind, any[]>();
+  for (const l of snap.limits) groups.set(l.kind, [...(groups.get(l.kind) || []), l]);
+  const meter = (l: any) => {
+    const pct = Math.round(l.usedPercent);
+    const color = pct >= at ? '#ff453a' : pct >= at - 20 ? '#ffd60a' : '#ffffff';
+    return `<div class="ai-meter"><span>${l.label === 'Weekly' ? 'Week' : l.label}</span><div class="ai-track"><i style="width:${Math.min(100, pct)}%;background:${color}"></i></div><b>${pct}%</b></div>`;
+  };
+  const limitRows = [...groups.entries()].map(([kind, items]) => `
+    <div class="lap-row ai-limit-row">
+      <span class="ai-tool">${logo(kind, 16)}${NAMES[kind]}</span>
+      <div class="ai-meters">${items.map(meter).join('')}</div>
+      <span class="lap-total">${until(items.find((i: any) => i.label === 'Session')?.resetsAt ?? items[0].resetsAt)}</span>
+    </div>`).join('');
 
-    <section class="dx-grid">
-      <div class="dx-card">
-        <div class="dx-card-head"><h2>Plan limits</h2><span class="dx-muted">${snap.settings.autoSwitch ? `Auto-switch at ${at}%` : 'Auto-switch off'}</span></div>
-        ${groups.size ? [...groups.entries()].map(([kind, items]) => `
-          <div class="dx-limit">
-            <div class="dx-limit-head">${logo(kind)}<b>${NAMES[kind]}</b>${kind === snap.current ? '<span class="dx-tag">In use</span>' : ''}</div>
-            ${items.map((l: any) => `
-              <div class="dx-bar-row">
-                <span>${l.label === 'Weekly' ? 'Week' : l.label}</span>
-                <div class="dx-bar"><i style="width:${Math.min(100, l.usedPercent)}%;background:${tone(l.usedPercent)}"></i></div>
-                <b>${Math.round(l.usedPercent)}%</b>
-                <small>${until(l.resetsAt)}</small>
-              </div>
-              <div class="dx-spark-row" style="color:${tone(l.usedPercent)}">${limitSpark(kind, l.label)}</div>`).join('')}
-          </div>`).join('') : '<p class="dx-muted">Session and weekly limits appear once Claude Code or Codex has run on this PC.</p>'}
-      </div>
-      <div class="dx-card dx-now">
-        <div class="dx-card-head"><h2>Right now</h2>${snap.lastSwitch ? `<span class="dx-muted">Last handoff ${new Date(snap.lastSwitch.at).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}</span>` : ''}</div>
-        ${snap.current ? `<div class="dx-current">${logo(snap.current, 28)}<div><b>${NAMES[snap.current as Kind]}</b><span class="dx-muted">Your most recent AI tool</span></div></div>` : '<p class="dx-muted">No AI tool activity yet.</p>'}
-        ${snap.current && snap.next ? `
-          <button class="dx-primary" data-continue ${busy ? 'disabled' : ''}>${busy ? 'Preparing your context…' : `${logo(snap.next, 16)} Continue in ${NAMES[snap.next as Kind]}`}</button>
-          <p class="dx-muted dx-center">${ready ? 'Opens it in a terminal in your project with your prompts, files and git status.' : 'Not signed in or not installed as a CLI, so your context is copied instead.'}</p>` : ''}
-        ${note ? `<p class="dx-note">${esc(note)}</p>` : ''}
-      </div>
-    </section>
+  const toolRows = hist.kinds.map((k: any) => `
+    <div class="lap-row ai-tool-row">
+      <span class="ai-tool">${logo(k.kind, 16)}${NAMES[k.kind as Kind] || k.kind}${k.estimated ? '<em>est.</em>' : ''}</span>
+      <span class="lap-split">${tokens(k.tokens)}</span>
+      <span class="lap-total">${money(k.usd)}</span>
+    </div>`).join('');
 
-    <section class="dx-card">
-      <div class="dx-card-head"><h2>Daily tokens</h2>
-        <div class="dx-legend">${hist.kinds.map((k: any) => `<span><i style="background:${COLORS[k.kind as Kind] || '#888'}"></i>${NAMES[k.kind as Kind] || k.kind}</span>`).join('')}</div></div>
-      <div class="dx-chart">${hist.daily.map((d: any) => {
-        const t = Object.values(d.parts).reduce((a: number, b: any) => a + b, 0) as number;
-        const parts = (Object.entries(d.parts) as [Kind, number][]).map(([k, v]) => `<i style="flex:${v};background:${COLORS[k] || '#888'}"></i>`).join('');
-        return `<div class="dx-col" title="${new Date(`${d.day}T12:00`).toLocaleDateString([], { weekday: 'short', day: 'numeric', month: 'short' })} · ${tokens(t)}"><div class="dx-stack" style="height:${t ? Math.max(2, (t / peak) * 100) : 0}%">${parts}</div></div>`;
-      }).join('')}</div>
-      <div class="dx-axis"><span>${new Date(`${hist.daily[0].day}T12:00`).toLocaleDateString([], { day: 'numeric', month: 'short' })}</span><span>Today</span></div>
-    </section>
+  el.innerHTML = `<div class="panel-inner">
+    <div class="panel-hdr"><div class="panel-label">AI USAGE</div><div class="panel-sub">Stored on this PC · synced with the notch</div></div>
 
-    <section class="dx-grid">
-      <div class="dx-card">
-        <div class="dx-card-head"><h2>By tool</h2><span class="dx-muted">last ${range} days</span></div>
-        <table class="dx-table">
-          <thead><tr><th>Tool</th><th>Input</th><th>Cache</th><th>Output</th><th>Cost</th></tr></thead>
-          <tbody>${hist.kinds.map((k: any) => `
-            <tr><td><div class="dx-tool">${logo(k.kind)}<span>${NAMES[k.kind as Kind] || k.kind}${k.estimated ? ' <em title="This tool does not store exact counts">est.</em>' : ''}</span></div>
-              <div class="dx-bar thin"><i style="width:${total ? (k.tokens / total) * 100 : 0}%;background:${COLORS[k.kind as Kind] || '#888'}"></i></div></td>
-            <td>${tokens(k.input)}</td><td>${tokens(k.cache)}</td><td>${tokens(k.output)}</td><td>${money(k.usd)}</td></tr>`).join('') || '<tr><td colspan="5" class="dx-muted">No usage in this range.</td></tr>'}</tbody>
-        </table>
-      </div>
-      <div class="dx-card">
-        <div class="dx-card-head"><h2>Top models</h2></div>
-        ${hist.models.map((m: any) => `<div class="dx-model">${logo(m.kind, 14)}<code>${esc(m.model)}</code><span>${tokens(m.tokens)}</span></div>`).join('') || '<p class="dx-muted">No usage in this range.</p>'}
-      </div>
-    </section>
+    <div class="dur-row">${[7, 30, 90].map((d) => `<button class="dur-btn${d === range ? ' active' : ''}" data-range="${d}">${d}d</button>`).join('')}</div>
+
+    <div class="stats-grid">
+      <div class="stat-card"><div class="stat-lbl">Today</div><div class="stat-val">${tokens(snap.today)}</div></div>
+      <div class="stat-card"><div class="stat-lbl">Last 7 days</div><div class="stat-val">${tokens(snap.week)}</div></div>
+      <div class="stat-card"><div class="stat-lbl">Last ${range} days</div><div class="stat-val">${tokens(total)}</div></div>
+      <div class="stat-card"><div class="stat-lbl">Est. cost</div><div class="stat-val">${money(usd)}</div></div>
+    </div>
+
+    <div class="graph-section">
+      <div class="graph-lbl">Tokens per ${range > 30 ? 'week' : 'day'}</div>
+      <div class="bar-chart${bars.length > 14 ? ' dense' : ''}">${chart}</div>
+    </div>
+
+    ${groups.size ? `<div class="graph-section">
+      <div class="graph-lbl">Plan limits · auto-switch ${snap.settings.autoSwitch ? `at ${at}%` : 'off'}</div>
+      <div class="laps-list ai-list">${limitRows}</div>
+    </div>` : ''}
+
+    ${hist.kinds.length ? `<div class="graph-section">
+      <div class="laps-hdr ai-hdr"><span>Tool</span><span>Tokens</span><span>Cost</span></div>
+      <div class="laps-list ai-list">${toolRows}</div>
+    </div>` : ''}
+
+    <div class="ctrl-row">
+      ${snap.current && snap.next ? `<button class="ctrl-btn primary" data-continue ${busy ? 'disabled' : ''}>${busy ? '<span>Preparing…</span>' : `${logo(snap.next, 16)}<span>Continue in ${NAMES[snap.next as Kind]}</span>`}</button>` : ''}
+      <button class="ctrl-btn secondary" data-refresh>${ico('<path d="M20 12a8 8 0 1 1-2.34-5.66M20 4v4.5h-4.5"/>')}<span>Sync</span></button>
+    </div>
+    ${note ? `<div class="panel-sub">${esc(note)}</div>` : ''}
   </div>`;
 }
 
@@ -168,17 +158,20 @@ function paintTodos() {
   if (!el) return;
   const open = todos.filter((t) => !t.done).length;
   const shown = todos.filter((t) => (filter === 'all' ? true : filter === 'open' ? !t.done : t.done));
-  el.innerHTML = `<div class="dx-wrap dx-narrow">
-    <header class="dx-head"><div><h1>To-Dos</h1><p class="dx-muted">${open} open · synced with the notch</p></div>
-      <div class="dx-seg">${(['open', 'done', 'all'] as const).map((f) => `<button class="${f === filter ? 'on' : ''}" data-filter="${f}">${f[0].toUpperCase() + f.slice(1)}</button>`).join('')}</div></header>
-    <form class="dx-add" data-todo-form>${ico('<path d="M12 5.5v13M5.5 12h13"/>')}<input data-todo-input placeholder="Add a to-do and press Enter" maxlength="200"/></form>
-    <div class="dx-todos">${shown.map((t) => `
-      <div class="dx-todo${t.done ? ' done' : ''}" data-id="${t.id}">
-        <button class="dx-check" data-toggle>${t.done ? ico('<path d="m5 12.5 4.5 4.5L19 7.5"/>', 12) : ''}</button>
-        <span>${esc(t.text)}</span>
-        <button class="dx-icon-btn dx-del" data-del title="Delete">${ico('<path d="M4.5 7h15M9.5 7V5h5v2M6.5 7l1 12.5h9l1-12.5"/>', 14)}</button>
-      </div>`).join('') || `<p class="dx-muted dx-empty">${filter === 'done' ? 'Nothing finished yet.' : 'Nothing to do.'}</p>`}</div>
-    ${todos.some((t) => t.done) ? '<button class="dx-link" data-clear>Clear completed</button>' : ''}
+  el.innerHTML = `<div class="panel-inner">
+    <div class="panel-hdr"><div class="panel-label">TO-DOS</div><div class="panel-sub">${open} open · synced with the notch</div></div>
+    <div class="dur-row">${(['open', 'done', 'all'] as const).map((f) => `<button class="dur-btn${f === filter ? ' active' : ''}" data-filter="${f}">${f[0].toUpperCase() + f.slice(1)}</button>`).join('')}</div>
+    <form class="todo-add-row" data-todo-form>
+      <input class="cal-inp" data-todo-input placeholder="Add a to-do…" maxlength="200" />
+      <button class="ctrl-btn primary" type="submit">${ico('<path d="M12 5.5v13M5.5 12h13"/>')}<span>Add</span></button>
+    </form>
+    <div class="cal-evs-list todo-list">${shown.map((t) => `
+      <div class="cal-ev-item dx-todo${t.done ? ' done' : ''}" data-id="${t.id}">
+        <button class="todo-tick" data-toggle title="${t.done ? 'Mark as open' : 'Mark as done'}">${t.done ? ico('<path d="m5 12.5 4.5 4.5L19 7.5"/>', 11) : ''}</button>
+        <span class="cal-ev-title">${esc(t.text)}</span>
+        <button class="ev-del" data-del title="Delete">${ico('<path d="M4.5 7h15M9.5 7V5h5v2M6.5 7l1 12.5h9l1-12.5"/>', 14)}</button>
+      </div>`).join('') || `<div class="cal-empty-msg">${filter === 'done' ? 'Nothing finished yet' : 'Nothing to do'}</div>`}</div>
+    ${todos.some((t) => t.done) ? '<button class="ctrl-btn secondary" data-clear><span>Clear completed</span></button>' : ''}
   </div>`;
 }
 
@@ -189,10 +182,10 @@ function paintNotes() {
   const el = document.getElementById('panel-notes');
   if (!el) return;
   const words = noteText.trim() ? noteText.trim().split(/\s+/).length : 0;
-  el.innerHTML = `<div class="dx-wrap dx-narrow dx-fill">
-    <header class="dx-head"><div><h1>Note</h1><p class="dx-muted" data-note-meta>${words} word${words === 1 ? '' : 's'} · synced with the notch</p></div>
-      <button class="dx-secondary" data-note-copy>${ico('<rect x="8.5" y="8.5" width="11" height="11" rx="2.5"/><path d="M15.5 8.5V6a1.5 1.5 0 0 0-1.5-1.5H6A1.5 1.5 0 0 0 4.5 6v8A1.5 1.5 0 0 0 6 15.5h2.5"/>', 14)} Copy</button></header>
-    <textarea class="dx-note-area" data-note placeholder="Write anything. It saves as you type.">${esc(noteText)}</textarea>
+  el.innerHTML = `<div class="panel-inner">
+    <div class="panel-hdr"><div class="panel-label">NOTE</div><div class="panel-sub" data-note-meta>${words} word${words === 1 ? '' : 's'} · synced with the notch</div></div>
+    <textarea class="cal-inp note-area" data-note placeholder="Write anything. It saves as you type.">${esc(noteText)}</textarea>
+    <div class="ctrl-row"><button class="ctrl-btn secondary" data-note-copy>${ico('<rect x="8.5" y="8.5" width="11" height="11" rx="2.5"/><path d="M15.5 8.5V6a1.5 1.5 0 0 0-1.5-1.5H6A1.5 1.5 0 0 0 4.5 6v8A1.5 1.5 0 0 0 6 15.5h2.5"/>')}<span>Copy</span></button></div>
   </div>`;
 }
 
@@ -208,7 +201,7 @@ export function mountDashExtras() {
     if (t.closest('#panel-ai')) {
       const r = t.closest<HTMLElement>('[data-range]');
       if (r) { range = Number(r.dataset.range); void loadAI(); }
-      if (t.closest('[data-refresh]')) void invoke('count:refresh').then(loadAI);
+      if (t.closest('[data-refresh]')) void invoke('sync:all').then(loadAI);
       if (t.closest('[data-continue]')) void continueIn();
     }
     if (t.closest('#panel-todos')) {
@@ -241,13 +234,22 @@ export function mountDashExtras() {
     noteText = area.value;
     const words = noteText.trim() ? noteText.trim().split(/\s+/).length : 0;
     const meta = document.querySelector('[data-note-meta]');
-    if (meta) meta.textContent = `${words} word${words === 1 ? '' : 's'} · saving…`;
+    if (meta) meta.textContent = `${words} word${words === 1 ? '' : 's'} · saving`;
     clearTimeout(noteTimer);
-    noteTimer = window.setTimeout(() => { send('set-setting', 'note', noteText); if (meta) meta.textContent = `${words} word${words === 1 ? '' : 's'} · saved`; }, 400);
+    noteTimer = window.setTimeout(() => { send('set-setting', 'note', noteText); if (meta) meta.textContent = `${words} word${words === 1 ? '' : 's'} · synced with the notch`; }, 400);
   });
 
   // Live sync from the notch and the background scanner.
   ipc?.on('count:update', () => void loadAI());
+  ipc?.on('sync-all', () => {
+    void loadAI();
+    void invoke('get-setting', 'todos', '[]').then((v: string) => { try { todos = JSON.parse(v) || []; } catch { todos = []; } paintTodos(); });
+    void invoke('get-setting', 'note', '').then((v: string) => {
+      noteText = v || '';
+      const area = document.querySelector<HTMLTextAreaElement>('[data-note]');
+      if (area && document.activeElement !== area) area.value = noteText;
+    });
+  });
   ipc?.on('setting-changed', (_e: unknown, key: string, value: string) => {
     if (key === 'todos') { try { todos = JSON.parse(value) || []; } catch { todos = []; } paintTodos(); }
     if (key === 'note') {

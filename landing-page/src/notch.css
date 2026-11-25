@@ -1,0 +1,221 @@
+/* The Overlay notch, sized in the app's own pixels on a 1000px-wide screen.
+   1u = 1px in the app, so every measurement below matches src/style.css. */
+.display { --u: calc(100cqw / 1000); }
+
+.ov {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  z-index: 2;
+  width: calc(var(--u) * 280);
+  height: calc(var(--u) * 44);
+  transform: translateX(-50%);
+  border-radius: 0 0 calc(var(--u) * 22) calc(var(--u) * 22);
+  background: #000;
+  color: #f2f2f5;
+  font-family: var(--sans);
+  letter-spacing: -0.01em;
+  box-shadow: 0 calc(var(--u) * 14) calc(var(--u) * 34) calc(var(--u) * -12) rgba(0, 0, 0, 0.7);
+  transition:
+    width 0.55s cubic-bezier(0.2, 0.9, 0.25, 1.05),
+    height 0.55s cubic-bezier(0.2, 0.9, 0.25, 1.05),
+    border-radius 0.55s cubic-bezier(0.2, 0.9, 0.25, 1.05);
+}
+
+/* The curved shoulders that melt the notch into the top edge. */
+.ov::before, .ov::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  width: calc(var(--u) * 16);
+  height: calc(var(--u) * 16);
+}
+.ov::before { left: calc(var(--u) * -16); background: radial-gradient(circle at 0 100%, transparent calc(var(--u) * 15.5), #000 calc(var(--u) * 16)); }
+.ov::after { right: calc(var(--u) * -16); background: radial-gradient(circle at 100% 100%, transparent calc(var(--u) * 15.5), #000 calc(var(--u) * 16)); }
+
+.ov.playing:not(.open) { width: calc(var(--u) * 340); }
+.ov.open {
+  width: calc(var(--u) * 600);
+  height: calc(var(--u) * 360);
+  border-radius: 0 0 calc(var(--u) * 30) calc(var(--u) * 30);
+}
+
+.ov svg { width: 100%; height: 100%; display: block; }
+
+.ov-btn {
+  width: calc(var(--u) * 24);
+  height: calc(var(--u) * 24);
+  padding: calc(var(--u) * 5);
+  border: none;
+  border-radius: calc(var(--u) * 7);
+  background: transparent;
+  color: rgba(255, 255, 255, 0.72);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.ov-btn:hover { color: #fff; background: rgba(255, 255, 255, 0.07); }
+
+/* Closed */
+.ov-idle {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  border-radius: inherit;
+  display: flex;
+  align-items: center;
+  gap: calc(var(--u) * 8);
+  padding: 0 calc(var(--u) * 10) 0 calc(var(--u) * 12);
+  transition: opacity 0.2s ease;
+}
+.ov.open .ov-idle { opacity: 0; pointer-events: none; }
+
+.ov-mark { width: calc(var(--u) * 16); height: auto; opacity: 0.92; }
+.ov-clock { font-size: calc(var(--u) * 14); font-weight: 600; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+.ov-spacer { flex: 1; }
+.ov-x { width: calc(var(--u) * 24); height: calc(var(--u) * 24); padding: calc(var(--u) * 5); color: rgba(255, 255, 255, 0.72); }
+.ov-line {
+  flex: 1;
+  min-width: 0;
+  font-size: calc(var(--u) * 12.5);
+  font-weight: 500;
+  color: #dfe6ff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ov-art {
+  width: calc(var(--u) * 58);
+  height: calc(var(--u) * 58);
+  border-radius: calc(var(--u) * 12);
+  flex: 0 0 auto;
+  background:
+    linear-gradient(160deg, rgba(255, 255, 255, 0.32), transparent 45%),
+    radial-gradient(80% 80% at 25% 95%, #f8c57d, transparent 62%),
+    linear-gradient(150deg, #4e2c6b, #c97b9c);
+  box-shadow: 0 calc(var(--u) * 10) calc(var(--u) * 28) rgba(0, 0, 0, 0.55);
+}
+.ov-art.sm { width: calc(var(--u) * 24); height: calc(var(--u) * 24); border-radius: calc(var(--u) * 7); box-shadow: none; }
+
+.ov-bars { display: inline-flex; align-items: center; gap: calc(var(--u) * 2); height: calc(var(--u) * 14); }
+.ov-bars i { width: calc(var(--u) * 3); height: 100%; border-radius: calc(var(--u) * 2); background: #32d27a; transform: scaleY(0.25); }
+.ov.playing .ov-bars i { animation: ov-eq 0.9s ease-in-out infinite; }
+.ov.playing .ov-bars i:nth-child(2) { animation-delay: -0.3s; animation-duration: 0.75s; }
+.ov.playing .ov-bars i:nth-child(3) { animation-delay: -0.55s; animation-duration: 1.05s; }
+.ov.playing .ov-bars i:nth-child(4) { animation-delay: -0.15s; animation-duration: 0.85s; }
+@keyframes ov-eq { 0%, 100% { transform: scaleY(0.25); } 50% { transform: scaleY(1); } }
+
+/* Open */
+.ov-exp {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  border-radius: inherit;
+  display: flex;
+  flex-direction: column;
+  padding: calc(var(--u) * 14) calc(var(--u) * 14) calc(var(--u) * 10);
+  opacity: 0;
+  transform: scale(0.97);
+  pointer-events: none;
+  transition: opacity 0.14s ease, transform 0.14s ease;
+}
+.ov.open .ov-exp {
+  opacity: 1;
+  transform: none;
+  pointer-events: auto;
+  transition: opacity 0.28s ease 0.18s, transform 0.4s cubic-bezier(0.2, 0.9, 0.25, 1.05) 0.12s;
+}
+
+.ov-head { display: flex; align-items: center; justify-content: space-between; height: calc(var(--u) * 26); padding: 0 calc(var(--u) * 6); }
+.ov-head h2 { font-family: var(--sans); font-size: calc(var(--u) * 16); font-weight: 600; letter-spacing: -0.02em; line-height: 1; }
+.ov-head-r { display: flex; align-items: center; gap: calc(var(--u) * 10); }
+.ov-bat { display: inline-flex; align-items: center; gap: calc(var(--u) * 7); font-size: calc(var(--u) * 12); font-weight: 500; }
+.ov-bat svg { width: calc(var(--u) * 28); height: calc(var(--u) * 13); }
+
+.ov-np { display: flex; align-items: center; gap: calc(var(--u) * 14); margin: calc(var(--u) * 10) calc(var(--u) * 4) 0; }
+.ov-np-text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: calc(var(--u) * 2); }
+.ov-np-text b { font-size: calc(var(--u) * 18); font-weight: 600; letter-spacing: -0.02em; }
+.ov-np-text span { font-size: calc(var(--u) * 13); font-weight: 500; color: #a9a9b4; }
+
+.ov-progress {
+  display: flex;
+  align-items: center;
+  gap: calc(var(--u) * 10);
+  margin: calc(var(--u) * 10) calc(var(--u) * 4) 0;
+  font-size: calc(var(--u) * 11);
+  font-weight: 500;
+  color: #a9a9b4;
+  font-variant-numeric: tabular-nums;
+}
+.ov-progress span { width: calc(var(--u) * 34); }
+.ov-progress span:last-child { text-align: right; }
+.ov-progress div { flex: 1; height: calc(var(--u) * 4); border-radius: calc(var(--u) * 2); background: rgba(255, 255, 255, 0.12); overflow: hidden; }
+.ov-progress i { display: block; height: 100%; background: #f2f2f5; border-radius: inherit; transition: width 0.2s linear; }
+
+.ov-ctrls { display: flex; align-items: center; justify-content: space-between; margin: calc(var(--u) * 10) calc(var(--u) * 4) 0; }
+.ov-vol { display: inline-flex; align-items: center; gap: calc(var(--u) * 8); width: calc(var(--u) * 120); color: rgba(255, 255, 255, 0.72); }
+.ov-vol svg { width: calc(var(--u) * 16); height: calc(var(--u) * 16); flex-shrink: 0; }
+.ov-vol i { flex: 1; height: calc(var(--u) * 4); border-radius: calc(var(--u) * 2); background: linear-gradient(90deg, #fff 62%, rgba(255, 255, 255, 0.12) 62%); position: relative; }
+.ov-vol b { position: absolute; left: 62%; top: 50%; width: calc(var(--u) * 12); height: calc(var(--u) * 12); border-radius: 50%; background: #fff; transform: translate(-50%, -50%); }
+.ov-main { display: flex; align-items: center; gap: calc(var(--u) * 14); }
+.ov-main .ov-btn { width: calc(var(--u) * 28); height: calc(var(--u) * 28); padding: calc(var(--u) * 5); color: #fff; }
+.ov-play {
+  width: calc(var(--u) * 38);
+  height: calc(var(--u) * 38);
+  padding: calc(var(--u) * 11);
+  border: none;
+  border-radius: 50%;
+  background: #f2f2f5;
+  color: #000;
+  cursor: pointer;
+  transition: transform 0.2s ease, background 0.2s ease;
+}
+.ov-play:hover { background: #fff; transform: scale(1.04); }
+.ov-ly { width: calc(var(--u) * 120); display: flex; justify-content: flex-end; color: #3d6bff; }
+.ov-ly svg { width: calc(var(--u) * 16); height: calc(var(--u) * 16); }
+
+.ov-lyrics {
+  flex: 1;
+  min-height: 0;
+  margin-top: calc(var(--u) * 10);
+  padding-top: calc(var(--u) * 8);
+  border-top: 1px solid rgba(255, 255, 255, 0.07);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: calc(var(--u) * 4);
+  text-align: center;
+}
+.ov-lyrics p { font-size: calc(var(--u) * 12.5); color: #85858f; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+.ov-lyrics p.cur { font-size: calc(var(--u) * 15); font-weight: 600; color: #f2f2f5; animation: ov-line 0.4s cubic-bezier(0.2, 0.9, 0.25, 1); }
+@keyframes ov-line { from { opacity: 0; transform: translateY(calc(var(--u) * 4)); } to { opacity: 1; transform: none; } }
+
+.ov-dock {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: calc(var(--u) * 48);
+  margin-top: calc(var(--u) * 10);
+  padding: 0 calc(var(--u) * 7);
+  border-radius: calc(var(--u) * 16);
+  background: #121215;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+}
+.ov-dot {
+  position: relative;
+  width: calc(var(--u) * 32);
+  height: calc(var(--u) * 36);
+  padding: calc(var(--u) * 9) calc(var(--u) * 7);
+  border-radius: calc(var(--u) * 10);
+}
+.ov-dot.on { background: rgba(255, 255, 255, 0.1); }
+.ov-dot.on::after { content: ''; position: absolute; bottom: calc(var(--u) * 3); left: 50%; width: calc(var(--u) * 14); height: calc(var(--u) * 2.5); border-radius: 2px; background: #f2f2f5; transform: translateX(-50%); }
+.ov-dot.gear { color: rgba(255, 255, 255, 0.72); }
+.ov-dock-gap { width: 1px; height: calc(var(--u) * 20); background: rgba(255, 255, 255, 0.13); }
+
+@media (prefers-reduced-motion: reduce) {
+  .ov, .ov-exp, .ov-idle { transition: none !important; }
+  .ov-bars i, .ov-lyrics p.cur { animation: none !important; }
+}

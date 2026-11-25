@@ -164,7 +164,7 @@ function renderSpace(s: Snapshot) {
     </div>
     <div class="ai-actions">
       ${continueButton(s, true)}
-      <button class="cnt-ghost" data-act="sidebar" title="Open the full Count panel">Details</button>
+      <button class="cnt-ghost" data-act="sidebar" title="Open AI Usage in the Dashboard">Open in Dashboard</button>
     </div>
     ${note ? `<p class="cnt-note">${esc(note)}</p>` : ''}`;
 }
