@@ -400,6 +400,7 @@ export function mountMoreTools(opts: { invoke: Invoke; send: Send }) {
   // ── Launcher ────────────────────────────────────────────────────────────
   const lEl = $('[data-space="launcher"]');
   let apps: { name: string; path: string }[] = [];
+  let appsReady = false;
   let query = '';
   let sel = 0;
   const appIcons = new Map<string, string>();
@@ -408,7 +409,7 @@ export function mountMoreTools(opts: { invoke: Invoke; send: Send }) {
   const input = lEl.querySelector<HTMLInputElement>('[data-l-input]')!;
   function matches() {
     const q = query.trim().toLowerCase();
-    if (!q) return apps.slice(0, 0);
+    if (!q) return apps.slice(0, 8);
     return apps
       .map((a) => { const n = a.name.toLowerCase(); const i = n.indexOf(q); const initials = n.split(/\s+/).map((w) => w[0]).join(''); return { a, score: n.startsWith(q) ? 0 : initials.startsWith(q) ? 1 : i >= 0 ? 2 + i / 100 : 9 }; })
       .filter((x) => x.score < 9).sort((x, y) => x.score - y.score || x.a.name.length - y.a.name.length).slice(0, 7).map((x) => x.a);
@@ -420,7 +421,7 @@ export function mountMoreTools(opts: { invoke: Invoke; send: Send }) {
       <button class="l-row${k === sel ? ' on' : ''}" data-app="${k}">
         <span class="l-icon">${appIcons.get(a.path) ? `<img src="${appIcons.get(a.path)}" width="22" height="22"/>` : ''}</span>
         <b>${esc(a.name)}</b>${k === sel ? '<kbd>Enter</kbd>' : ''}</button>`).join('')
-      : `<p class="tool-empty">${query.trim() ? 'No apps match.' : `${apps.length ? `${apps.length} apps from your Start menu. Start typing.` : 'Reading your Start menu…'}`}</p>`;
+      : `<p class="tool-empty">${query.trim() ? 'No apps match.' : appsReady ? 'No apps in the Start menu.' : 'Reading your Start menu…'}</p>`;
     found.filter((a) => !appIcons.has(a.path)).forEach((a) => {
       appIcons.set(a.path, '');
       void invoke('get-file-icon', a.path).then((d: string | null) => { if (d) { appIcons.set(a.path, d); renderList(); } });
@@ -441,7 +442,7 @@ export function mountMoreTools(opts: { invoke: Invoke; send: Send }) {
       if (name === 'weather') void loadWeather();
       if (name === 'clocks') renderClocks();
       if (name === 'launcher') {
-        if (!apps.length) void invoke('apps:list').then((a: any) => { apps = a || []; renderList(); });
+        if (!apps.length) void invoke('apps:list').then((a: any) => { apps = a || []; appsReady = true; renderList(); });
         renderList();
         setTimeout(() => input.focus(), 250);
       }

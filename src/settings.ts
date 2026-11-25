@@ -1,22 +1,27 @@
 import '@fontsource-variable/instrument-sans';
 import './settings.css';
-import appLogoUrl from '../applogo.png';
+import overlayMark from './assets/overlay-mark.png';
 
 // IPC
 let ipc: any = null;
 try {
   if ((window as any).require) ipc = (window as any).require('electron').ipcRenderer;
 } catch {}
+const navIcon = (body: string, fill = false) =>
+  `<svg class="nav-ico" viewBox="0 0 24 24" width="16" height="16" fill="${fill ? 'currentColor' : 'none'}" stroke="${fill ? 'none' : 'currentColor'}" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${body}</svg>`;
+
+const GEAR = `<path fill-rule="evenodd" d="M10.2 2.35a1.8 1.8 0 0 1 3.6 0l.28 1.7c.55.16 1.07.4 1.55.72l1.52-.76a1.8 1.8 0 0 1 2.46.66l1.2 2.08a1.8 1.8 0 0 1-.66 2.46l-1.32.86c.08.47.12.96.12 1.45s-.04.98-.12 1.45l1.32.86a1.8 1.8 0 0 1 .66 2.46l-1.2 2.08a1.8 1.8 0 0 1-2.46.66l-1.52-.76c-.48.32-1 .56-1.55.72l-.28 1.7a1.8 1.8 0 0 1-3.6 0l-.28-1.7a6.6 6.6 0 0 1-1.55-.72l-1.52.76a1.8 1.8 0 0 1-2.46-.66l-1.2-2.08a1.8 1.8 0 0 1 .66-2.46l1.32-.86A7.4 7.4 0 0 1 4.7 12c0-.49.04-.98.12-1.45l-1.32-.86a1.8 1.8 0 0 1-.66-2.46l1.2-2.08a1.8 1.8 0 0 1 2.46-.66l1.52.76c.48-.32 1-.56 1.55-.72l.28-1.7ZM12 15.15a3.15 3.15 0 1 0 0-6.3 3.15 3.15 0 0 0 0 6.3Z" clip-rule="evenodd"/>`;
+
 const TABS = [
-  { name: 'Dashboard', icon: '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="3" y1="9" x2="21" y2="9"></line><line x1="9" y1="21" x2="9" y2="9"></line></svg>' },
-  { name: 'General', icon: '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>' },
-  { name: 'Appearance', icon: '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>' },
-  { name: 'Media', icon: '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"></path><circle cx="6" cy="18" r="3"></circle><circle cx="18" cy="16" r="3"></circle></svg>' },
-  { name: 'Calendar', icon: '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>' },
-  { name: 'Battery', icon: '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="6" width="18" height="12" rx="2" ry="2"></rect><line x1="23" y1="13" x2="23" y2="11"></line></svg>' },
-  { name: 'Shelf', icon: '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"></path></svg>' },
-  { name: 'Shortcuts', icon: '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 3a3 3 0 0 0-3 3v12a3 3 0 0 0 3 3 3 3 0 0 0 3-3 3 3 0 0 0-3-3H6a3 3 0 0 0-3 3 3 3 0 0 0 3 3 3 3 0 0 0 3-3V6a3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3h12a3 3 0 0 0 3-3 3 3 0 0 0-3-3z"></path></svg>' },
-  { name: 'About', icon: '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>' }
+  { name: 'Dashboard', icon: navIcon('<rect x="3.5" y="3.5" width="7" height="7" rx="1.6"/><rect x="13.5" y="3.5" width="7" height="7" rx="1.6"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.6"/><rect x="13.5" y="13.5" width="7" height="7" rx="1.6"/>') },
+  { name: 'General', icon: navIcon(GEAR, true) },
+  { name: 'Appearance', icon: navIcon('<circle cx="12" cy="12" r="4"/><path d="M12 3.5v2M12 18.5v2M3.5 12h2M18.5 12h2M5.8 5.8l1.4 1.4M16.8 16.8l1.4 1.4M18.2 5.8l-1.4 1.4M7.2 16.8l-1.4 1.4"/>') },
+  { name: 'Media', icon: navIcon('<path d="M9 17.5V6.5l9-1.5v11"/><circle cx="6.5" cy="17.5" r="2.5"/><circle cx="15.5" cy="16" r="2.5"/>') },
+  { name: 'Calendar', icon: navIcon('<rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 9.5h16M8 3.5v3M16 3.5v3"/>') },
+  { name: 'Battery', icon: navIcon('<rect x="3" y="7" width="16" height="10" rx="2"/><path d="M19 10h1.2a1 1 0 0 1 1 1v2a1 1 0 0 1-1 1H19"/>') },
+  { name: 'Shelf', icon: navIcon('<path d="M4 8.5h16M4 15.5h16M6 5.5v13M18 5.5v13"/>') },
+  { name: 'Shortcuts', icon: navIcon('<rect x="3.5" y="6" width="17" height="12" rx="2"/><path d="M7 10h.01M10.5 10h.01M14 10h.01M17.5 10h.01M8.5 13.5h7"/>') },
+  { name: 'About', icon: navIcon('<circle cx="12" cy="12" r="8"/><path d="M12 11v5M12 8h.01"/>') }
 ];
 
 let activeTab = 'Dashboard';
@@ -83,7 +88,7 @@ function renderAboutContent(container: HTMLElement) {
     <div class="group">
       <div class="about-hero">
         <div class="about-logo-container">
-          <img src="${appLogoUrl}" class="about-logo" />
+          <img src="${overlayMark}" class="logo-glow about-logo" alt="Overlay" />
         </div>
         <div class="about-title-block">
           <h2 class="about-name"><span class="brand">Overlay</span></h2>
@@ -213,7 +218,7 @@ async function render() {
   root.innerHTML = `
     <div class="sidebar">
       <div class="sidebar-header">
-        <img src="${appLogoUrl}" alt="Overlay" class="sidebar-logo">
+        <img src="${overlayMark}" alt="Overlay" class="logo-glow sidebar-logo">
         <span class="sidebar-title" style="font-weight: 600;">Overlay</span>
       </div>
       ${TABS.map(t => `
@@ -233,7 +238,10 @@ async function render() {
         <!-- Dashboard Pane -->
         <div class="pane-section ${activeTab === 'Dashboard' ? 'active' : ''}">
           <div class="group">
-            <h2>Your Focus Stats</h2>
+            <div style="display:flex; align-items:center; justify-content:space-between; gap:16px; margin-bottom:16px;">
+              <h2 style="margin:0;">Your Focus Stats</h2>
+              <button id="btn-open-dashboard" class="update-btn primary" type="button">Open Lock In</button>
+            </div>
             <div class="card" style="display: flex; gap: 24px; padding: 24px; margin-bottom: 24px;">
               <div style="flex:1;">
                 <div style="font-size: 13px; color: var(--text-muted); margin-bottom: 4px;">Sessions Today</div>
@@ -431,6 +439,10 @@ async function render() {
       </div>
     </div>
   `;
+
+  document.getElementById('btn-open-dashboard')?.addEventListener('click', () => {
+    ipc?.send('open-dashboard');
+  });
 
   // Bind tabs
   root.querySelectorAll('.nav-item').forEach(el => {

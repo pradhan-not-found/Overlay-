@@ -1,9 +1,13 @@
 import '@fontsource-variable/instrument-sans';
 import './style.css';
 import { countMark } from './count/mark';
+import overlayMark from './assets/overlay-mark.png';
 import { mountCount, openCountSpace } from './count/panel';
 import { mountExtraTools } from './tools/extra';
 import { mountMoreTools } from './tools/more';
+import { mountLinks, marks } from './tools/links';
+import { mountStudio } from './tools/studio';
+import { mountDesk } from './tools/desk';
 import plusSvgRaw from './assets/icons/plus.svg?raw';
 import expandSvgRaw from './assets/icons/expand.svg?raw';
 import playSvgRaw from './assets/icons/play.svg?raw';
@@ -26,24 +30,22 @@ const timerSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16"
 
 const lyricsSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h11M4 11h8M4 16h5"/><circle cx="17" cy="16.5" r="2.5"/><path d="M19.5 16.5V7.5l2-1"/></svg>`;
 
-/** Battery like the macOS menu bar: outline, terminal, inset fill, and a bolt
- *  cut cleanly out of the fill (with a hairline gap) while charging. */
+/** Menu-bar battery: even stroke, inset charge, a centered cap, and a bolt only while charging. */
 let batteryMaskId = 0;
 function batterySvg(pct: number, charging: boolean): string {
   const id = `bat-cut-${++batteryMaskId}`;
-  const fill = charging ? '#34c759' : pct <= 20 ? '#ff453a' : '#f2f2f5';
-  const w = Math.max(2, (pct / 100) * 19.4);
-  const bolt = 'M13.1 2.4 8.9 7.1h2.9l-1 3.5 4.2-4.7h-2.9l1-3.5Z';
-  return `<svg width="28" height="13" viewBox="0 0 28 13" aria-hidden="true">
-    ${charging ? `<defs><mask id="${id}" maskUnits="userSpaceOnUse" x="0" y="0" width="28" height="13">
-      <rect width="28" height="13" fill="#fff"/>
-      <path d="${bolt}" fill="#000" stroke="#000" stroke-width="1.6" stroke-linejoin="round"/>
+  const fill = charging ? '#32d27a' : pct <= 20 ? '#ff5a4e' : '#f4f4f6';
+  const inner = 16.2;
+  const w = pct <= 0 ? 0 : Math.max(1.6, (Math.min(100, pct) / 100) * inner);
+  const bolt = 'M11.55 2.55 8.55 6.55h2.05l-.7 2.9 3.05-4.05H10.9l.65-2.85Z';
+  return `<svg width="26" height="12" viewBox="0 0 26 12" aria-hidden="true">
+    ${charging ? `<defs><mask id="${id}" maskUnits="userSpaceOnUse" x="0" y="0" width="26" height="12">
+      <rect width="26" height="12" fill="#fff"/>
+      <path d="${bolt}" fill="#000" stroke="#000" stroke-width="0.7" stroke-linejoin="round"/>
     </mask></defs>` : ''}
-    <g ${charging ? `mask="url(#${id})"` : ''}>
-      <rect x="0.65" y="0.65" width="23.2" height="11.7" rx="3.6" fill="none" stroke="rgba(255,255,255,0.45)" stroke-width="1.3"/>
-      <rect x="2.4" y="2.4" width="${w}" height="8.2" rx="2" fill="${fill}"/>
-    </g>
-    <path d="M25.2 4.5v4a2 2 0 0 0 0-4Z" fill="rgba(255,255,255,0.45)"/>
+    <rect x="0.7" y="0.7" width="21.2" height="10.6" rx="3.1" fill="none" stroke="rgba(255,255,255,0.72)" stroke-width="1.15"/>
+    <rect x="22.55" y="3.85" width="2.15" height="4.3" rx="0.9" fill="rgba(255,255,255,0.72)"/>
+    ${w ? `<rect x="2.25" y="2.25" width="${w.toFixed(2)}" height="7.5" rx="1.5" fill="${fill}" ${charging ? `mask="url(#${id})"` : ''}/>` : ''}
     ${charging ? `<path d="${bolt}" fill="#fff"/>` : ''}
   </svg>`;
 }
@@ -239,9 +241,13 @@ document.getElementById('app')!.innerHTML = `
   <!-- ══ IDLE ══ -->
   <div class="view view-idle active" id="view-idle">
     <div class="idle-state" id="idle-state-default">
-      <button class="count-dot" id="btn-count-idle" title="Count · AI usage">${countMark(13, '#fff')}</button>
+      <button class="overlay-mark" id="btn-count-idle" title="Overlay"><img src="${overlayMark}" alt="" /></button>
       <span class="idle-clock" id="idle-clock">00:00</span>
       <span class="idle-spacer"></span>
+      <div class="idle-links">
+        <button class="link-chip" id="btn-idle-github" title="GitHub">${marks.github}<span id="gh-idle-count"></span></button>
+        <button class="link-chip" id="btn-idle-discord" title="Discord">${marks.discord}<i id="dc-idle-dot"></i></button>
+      </div>
       <div class="idle-shortcuts" id="idle-shortcuts"></div>
       <button class="ibtn ibtn-sm" id="btn-close-app" title="Hide Overlay">${closeSvgRaw}</button>
     </div>
@@ -376,6 +382,25 @@ document.getElementById('app')!.innerHTML = `
       <section class="space p-shelf" data-space="shelf"></section>
       <section class="space p-colour" data-space="colour"></section>
       <section class="space p-launcher" data-space="launcher"></section>
+      <section class="space p-github" data-space="github"></section>
+      <section class="space p-discord" data-space="discord"></section>
+      <section class="space p-leetcode" data-space="leetcode"></section>
+      <section class="space p-terminal" data-space="terminal"></section>
+      <section class="space p-convert" data-space="convert"></section>
+      <section class="space p-water" data-space="water"></section>
+      <section class="space p-habits" data-space="habits"></section>
+      <section class="space p-scratch" data-space="scratch"></section>
+      <section class="space p-prompter" data-space="prompter"></section>
+      <section class="space p-ask" data-space="ask"></section>
+      <section class="space p-trading" data-space="trading"></section>
+      <section class="space p-vault" data-space="vault"></section>
+      <section class="space p-notices" data-space="notices"></section>
+      <section class="space p-capture" data-space="capture"></section>
+      <section class="space p-recorder" data-space="recorder"></section>
+      <section class="space p-camera" data-space="camera"></section>
+      <section class="space p-agents" data-space="agents"></section>
+      <section class="space p-screentime" data-space="screentime"></section>
+      <section class="space p-wallpapers" data-space="wallpapers"></section>
     </div>
 
     <nav class="dock" id="space-dots">
@@ -394,6 +419,25 @@ document.getElementById('app')!.innerHTML = `
       <button class="space-dot" data-space="shelf" data-title="Shelf" title="Shelf" style="--tint:#fb923c">${ico('<path d="M4 13.5 6.5 6a2 2 0 0 1 1.9-1.4h7.2A2 2 0 0 1 17.5 6l2.5 7.5"/><path d="M4 13.5h4.5l1.5 2.5h4l1.5-2.5H20V18a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2Z"/>')}</button>
       <button class="space-dot" data-space="colour" data-title="Colour" title="Colour picker" style="--tint:#e879f9">${ico('<path d="M16 3.5a2.1 2.1 0 0 1 3 0l1.5 1.5a2.1 2.1 0 0 1 0 3L19 9.5 14.5 5Z"/><path d="m14.5 5 4.5 4.5-9.5 9.5H5v-4.5Z"/>')}</button>
       <button class="space-dot" data-space="launcher" data-title="Launcher" title="Launch an app" style="--tint:#f87171">${ico('<circle cx="11" cy="11" r="6.5"/><path d="m20 20-4.4-4.4"/>')}</button>
+      <button class="space-dot" data-space="github" data-title="GitHub" title="GitHub" style="--tint:#c4c4cc">${marks.github}</button>
+      <button class="space-dot" data-space="discord" data-title="Discord" title="Discord" style="--tint:#8ea1ff">${marks.discord}</button>
+      <button class="space-dot" data-space="leetcode" data-title="LeetCode" title="LeetCode" style="--tint:#ffb340">${marks.leetcode}</button>
+      <button class="space-dot" data-space="terminal" data-title="Terminal" title="Terminal" style="--tint:#d4d4d8">${ico('<rect x="3.75" y="4.75" width="16.5" height="14.5" rx="2.5"/><path d="M7.25 9.25 9.75 12l-2.5 2.75M12.25 14.75h4.5"/>')}</button>
+      <button class="space-dot" data-space="convert" data-title="Convert" title="Convert" style="--tint:#67e8f9">${ico('<path d="M7 8h9.2M13.6 5.4 16.4 8l-2.8 2.6M17 16H7.8M10.4 13.4 7.6 16l2.8 2.6"/>')}</button>
+      <button class="space-dot" data-space="water" data-title="Water" title="Water" style="--tint:#7dd3fc">${`<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2.8c.35.55 5.4 6.55 5.4 10.05a5.4 5.4 0 1 1-10.8 0C6.6 9.35 11.65 3.35 12 2.8Z"/></svg>`}</button>
+      <button class="space-dot" data-space="habits" data-title="Habits" title="Habits" style="--tint:#86efac">${ico('<path d="M8 13.5 10.5 16 16 9"/><circle cx="12" cy="12" r="8.25"/>')}</button>
+      <button class="space-dot" data-space="scratch" data-title="Scratchpad" title="Scratchpad" style="--tint:#fcd34d">${ico('<path d="M8 8.5 5.5 12 8 15.5M16 8.5 18.5 12 16 15.5M13 7l-2 10"/>')}</button>
+      <button class="space-dot" data-space="prompter" data-title="Prompter" title="Prompter" style="--tint:#fda4af">${ico('<path d="M6 7h12M6 12h12M6 17h8"/>')}</button>
+      <button class="space-dot" data-space="ask" data-title="Ask" title="Ask" style="--tint:#c4b5fd">${ico('<path d="M12 3.5 13.4 8l4.6.2-3.6 2.9 1.3 4.4L12 13.2 8.3 15.5 9.6 11 6 8.2 10.6 8Z"/>')}</button>
+      <button class="space-dot" data-space="trading" data-title="Trading" title="Trading" style="--tint:#4ade80">${ico('<path d="M4 16.5 9 11l3 2.5L20 6"/><path d="M14 6h6v6"/>')}</button>
+      <button class="space-dot" data-space="vault" data-title="Vault" title="Vault" style="--tint:#fbbf24">${ico('<rect x="5" y="10" width="14" height="9" rx="2"/><path d="M8 10V8a4 4 0 0 1 8 0v2"/>')}</button>
+      <button class="space-dot" data-space="notices" data-title="Notices" title="Notices" style="--tint:#fb7185">${ico('<path d="M6 16.5V11a6 6 0 0 1 12 0v5.5L19.5 18H4.5Z"/><path d="M10 18.5a2 2 0 0 0 4 0"/>')}</button>
+      <button class="space-dot" data-space="capture" data-title="Capture" title="Capture" style="--tint:#f472b6">${ico('<rect x="4" y="6" width="16" height="12" rx="2"/><path d="M8 6 9.2 4h5.6L16 6"/>')}</button>
+      <button class="space-dot" data-space="recorder" data-title="Recorder" title="Recorder" style="--tint:#fb923c">${ico('<path d="M4 12h2l2-4 3 8 2-4h7"/>')}</button>
+      <button class="space-dot" data-space="camera" data-title="Camera" title="Camera" style="--tint:#facc15">${ico('<path d="M4 8.5h3l1.5-2h7L17 8.5h3v9H4Z"/><circle cx="12" cy="12.5" r="2.4"/>')}</button>
+      <button class="space-dot" data-space="agents" data-title="Agents" title="Agents" style="--tint:#a5b4fc">${ico('<rect x="6" y="8" width="12" height="9" rx="2"/><path d="M12 8V5.5M9 13h.01M15 13h.01M4 12H2.5M21.5 12H20"/>')}</button>
+      <button class="space-dot" data-space="screentime" data-title="Screen Time" title="Screen Time" style="--tint:#38bdf8">${ico('<circle cx="12" cy="12" r="8"/><path d="M12 8v4.5l3 1.5"/>')}</button>
+      <button class="space-dot" data-space="wallpapers" data-title="Wallpapers" title="Wallpapers" style="--tint:#e879f9">${ico('<rect x="4" y="5" width="16" height="14" rx="2"/><path d="m4 15 4.5-4 3 3 2.5-2.5L20 16"/>')}</button>
       <span class="dock-sep"></span>
       <button class="dock-btn" id="qbtn-settings" title="Settings">${settingsSvgRaw}</button>
     </nav>
@@ -667,7 +711,7 @@ function setPhase(next: Phase) {
 // ─── Spaces (dot tabs across the top of the expanded notch) ──────────────────
 let currentSpace = 'overview';
 function showSpace(name: string) {
-  const order = ['overview', 'media', 'focus', 'today', 'count', 'todos', 'note', 'clipboard', 'hardware', 'weather', 'clocks', 'calc', 'shelf', 'colour', 'launcher'];
+  const order = ['overview', 'media', 'focus', 'today', 'count', 'todos', 'note', 'clipboard', 'hardware', 'weather', 'clocks', 'calc', 'shelf', 'colour', 'launcher', 'github', 'discord', 'leetcode', 'terminal', 'convert', 'water', 'habits', 'scratch', 'prompter', 'ask', 'trading', 'vault', 'notices', 'capture', 'recorder', 'camera', 'agents', 'screentime', 'wallpapers'];
   const from = order.indexOf(currentSpace);
   const to = order.indexOf(name);
   currentSpace = name;
@@ -687,13 +731,19 @@ function showSpace(name: string) {
   if (name === 'count') openCountSpace();
   extra.onSpace(name);
   more.onSpace(name);
+  links.onSpace(name);
+  studio.onSpace(name);
+  desk.onSpace(name);
   send('set-setting', 'lastSpace', name);
 }
 document.querySelectorAll<HTMLElement>('.space-dot').forEach((dot) => {
   dot.addEventListener('click', (e) => { e.stopPropagation(); showSpace(dot.dataset.space || 'media'); });
 });
-const extra = mountExtraTools({ invoke, send });
+const extra = mountExtraTools({ invoke, send, on: (ch, fn) => ipc?.on(ch, fn) });
 const more = mountMoreTools({ invoke, send });
+const links = mountLinks({ invoke, send });
+const studio = mountStudio({ invoke, send });
+const desk = mountDesk({ invoke, send });
 setInterval(() => more.tick(), 15_000);
 
 document.querySelectorAll<HTMLElement>('[data-go]').forEach((card) => {
@@ -703,7 +753,7 @@ document.getElementById('btn-collapse')?.addEventListener('click', (e) => { e.st
 invoke('get-setting', 'lastSpace', 'overview').then((v: any) => showSpace(typeof v === 'string' && v ? v : 'overview')).catch(() => showSpace('overview'));
 
 ipc?.on('preview', () => {
-  const order = ['overview', 'media', 'focus', 'today', 'count', 'todos', 'note', 'clipboard', 'hardware', 'weather', 'clocks', 'calc', 'shelf', 'colour', 'launcher'];
+  const order = ['overview', 'media', 'focus', 'today', 'count', 'todos', 'note', 'clipboard', 'hardware', 'weather', 'clocks', 'calc', 'shelf', 'colour', 'launcher', 'github', 'discord', 'leetcode', 'terminal', 'convert', 'water', 'habits', 'scratch', 'prompter', 'ask', 'trading', 'vault', 'notices', 'capture', 'recorder', 'camera', 'agents', 'screentime', 'wallpapers'];
   let k = 0;
   setPhase('expanded');
   setTimeout(() => showSpace(order[0]), 400);
@@ -714,7 +764,20 @@ ipc?.on('preview', () => {
     else { clearInterval(t); setPhase('idle'); }
   }, 2500);
 });
-document.getElementById('btn-count-idle')?.addEventListener('click', (e) => { e.stopPropagation(); setPhase('count'); });
+document.getElementById('btn-count-idle')?.addEventListener('click', (e) => {
+  e.stopPropagation();
+  setPhase('expanded');
+  showSpace('overview');
+});
+document.getElementById('btn-idle-github')?.addEventListener('click', (e) => {
+  e.stopPropagation();
+  setPhase('expanded');
+  showSpace('github');
+});
+document.getElementById('btn-idle-discord')?.addEventListener('click', (e) => {
+  e.stopPropagation();
+  void invoke('links:open', { kind: 'discord' });
+});
 mountCount({
   sidebar: viewCountEl,
   space: document.getElementById('count-space')!,
@@ -1285,6 +1348,7 @@ pill.addEventListener('pointerup', e => {
 
 // Clicking anywhere else on the screen tucks an open notch away.
 ipc?.on('window-blur', () => {
+  if (interactive) return;
   if (appPhase === 'expanded' || appPhase === 'calendar') setPhase('idle');
 });
 window.addEventListener('resize', () => { pillX = Math.min(pillX, window.innerWidth - 160); applyPos(); });

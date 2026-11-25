@@ -1,5 +1,6 @@
 import '@fontsource-variable/instrument-sans';
 import './dashboard.css';
+import { DASH_ICONS, mountDashExtras } from './dashboard-extra';
 
 // ─── IPC ────────────────────────────────────────────────────────────────────
 let ipc: any = null;
@@ -141,6 +142,10 @@ function render() {
           ${navItem('stopwatch', icons.stopwatch, 'Stopwatch')}
           ${navItem('stats',     icons.chart,     'Stats')}
           ${navItem('calendar',  icons.calendar,  'Calendar')}
+          <div class="nav-sep"></div>
+          ${navItem('ai',        DASH_ICONS.ai,    'AI Usage')}
+          ${navItem('todos',     DASH_ICONS.todos, 'To-Dos')}
+          ${navItem('notes',     DASH_ICONS.notes, 'Note')}
         </div>
         <div class="nav-footer">
           <div class="nav-stat-chip" title="Focus Level">
@@ -160,10 +165,14 @@ function render() {
         <div class="panel ${activeNav==='stopwatch' ? 'active':''}" id="panel-stopwatch">${renderStopwatch()}</div>
         <div class="panel ${activeNav==='stats'     ? 'active':''}" id="panel-stats">${renderStats()}</div>
         <div class="panel ${activeNav==='calendar'  ? 'active':''}" id="panel-calendar">${renderCalendar()}</div>
+        <div class="panel ${activeNav==='ai'        ? 'active':''}" id="panel-ai"></div>
+        <div class="panel ${activeNav==='todos'     ? 'active':''}" id="panel-todos"></div>
+        <div class="panel ${activeNav==='notes'     ? 'active':''}" id="panel-notes"></div>
       </main>
     </div>
   `;
   bindEvents();
+  mountDashExtras();
 }
 
 function navItem(id: string, icon: string, label: string) {
@@ -480,6 +489,13 @@ function startTick() {
 // ─── IPC from notch ──────────────────────────────────────────────────────────
 function bindIPC() {
   if(!ipc) return;
+  // Focus time added from the notch shows up here straight away.
+  ipc.on('stats-changed', async () => {
+    stats = await ipc.invoke('get-stats') || {};
+    computeStats();
+    const el = document.getElementById('panel-stats');
+    if (el && activeNav !== 'stats') el.innerHTML = renderStats();
+  });
   ipc.on('toggle-dashboard-timer', () => {
     if(pomoActive||pomoLeft<pomoDuration*60)      { pomoActive=!pomoActive; refreshPomodoro(); }
     else if(cdActive||cdLeft<cdCustomLeft)         { cdActive=!cdActive; refreshCountdown(); }

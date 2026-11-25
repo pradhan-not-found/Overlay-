@@ -5,6 +5,7 @@ const { app } = require('electron');
 let db;
 
 function initDB() {
+  if (db) return db;
   const dbPath = path.join(app.getPath('userData'), 'overlay_db.sqlite');
   db = new Database(dbPath, { verbose: null });
 
@@ -39,7 +40,72 @@ function initDB() {
       split_secs INTEGER NOT NULL,
       elapsed_secs INTEGER NOT NULL
     );
+    CREATE TABLE IF NOT EXISTS ai_usage (
+      day TEXT NOT NULL,
+      kind TEXT NOT NULL,
+      model TEXT NOT NULL,
+      input INTEGER NOT NULL DEFAULT 0,
+      cache INTEGER NOT NULL DEFAULT 0,
+      output INTEGER NOT NULL DEFAULT 0,
+      usd REAL NOT NULL DEFAULT 0,
+      exact INTEGER NOT NULL DEFAULT 1,
+      PRIMARY KEY (day, kind, model)
+    );
+    CREATE INDEX IF NOT EXISTS idx_ai_usage_day ON ai_usage(day);
+    CREATE TABLE IF NOT EXISTS ai_limits (
+      ts INTEGER NOT NULL,
+      kind TEXT NOT NULL,
+      label TEXT NOT NULL,
+      pct REAL NOT NULL,
+      resets_at INTEGER
+    );
+    CREATE INDEX IF NOT EXISTS idx_ai_limits ON ai_limits(kind, label, ts);
   `);
+  return db;
+}
+
+// ── AI usage history ─────────────────────────────────────────────────────────
+// Daily totals per tool and model. A rescan replaces the days it can still see
+// in the tool's own logs and keeps older days, so history outlives log rotation.
+function storeUsage(kind, rows) {
+  if (!rows.length) return;
+  const folded = new Map();
+  for (const r of rows) {
+    const key = `${r.day}|${r.model}`;
+    const f = folded.get(key) || { day: r.day, model: r.model, input: 0, cache: 0, output: 0, usd: 0, exact: 1 };
+    f.input += r.input; f.cache += r.cache; f.output += r.output; f.usd += r.usd;
+    if (!r.exact) f.exact = 0;
+    folded.set(key, f);
+  }
+  const days = [...new Set([...folded.values()].map((f) => f.day))];
+  const del = db.prepare('DELETE FROM ai_usage WHERE kind = ? AND day = ?');
+  const ins = db.prepare('INSERT INTO ai_usage (day, kind, model, input, cache, output, usd, exact) VALUES (?, ?, ?, ?, ?, ?, ?, ?)');
+  db.transaction(() => {
+    for (const d of days) del.run(kind, d);
+    for (const f of folded.values()) ins.run(f.day, kind, f.model, Math.round(f.input), Math.round(f.cache), Math.round(f.output), f.usd, f.exact);
+  })();
+}
+
+function getUsage(sinceDay) {
+  return db.prepare('SELECT day, kind, model, input, cache, output, usd, exact FROM ai_usage WHERE day >= ? ORDER BY day').all(sinceDay);
+}
+
+function firstUsageDay() {
+  const row = db.prepare('SELECT MIN(day) AS d FROM ai_usage').get();
+  return row ? row.d : null;
+}
+
+// ── Plan limit readings ──────────────────────────────────────────────────────
+function storeLimit(kind, label, pct, resetsAt) {
+  const last = db.prepare('SELECT ts, pct FROM ai_limits WHERE kind = ? AND label = ? ORDER BY ts DESC LIMIT 1').get(kind, label);
+  // Keep a reading when it moves, or every 15 minutes, so the history stays small.
+  if (last && Math.abs(last.pct - pct) < 0.5 && Date.now() - last.ts < 15 * 60_000) return;
+  db.prepare('INSERT INTO ai_limits (ts, kind, label, pct, resets_at) VALUES (?, ?, ?, ?, ?)').run(Date.now(), kind, label, pct, resetsAt || null);
+  db.prepare('DELETE FROM ai_limits WHERE ts < ?').run(Date.now() - 30 * 86_400_000);
+}
+
+function getLimits(since) {
+  return db.prepare('SELECT ts, kind, label, pct, resets_at FROM ai_limits WHERE ts >= ? ORDER BY ts').all(since);
 }
 
 function getEvents() {
@@ -147,5 +213,10 @@ module.exports = {
   setSetting,
   addLap,
   getLaps,
-  clearLaps
+  clearLaps,
+  storeUsage,
+  getUsage,
+  firstUsageDay,
+  storeLimit,
+  getLimits
 };

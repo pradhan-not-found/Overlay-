@@ -28,7 +28,7 @@ function ago(ts: number): string {
 const bytes = (n: number) => (n >= 1e9 ? `${(n / 1073741824).toFixed(1)} GB` : `${Math.round(n / 1048576)} MB`);
 const rate = (n: number) => (n >= 1048576 ? `${(n / 1048576).toFixed(1)} MB/s` : n >= 1024 ? `${Math.round(n / 1024)} KB/s` : `${Math.round(n)} B/s`);
 
-export function mountExtraTools(opts: { invoke: Invoke; send: Send }) {
+export function mountExtraTools(opts: { invoke: Invoke; send: Send; on?: (ch: string, fn: (...a: any[]) => void) => void }) {
   const { invoke, send } = opts;
   const $ = (sel: string) => document.querySelector<HTMLElement>(sel)!;
 
@@ -155,6 +155,12 @@ export function mountExtraTools(opts: { invoke: Invoke; send: Send }) {
   let hwTimer: number | undefined;
   const sampleHw = async () => renderHw(await invoke('hw:sample').catch(() => null));
   renderHw(null);
+
+  // Changes made in the Dashboard arrive here, and the other way round.
+  opts.on?.('setting-changed', (_e: unknown, key: string, value: string) => {
+    if (key === 'todos') { try { todos = JSON.parse(value) || []; } catch { todos = []; } renderTodos(); }
+    if (key === 'note' && document.activeElement !== area) { area.value = value || ''; words(); }
+  });
 
   return {
     onSpace(name: string) {

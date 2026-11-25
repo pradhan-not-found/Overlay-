@@ -10,6 +10,7 @@ const os = require('os');
 const path = require('path');
 const src = require('./sources.cjs');
 const launcher = require('./launcher.cjs');
+const db = require('../db.cjs');
 
 const SWITCHABLE = ['claude-code', 'codex', 'cursor', 'gemini-cli', 'opencode'];
 const CONTEXT_FILE = { 'claude-code': 'CLAUDE.md', codex: 'AGENTS.md', 'gemini-cli': 'GEMINI.md', cursor: 'AGENTS.md', opencode: 'AGENTS.md' };
@@ -50,7 +51,11 @@ async function sync(onlyChanged = false) {
       const print = src.fingerprint(s.kind);
       if (onlyChanged && prints.get(s.kind) === print) continue;
       prints.set(s.kind, print);
-      try { rows.set(s.kind, await src.scan(s.kind)); } catch (e) { console.warn('[Count] scan failed', s.kind, e.message); }
+      try {
+        const scanned = await src.scan(s.kind);
+        rows.set(s.kind, scanned);
+        try { db.storeUsage(s.kind, scanned); } catch (e) { console.warn('[Count] could not store usage', e.message); }
+      } catch (e) { console.warn('[Count] scan failed', s.kind, e.message); }
     }
     for (const kind of [...rows.keys()]) if (!detected.some((d) => d.kind === kind)) rows.delete(kind);
   } finally {
@@ -103,6 +108,7 @@ async function refreshLimits(force = false) {
     if (c && c.weekly) next.push({ kind: 'codex', source: 'Codex', label: 'Weekly', ...c.weekly });
   } catch {}
   limits = next;
+  for (const l of limits) { try { db.storeLimit(l.kind, l.label, l.usedPercent, l.resetsAt); } catch {} }
   checkAutoSwitch();
 }
 
@@ -265,8 +271,40 @@ function snapshot() {
   };
 }
 
+/** Stored history for the Dashboard: per day, per tool, per model, plus limit readings. */
+function history(days = 30) {
+  const n = Math.min(365, Math.max(7, Number(days) || 30));
+  const since = shiftDay(n - 1);
+  const rowsDb = db.getUsage(since);
+  const byDay = new Map();
+  const byKind = new Map();
+  const byModel = new Map();
+  for (const r of rowsDb) {
+    const t = r.input + r.cache + r.output;
+    const d = byDay.get(r.day) || {};
+    d[r.kind] = (d[r.kind] || 0) + t;
+    byDay.set(r.day, d);
+    const k = byKind.get(r.kind) || { kind: r.kind, name: src.NAMES[r.kind] || r.kind, tokens: 0, input: 0, cache: 0, output: 0, usd: 0, estimated: false };
+    k.tokens += t; k.input += r.input; k.cache += r.cache; k.output += r.output; k.usd += r.usd; if (!r.exact) k.estimated = true;
+    byKind.set(r.kind, k);
+    const m = byModel.get(r.model) || { model: r.model, kind: r.kind, tokens: 0, usd: 0 };
+    m.tokens += t; m.usd += r.usd;
+    byModel.set(r.model, m);
+  }
+  const daily = Array.from({ length: n }, (_, i) => { const day = shiftDay(n - 1 - i); return { day, parts: byDay.get(day) || {} }; });
+  return {
+    days: n,
+    since: db.firstUsageDay(),
+    daily,
+    kinds: [...byKind.values()].sort((a, b) => b.tokens - a.tokens),
+    models: [...byModel.values()].sort((a, b) => b.tokens - a.tokens).slice(0, 8),
+    limitHistory: db.getLimits(Date.now() - 7 * 86_400_000),
+  };
+}
+
 function init() {
   loadSettings();
+  ipcMain.handle('count:history', (_e, days) => history(days));
   ipcMain.handle('count:snapshot', () => snapshot());
   ipcMain.handle('count:refresh', async () => { await sync(); await refreshLimits(true); broadcast(); return snapshot(); });
   ipcMain.handle('count:continue', async (_e, from, to) => {

@@ -10,6 +10,9 @@ const db     = require('./db.cjs');
 const count  = require('./count/index.cjs');
 const lyrics = require('./lyrics.cjs');
 const tools  = require('./tools.cjs');
+const links  = require('./links.cjs');
+const term   = require('./term.cjs');
+const desk   = require('./desk.cjs');
 
 // ─── Auto Updater ─────────────────────────────────────────────────────────────
 let autoUpdater = null;
@@ -249,8 +252,18 @@ ipcMain.handle('get-setting', (event, key, defaultValue) => {
   try { return db.getSetting(key, defaultValue); } catch (err) { return defaultValue; }
 });
 
+/** Tell every window except the sender that something changed, so the notch
+ *  and the Dashboard always show the same data. */
+function broadcastExcept(sender, channel, ...args) {
+  for (const w of BrowserWindow.getAllWindows()) {
+    if (w.isDestroyed() || w.webContents === sender) continue;
+    w.webContents.send(channel, ...args);
+  }
+}
+
 ipcMain.on('set-setting', (event, key, value) => {
   try { db.setSetting(key, value); } catch (err) { console.error('DB Set Setting Error:', err); }
+  broadcastExcept(event.sender, 'setting-changed', key, String(value));
 });
 
 // Timer sync IPC handlers (Dashboard <-> Notch)
@@ -305,8 +318,8 @@ let settingsWindow = null;
 function openSettings(tab) {
   const hash = tab ? `#tab=${tab}` : '';
   if (settingsWindow && !settingsWindow.isDestroyed()) {
-    settingsWindow.focus();
-    if (tab) settingsWindow.webContents.executeJavaScript(`window.__navigateToTab && window.__navigateToTab('${tab}')`);
+    presentWindow(settingsWindow);
+    if (tab) settingsWindow.webContents.executeJavaScript(`window.__navigateToTab && window.__navigateToTab('${String(tab).replace(/'/g, '')}')`);
     return;
   }
   settingsWindow = new BrowserWindow({
@@ -315,8 +328,10 @@ function openSettings(tab) {
     icon: nativeImage.createFromPath(path.join(__dirname, '../applogo.png')),
     titleBarStyle: 'hidden',
     titleBarOverlay: { color: '#000000', symbolColor: '#ffffff' },
+    show: false,
     webPreferences: { nodeIntegration: true, contextIsolation: false }
   });
+  settingsWindow.once('ready-to-show', () => presentWindow(settingsWindow));
   const devUrl = process.env.VITE_DEV_SERVER_URL;
   if (app.isPackaged) {
     settingsWindow.loadFile(path.join(__dirname, '../dist/settings.html'), { hash: hash.slice(1) });
@@ -394,8 +409,16 @@ function createPillWindow() {
 ipcMain.on('set-interactive', (_e, on) => {
   if (!mainWindow || mainWindow.isDestroyed()) return;
   mainWindow.setIgnoreMouseEvents(!on, { forward: true });
-  if (on && !mainWindow.isFocused()) mainWindow.focus();
 });
+
+/** Settings and Lock In sit above the full-screen notch, or a click never reaches them. */
+function presentWindow(win) {
+  if (!win || win.isDestroyed()) return;
+  if (win.isMinimized()) win.restore();
+  win.setAlwaysOnTop(true, 'screen-saver');
+  win.show();
+  win.focus();
+}
 
 ipcMain.on('start-drag', (_e, origin) => {
   if (!mainWindow || mainWindow.isDestroyed()) return;
@@ -482,7 +505,8 @@ ipcMain.on('save-session', (_e, { count, totalSecs }) => {
   db.updateStats(key, count, totalSecs);
 });
 
-ipcMain.on('add-stats', (_e, { count, totalSecs }) => {
+ipcMain.on('add-stats', (event, { count, totalSecs }) => {
+  setImmediate(() => broadcastExcept(null, 'stats-changed'));
   const d = new Date();
   const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
   db.addStats(key, count, totalSecs);
@@ -541,7 +565,7 @@ ipcMain.handle('get-file-icon', async (_e, path) => {
 function createDashWindow(options) {
   if (dashWindow && !dashWindow.isDestroyed()) { 
     if (options && options.expand) dashWindow.webContents.executeJavaScript('window.location.search = "?expand=true";');
-    dashWindow.focus(); 
+    presentWindow(dashWindow);
     return; 
   }
   dashWindow = new BrowserWindow({
@@ -557,6 +581,7 @@ function createDashWindow(options) {
     minHeight: 480,
     title: 'Overlay — Focus',
     autoHideMenuBar: true,
+    show: false,
     icon: nativeImage.createFromPath(path.join(__dirname, '../applogo.png')),
     webPreferences: { nodeIntegration: true, contextIsolation: false }
   });
@@ -565,6 +590,7 @@ function createDashWindow(options) {
     ? path.join(__dirname, '../dist/dashboard.html')
     : devUrl + '/dashboard.html';
 
+  dashWindow.once('ready-to-show', () => presentWindow(dashWindow));
   console.log('[Dashboard] Loading:', dashUrl);
 
   if (app.isPackaged) {
@@ -668,9 +694,13 @@ if (!gotTheLock) {
   app.whenReady().then(() => {
     app.setAppUserModelId(APP_ID);
     registerDevIdentity();
+    try { db.initDB(); } catch (err) { console.error('Failed to initialize database:', err); }
     createTray();
     count.init();
     tools.init();
+    links.init();
+    term.init();
+    desk.init();
     const cfg = readConfig();
     
     if (!cfg.setupComplete) {
@@ -681,6 +711,16 @@ if (!gotTheLock) {
         cfg.shortcuts = db.getShortcuts();
         if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send('widget-config', cfg);
       });
+    }
+
+    // Dev only: OVERLAY_DASH=ai opens the Dashboard on that page.
+    if (process.env.OVERLAY_DASH && !app.isPackaged) {
+      setTimeout(() => {
+        createDashWindow();
+        dashWindow?.webContents.once('did-finish-load', () => setTimeout(() => {
+          dashWindow?.webContents.executeJavaScript(`document.querySelector('.nav-item[data-nav="${String(process.env.OVERLAY_DASH).replace(/[^a-z]/g, '')}"]')?.click()`);
+        }, 4000));
+      }, 1500);
     }
 
     // ── Auto-update: wire up events then check after 10 s (let app load first) ──
