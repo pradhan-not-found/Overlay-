@@ -62,6 +62,10 @@ function paintAI() {
   }
   const at = snap.settings.switchAt;
   const total = hist.kinds.reduce((a: number, k: any) => a + k.tokens, 0);
+  // Every figure reads the stored history, so the cards always agree.
+  const dayTotal = (d: any) => Object.values(d.parts).reduce((x: number, y: any) => x + y, 0) as number;
+  const todayTokens = hist.daily.length ? dayTotal(hist.daily[hist.daily.length - 1]) : 0;
+  const weekTokens = hist.daily.slice(-7).reduce((x: number, d: any) => x + dayTotal(d), 0);
   const usd = hist.kinds.reduce((a: number, k: any) => a + k.usd, 0);
 
   // The chart keeps the Stats page look: one bar a day, today in white.
@@ -109,8 +113,8 @@ function paintAI() {
     <div class="dur-row">${[7, 30, 90].map((d) => `<button class="dur-btn${d === range ? ' active' : ''}" data-range="${d}">${d}d</button>`).join('')}</div>
 
     <div class="stats-grid">
-      <div class="stat-card"><div class="stat-lbl">Today</div><div class="stat-val">${tokens(snap.today)}</div></div>
-      <div class="stat-card"><div class="stat-lbl">Last 7 days</div><div class="stat-val">${tokens(snap.week)}</div></div>
+      <div class="stat-card"><div class="stat-lbl">Today</div><div class="stat-val">${tokens(todayTokens)}</div></div>
+      <div class="stat-card"><div class="stat-lbl">Last 7 days</div><div class="stat-val">${tokens(weekTokens)}</div></div>
       <div class="stat-card"><div class="stat-lbl">Last ${range} days</div><div class="stat-val">${tokens(total)}</div></div>
       <div class="stat-card"><div class="stat-lbl">Est. cost</div><div class="stat-val">${money(usd)}</div></div>
     </div>
