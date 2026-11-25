@@ -224,41 +224,6 @@
   .ov-bars i, .ov-lyrics p.cur { animation: none !important; }
 }
 
-/* A small desktop window holding YouTube's player while it plays. */
-.yt-window {
-  position: absolute;
-  right: 3cqw;
-  bottom: 4cqw;
-  z-index: 1;
-  width: 46cqw;
-  border-radius: 1.4cqw;
-  overflow: hidden;
-  background: #0e0e11;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  box-shadow: 0 2cqw 5cqw rgba(0, 0, 0, 0.5);
-  opacity: 0;
-  transform: translateY(2cqw) scale(0.96);
-  pointer-events: none;
-  transition: opacity 0.3s ease, transform 0.45s cubic-bezier(0.2, 0.9, 0.25, 1);
-}
-.yt-window.show { opacity: 1; transform: none; pointer-events: auto; }
-.yt-bar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  height: 3.6cqw;
-  padding: 0 0.8cqw 0 1.4cqw;
-  font-family: var(--sans);
-  font-size: 1.4cqw;
-  font-weight: 600;
-  color: rgba(255, 255, 255, 0.85);
-}
-.yt-bar button { width: 2.6cqw; height: 2.6cqw; padding: 0.5cqw; border: none; border-radius: 0.6cqw; background: transparent; color: rgba(255, 255, 255, 0.7); cursor: pointer; }
-.yt-bar button:hover { background: rgba(255, 255, 255, 0.1); color: #fff; }
-.yt-bar svg { width: 100%; height: 100%; }
-.yt-frame { aspect-ratio: 16 / 9; background: #000; }
-.yt-frame > *, .yt-frame iframe { width: 100%; height: 100%; display: block; border: 0; }
-
 /* ── Tools inside the open notch ─────────────────────────────────────── */
 .ov { width: calc(var(--u) * 340); cursor: pointer; }
 .ov.open { cursor: default; }
@@ -336,6 +301,47 @@
 .ov-dot:hover { background: rgba(255, 255, 255, 0.06); transform: translateY(calc(var(--u) * -1)); }
 .ov-dot.gear { cursor: default; }
 
-/* YouTube's player, small in the corner of the desktop while it plays. */
-.yt-window { right: 2.4cqw; bottom: 2.4cqw; width: 32cqw; }
-.yt-bar { display: none; }
+
+/* ── Working controls ───────────────────────────────────────────────── */
+.ov-vol-btn { width: calc(var(--u) * 20); height: calc(var(--u) * 20); padding: calc(var(--u) * 2); border: none; background: transparent; color: rgba(255, 255, 255, 0.72); cursor: pointer; flex-shrink: 0; }
+.ov-vol-btn:hover { color: #fff; }
+.ov-vol-track { flex: 1; height: calc(var(--u) * 4); border-radius: calc(var(--u) * 2); position: relative; cursor: pointer; touch-action: none; }
+.ov-vol-track::before { content: ''; position: absolute; inset: calc(var(--u) * -8) 0; }
+.ov-vol-track b { position: absolute; top: 50%; width: calc(var(--u) * 12); height: calc(var(--u) * 12); border-radius: 50%; background: #fff; transform: translate(-50%, -50%); box-shadow: 0 1px 3px rgba(0, 0, 0, 0.5); transition: transform 0.15s ease; }
+.ov-vol-track:hover b { transform: translate(-50%, -50%) scale(1.2); }
+.ov-vol > svg, .ov-vol > i:not(.ov-vol-track) { display: none; }
+.ov-ly-btn { width: calc(var(--u) * 26); height: calc(var(--u) * 26); padding: calc(var(--u) * 5); border: none; border-radius: calc(var(--u) * 7); background: transparent; color: rgba(255, 255, 255, 0.55); cursor: pointer; transition: color 0.2s ease, background 0.2s ease; }
+.ov-ly-btn.on { color: #3d6bff; }
+.ov-ly-btn:hover { background: rgba(255, 255, 255, 0.07); }
+
+.ov-continue { margin-top: auto; display: inline-flex; align-items: center; justify-content: center; gap: calc(var(--u) * 8); height: calc(var(--u) * 34); border: none; border-radius: calc(var(--u) * 10); background: #0027c4; color: #fff; font-family: var(--sans); font-size: calc(var(--u) * 12.5); font-weight: 600; cursor: pointer; box-shadow: 0 calc(var(--u) * 6) calc(var(--u) * 18) calc(var(--u) * -6) rgba(0, 39, 196, 0.8); }
+.ov-continue:hover { filter: brightness(1.15); }
+.sp-ai { flex-wrap: wrap; align-content: flex-start; }
+.sp-ai .ov-aicard { flex: 1 1 40%; }
+.sp-ai .ov-continue { flex: 1 1 100%; }
+
+.ov-add { display: flex; align-items: center; gap: calc(var(--u) * 10); height: calc(var(--u) * 36); padding: 0 calc(var(--u) * 12); border-radius: calc(var(--u) * 12); background: #121215; border: 1px solid rgba(255, 255, 255, 0.07); color: #85858f; }
+.ov-add:focus-within { border-color: rgba(91, 140, 255, 0.5); }
+.ov-add span { width: calc(var(--u) * 15); height: calc(var(--u) * 15); flex-shrink: 0; }
+.ov-add input { flex: 1; min-width: 0; background: transparent; border: none; outline: none; color: #f2f2f5; font-family: var(--sans); font-size: calc(var(--u) * 13); }
+.ov-add input::placeholder { color: #85858f; }
+.sp-todos { overflow-y: auto; scrollbar-width: none; }
+
+.sp-note textarea { flex: 1; resize: none; padding: calc(var(--u) * 12) calc(var(--u) * 14); border-radius: calc(var(--u) * 14); background: #121215; border: 1px solid rgba(255, 255, 255, 0.07); outline: none; color: #f2f2f5; font-family: var(--sans); font-size: calc(var(--u) * 13); line-height: 1.55; }
+.sp-note textarea:focus { border-color: rgba(251, 191, 36, 0.45); }
+
+.ov-clip { width: 100%; color: #f2f2f5; font-family: var(--sans); text-align: left; cursor: pointer; transition: border-color 0.2s ease, background 0.2s ease; }
+.ov-clip:hover { background: #1c1c21; }
+.ov-clip.copied { border-color: rgba(45, 212, 191, 0.6); }
+.ov-clip.copied small { color: #2dd4bf; font-weight: 600; }
+
+.sp-settings { gap: calc(var(--u) * 6); }
+.ov-pref { display: flex; align-items: center; justify-content: space-between; gap: calc(var(--u) * 12); width: 100%; padding: calc(var(--u) * 10) calc(var(--u) * 12); border-radius: calc(var(--u) * 12); border: 1px solid rgba(255, 255, 255, 0.07); background: #121215; color: #f2f2f5; font-family: var(--sans); font-size: calc(var(--u) * 13); font-weight: 500; text-align: left; cursor: pointer; }
+.ov-pref i { position: relative; width: calc(var(--u) * 34); height: calc(var(--u) * 20); border-radius: calc(var(--u) * 10); background: rgba(255, 255, 255, 0.16); flex-shrink: 0; transition: background 0.25s ease; }
+.ov-pref i b { position: absolute; top: calc(var(--u) * 2); left: calc(var(--u) * 2); width: calc(var(--u) * 16); height: calc(var(--u) * 16); border-radius: 50%; background: #fff; transition: transform 0.35s cubic-bezier(0.2, 0.9, 0.25, 1.05); }
+.ov-pref i.on { background: #0027c4; }
+.ov-pref i.on b { transform: translateX(calc(var(--u) * 14)); }
+
+.ov-exp { position: absolute; }
+.ov-toast { position: absolute; left: 50%; bottom: calc(var(--u) * 68); transform: translateX(-50%); padding: calc(var(--u) * 8) calc(var(--u) * 14); border-radius: 999px; background: #1f1f26; border: 1px solid rgba(255, 255, 255, 0.1); font-size: calc(var(--u) * 12); font-weight: 500; white-space: nowrap; animation: ov-toast 0.35s cubic-bezier(0.2, 0.9, 0.25, 1.05); z-index: 3; }
+@keyframes ov-toast { from { opacity: 0; transform: translate(-50%, calc(var(--u) * 8)); } to { opacity: 1; transform: translate(-50%, 0); } }

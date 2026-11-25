@@ -16,35 +16,30 @@ nav .cta:hover, nav .cta.on { background: #1c2030; color: #fff; }
 .tag {
   display: inline-flex;
   align-items: center;
-  gap: 10px;
-  height: 40px;
-  padding: 0 16px 0 8px;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.72);
-  border: 1px solid rgba(15, 18, 30, 0.07);
-  box-shadow: 0 6px 20px -12px rgba(15, 18, 30, 0.35);
-  backdrop-filter: blur(8px);
+  gap: 12px;
   white-space: nowrap;
-  font-size: 13.5px;
+  font-size: 14px;
   font-weight: 500;
   letter-spacing: -0.01em;
   color: #2d3140;
 }
 
 .tag-logo {
-  width: 26px;
-  height: 26px;
-  border-radius: 50%;
-  background: #fff;
-  box-shadow: 0 0 0 1px rgba(15, 18, 30, 0.06);
-  display: grid;
-  place-items: center;
+  display: inline-flex;
+  align-items: center;
+  animation: logo-in 0.7s cubic-bezier(0.2, 0.8, 0.2, 1) both;
 }
 
-.tag-logo svg { width: 15px; height: 15px; display: block; }
-.tag-logo .duo { display: inline-flex; gap: 2px; }
-.tag-logo .duo svg { width: 11px; height: 11px; }
-.tag-logo .tint { display: grid; place-items: center; }
+@keyframes logo-in {
+  0% { opacity: 0; transform: scale(0.6) rotate(-12deg); filter: blur(4px); }
+  100% { opacity: 1; transform: none; filter: blur(0); }
+}
+
+.tag-logo svg { width: 18px; height: 18px; display: block; }
+.tag-logo .duo { display: inline-flex; gap: 6px; }
+.tag-logo .duo svg { width: 17px; height: 17px; }
+.tag-logo .tint { display: grid; place-items: center; width: 18px; height: 18px; }
+.tag-logo .tint svg { width: 18px; height: 18px; }
 
 /* ── Pages ──────────────────────────────────────────────────────────── */
 .page {
@@ -140,4 +135,16 @@ footer a { color: #0d0f16; font-weight: 600; text-decoration: underline; text-un
 @media (max-width: 560px) {
   .feature-grid { grid-template-columns: 1fr; }
   .timeline li { grid-template-columns: 1fr; gap: 6px; }
+}
+
+/* Word-by-word reveal: each word rises out of its own mask. */
+.word { display: inline-block; overflow: hidden; vertical-align: bottom; padding-bottom: 0.08em; margin-bottom: -0.08em; }
+.word > span { display: inline-block; animation: word-up 0.75s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+@keyframes word-up {
+  0% { transform: translateY(105%); opacity: 0; }
+  60% { opacity: 1; }
+  100% { transform: none; opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .word > span, .tag-logo { animation: none; }
 }

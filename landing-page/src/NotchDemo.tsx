@@ -6,41 +6,78 @@ import { CLAUDE, OPENAI } from './brand/marks';
  * sizes on a 1000px-wide screen. Click it to open; the dock switches tools,
  * just like the app.
  *
- * Music: if /song.mp3 exists (a track you have the rights to), it plays with no
- * visible player. Otherwise YouTube's official player is used, and it stays
- * visible while it plays, because YouTube's terms do not allow a hidden player.
+ * Music plays with nothing else on screen. If /song.mp3 exists (a track you
+ * have the rights to), that plays from 0:18 as "Just a Boy". Otherwise a short
+ * ambient loop is generated in the browser and labelled as such.
  */
 
-const TRACK = {
-  youtube: 'q8bP3DW8EpY',
+const SONG = {
   file: '/song.mp3',
   start: 18,
-  guessLength: 225,
   title: 'Just a Boy',
   artist: 'DrINsaNE',
   art: 'https://i.ytimg.com/vi/q8bP3DW8EpY/hqdefault.jpg',
 };
+const LOOP = { start: 18, length: 205, title: 'Night Drive', artist: 'Overlay Sessions' };
 
-declare global {
-  interface Window { YT?: any; onYouTubeIframeAPIReady?: () => void }
+/** A gentle four-chord pad, scheduled ahead in the Web Audio clock. */
+function createPad() {
+  const ctx = new AudioContext();
+  const master = ctx.createGain();
+  master.gain.value = 0;
+  const filter = ctx.createBiquadFilter();
+  filter.type = 'lowpass';
+  filter.frequency.value = 1400;
+  filter.Q.value = 0.4;
+  master.connect(filter).connect(ctx.destination);
+  const chords = [[57, 60, 64, 69], [53, 57, 60, 65], [48, 52, 55, 60], [55, 59, 62, 67]];
+  const hz = (m: number) => 440 * Math.pow(2, (m - 69) / 12);
+  const BAR = 2.4;
+  let next = ctx.currentTime + 0.05;
+  let step = 0;
+  const schedule = () => {
+    while (next < ctx.currentTime + 1.2) {
+      const chord = chords[step % chords.length];
+      chord.forEach((note, k) => {
+        const osc = ctx.createOscillator();
+        const g = ctx.createGain();
+        osc.type = k === 0 ? 'triangle' : 'sine';
+        osc.frequency.value = hz(k === 0 ? note - 12 : note);
+        g.gain.setValueAtTime(0, next);
+        g.gain.linearRampToValueAtTime(k === 0 ? 0.12 : 0.06, next + 0.35);
+        g.gain.linearRampToValueAtTime(0.0001, next + BAR + 0.6);
+        osc.connect(g).connect(master);
+        osc.start(next);
+        osc.stop(next + BAR + 0.7);
+      });
+      // A soft pluck on the off-beat keeps it moving.
+      [0.6, 1.8].forEach((off, k) => {
+        const osc = ctx.createOscillator();
+        const g = ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.value = hz(chord[(k + step) % 4] + 12);
+        g.gain.setValueAtTime(0.05, next + off);
+        g.gain.exponentialRampToValueAtTime(0.0001, next + off + 0.5);
+        osc.connect(g).connect(master);
+        osc.start(next + off);
+        osc.stop(next + off + 0.55);
+      });
+      next += BAR;
+      step += 1;
+    }
+  };
+  const timer = window.setInterval(schedule, 250);
+  schedule();
+  let volume = 0.62;
+  return {
+    setVolume(v: number) { volume = v; if (ctx.state === 'running') { master.gain.cancelScheduledValues(ctx.currentTime); master.gain.linearRampToValueAtTime(1.4 * v, ctx.currentTime + 0.08); } },
+    play() { void ctx.resume(); master.gain.cancelScheduledValues(ctx.currentTime); master.gain.linearRampToValueAtTime(1.4 * volume, ctx.currentTime + 0.4); },
+    pause() { master.gain.cancelScheduledValues(ctx.currentTime); master.gain.linearRampToValueAtTime(0, ctx.currentTime + 0.25); window.setTimeout(() => void ctx.suspend(), 300); },
+    close() { window.clearInterval(timer); void ctx.close(); },
+  };
 }
 
-let apiReady: Promise<void> | null = null;
-function loadYouTube(): Promise<void> {
-  if (window.YT?.Player) return Promise.resolve();
-  if (!apiReady) {
-    apiReady = new Promise((resolve) => {
-      const prev = window.onYouTubeIframeAPIReady;
-      window.onYouTubeIframeAPIReady = () => { prev?.(); resolve(); };
-      const tag = document.createElement('script');
-      tag.src = 'https://www.youtube.com/iframe_api';
-      document.head.appendChild(tag);
-    });
-  }
-  return apiReady;
-}
-
-type Space = 'overview' | 'media' | 'focus' | 'today' | 'ai' | 'todos' | 'note' | 'clipboard' | 'hardware';
+type Space = 'overview' | 'media' | 'focus' | 'today' | 'ai' | 'todos' | 'note' | 'clipboard' | 'hardware' | 'settings';
 
 const I = (d: string, fill = false) => (
   <svg viewBox="0 0 24 24" aria-hidden="true" {...(fill ? { fill: 'currentColor' } : { fill: 'none', stroke: 'currentColor', strokeWidth: 2, strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const })}>
@@ -83,15 +120,21 @@ function Ring({ pct, color }: { pct: number; color: string }) {
 export default function NotchDemo({ open, onOpen, onClose }: { open: boolean; onOpen: () => void; onClose: () => void }) {
   const [space, setSpace] = useState<Space>('media');
   const [playing, setPlaying] = useState(false);
-  const [pos, setPos] = useState({ t: TRACK.start, d: TRACK.guessLength });
-  const [mode, setMode] = useState<'file' | 'youtube' | null>(null);
-  const [ytShown, setYtShown] = useState(false);
+  const [mode, setMode] = useState<'file' | 'loop'>('loop');
+  const [pos, setPos] = useState({ t: LOOP.start, d: LOOP.length });
   const audio = useRef<HTMLAudioElement | null>(null);
-  const host = useRef<HTMLDivElement | null>(null);
-  const yt = useRef<any>(null);
+  const pad = useRef<ReturnType<typeof createPad> | null>(null);
+  const loopStarted = useRef(0);
   const [now, setNow] = useState(() => new Date());
   const [focusLeft, setFocusLeft] = useState(25 * 60);
   const [focusOn, setFocusOn] = useState(false);
+  const [volume, setVolume] = useState(0.62);
+  const [lyricsOn, setLyricsOn] = useState(true);
+  const [note, setNote] = useState('Landing page: bigger laptop, smoother zoom, real notch.\nNext: Mac build, then Linux.');
+  const [draft, setDraft] = useState('');
+  const [copied, setCopied] = useState('');
+  const [toast, setToast] = useState('');
+  const [prefs, setPrefs] = useState({ login: true, lyrics: true, autoswitch: true, battery: true });
   const [todos, setTodos] = useState([
     { t: 'Ship the landing page', done: true },
     { t: 'Review the notch animations', done: false },
@@ -99,11 +142,16 @@ export default function NotchDemo({ open, onOpen, onClose }: { open: boolean; on
   ]);
   const [hw, setHw] = useState({ cpu: 24, mem: 58, gpu: 12, disk: 61 });
 
-  // Use a local track if one is provided.
+  // Use your own track if one is provided; it shows as already playing at 0:18.
   useEffect(() => {
-    fetch(TRACK.file, { method: 'HEAD' })
-      .then((r) => setMode(r.ok && (r.headers.get('content-type') || '').startsWith('audio') ? 'file' : 'youtube'))
-      .catch(() => setMode('youtube'));
+    fetch(SONG.file, { method: 'HEAD' })
+      .then((r) => {
+        if (r.ok && (r.headers.get('content-type') || '').startsWith('audio')) {
+          setMode('file');
+          setPos({ t: SONG.start, d: 210 });
+        }
+      })
+      .catch(() => {});
   }, []);
 
   useEffect(() => {
@@ -125,64 +173,67 @@ export default function NotchDemo({ open, onOpen, onClose }: { open: boolean; on
     return () => window.clearInterval(t);
   }, [focusOn]);
 
-  // Follow whichever player is running.
+  // Follow whichever source is playing.
   useEffect(() => {
     if (!playing) return;
     const t = window.setInterval(() => {
-      if (mode === 'file' && audio.current) setPos({ t: audio.current.currentTime, d: audio.current.duration || TRACK.guessLength });
-      if (mode === 'youtube' && yt.current?.getCurrentTime) setPos({ t: yt.current.getCurrentTime() || 0, d: yt.current.getDuration() || TRACK.guessLength });
+      if (mode === 'file' && audio.current) setPos({ t: audio.current.currentTime, d: audio.current.duration || 210 });
+      if (mode === 'loop') setPos((p) => ({ ...p, t: Math.min(p.d - 1, (performance.now() - loopStarted.current) / 1000) }));
     }, 250);
     return () => window.clearInterval(t);
   }, [playing, mode]);
 
-  useEffect(() => () => { yt.current?.destroy?.(); audio.current?.pause(); }, []);
-
-  const startYouTube = async () => {
-    await loadYouTube();
-    if (yt.current || !host.current) return;
-    yt.current = new window.YT.Player(host.current, {
-      videoId: TRACK.youtube,
-      width: '100%',
-      height: '100%',
-      playerVars: { start: Math.floor(pos.t), autoplay: 1, playsinline: 1, rel: 0, modestbranding: 1 },
-      events: {
-        onStateChange: (e: any) => {
-          const S = window.YT.PlayerState;
-          if (e.data === S.PLAYING) setPlaying(true);
-          if (e.data === S.PAUSED || e.data === S.ENDED) setPlaying(false);
-        },
-      },
-    });
-  };
+  useEffect(() => () => { audio.current?.pause(); pad.current?.close(); }, []);
 
   const toggle = (e?: React.MouseEvent) => {
     e?.stopPropagation();
     if (mode === 'file') {
       if (!audio.current) {
-        audio.current = new Audio(TRACK.file);
+        audio.current = new Audio(SONG.file);
         audio.current.currentTime = pos.t;
         audio.current.addEventListener('ended', () => setPlaying(false));
       }
       if (playing) { audio.current.pause(); setPlaying(false); } else { void audio.current.play(); setPlaying(true); }
       return;
     }
-    setYtShown(true);
-    if (!yt.current) { void startYouTube(); return; }
-    if (playing) yt.current.pauseVideo(); else yt.current.playVideo();
+    if (!pad.current) pad.current = createPad();
+    if (playing) { pad.current.pause(); setPlaying(false); return; }
+    loopStarted.current = performance.now() - pos.t * 1000;
+    pad.current.play();
+    setPlaying(true);
   };
   const seek = (e: React.MouseEvent, to: number) => {
     e.stopPropagation();
     const t = Math.max(0, Math.min(pos.d - 1, to));
     setPos((p) => ({ ...p, t }));
     if (mode === 'file' && audio.current) audio.current.currentTime = t;
-    if (mode === 'youtube' && yt.current?.seekTo) yt.current.seekTo(t, true);
+    if (mode === 'loop') loopStarted.current = performance.now() - t * 1000;
   };
   const go = (e: React.MouseEvent, s: Space) => { e.stopPropagation(); setSpace(s); };
+  const applyVolume = (v: number) => {
+    const x = Math.max(0, Math.min(1, v));
+    setVolume(x);
+    if (audio.current) audio.current.volume = x;
+    pad.current?.setVolume(x);
+  };
+  const dragVolume = (e: React.PointerEvent<HTMLElement>) => {
+    e.stopPropagation();
+    const bar = e.currentTarget.getBoundingClientRect();
+    const set = (x: number) => applyVolume((x - bar.left) / bar.width);
+    set(e.clientX);
+    e.currentTarget.setPointerCapture(e.pointerId);
+    const move = (ev: PointerEvent) => set(ev.clientX);
+    const up = () => { window.removeEventListener('pointermove', move); window.removeEventListener('pointerup', up); };
+    window.addEventListener('pointermove', move);
+    window.addEventListener('pointerup', up);
+  };
+  const say = (text: string) => { setToast(text); window.setTimeout(() => setToast(''), 2400); };
 
-  const title = DOCK.find((d) => d.id === space)?.title || '';
+  const title = space === 'settings' ? 'Settings' : DOCK.find((d) => d.id === space)?.title || '';
   const hhmm = now.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
   const pct = pos.d ? (pos.t / pos.d) * 100 : 0;
-  const art = { backgroundImage: `url(${TRACK.art})` };
+  const track = mode === 'file' ? SONG : LOOP;
+  const art = mode === 'file' ? { backgroundImage: `url(${SONG.art})` } : undefined;
 
   return (
     <>
@@ -195,7 +246,7 @@ export default function NotchDemo({ open, onOpen, onClose }: { open: boolean; on
         {/* Closed: the live activity, like the app with music playing */}
         <div className="ov-idle">
           <i className="ov-art sm" style={art} />
-          <span className="ov-line">{TRACK.title} · {TRACK.artist}</span>
+          <span className="ov-line">{track.title} · {track.artist}</span>
           <span className="ov-bars"><i /><i /><i /><i /></span>
           <button className="ov-btn" onClick={toggle} aria-label={playing ? 'Pause' : 'Play'}>{I(playing ? PAUSE : PLAY, true)}</button>
         </div>
@@ -217,7 +268,7 @@ export default function NotchDemo({ open, onOpen, onClose }: { open: boolean; on
               <div className="sp sp-overview">
                 <div className="ov-top"><div><b className="ov-big">{hhmm}</b><span>{now.toLocaleDateString([], { weekday: 'long', day: 'numeric', month: 'long' })}</span></div>
                   <button className="ov-chip" onClick={(e) => go(e, 'ai')}><Brand m={CLAUDE} size="calc(var(--u) * 16)" /><span>87% session</span></button></div>
-                <button className="ov-card" onClick={(e) => go(e, 'media')}><i className="ov-art md" style={art} /><div><b>{TRACK.title}</b><span>{TRACK.artist}</span></div><span className="ov-bars"><i /><i /><i /><i /></span></button>
+                <button className="ov-card" onClick={(e) => go(e, 'media')}><i className="ov-art md" style={art} /><div><b>{track.title}</b><span>{track.artist}</span></div><span className="ov-bars"><i /><i /><i /><i /></span></button>
                 <div className="ov-grid2">
                   <button className="ov-card" onClick={(e) => go(e, 'focus')}><span className="ov-ic" style={{ color: '#ff9f43' }}>{I(DOCK[2].d)}</span><div><b>Focus</b><span>{focusOn ? `${clock(focusLeft)} left` : '2 sessions today'}</span></div></button>
                   <button className="ov-card" onClick={(e) => go(e, 'today')}><span className="ov-ic" style={{ color: '#3ddc97' }}>{I(DOCK[3].d)}</span><div><b>Design review</b><span>4:30 PM</span></div></button>
@@ -227,18 +278,25 @@ export default function NotchDemo({ open, onOpen, onClose }: { open: boolean; on
 
             {space === 'media' && (
               <div className="sp sp-media">
-                <div className="ov-np"><i className="ov-art" style={art} /><div className="ov-np-text"><b>{TRACK.title}</b><span>{TRACK.artist}</span></div><span className="ov-bars"><i /><i /><i /><i /></span></div>
+                <div className="ov-np"><i className="ov-art" style={art} /><div className="ov-np-text"><b>{track.title}</b><span>{track.artist}</span></div><span className="ov-bars"><i /><i /><i /><i /></span></div>
                 <div className="ov-progress"><span>{clock(pos.t)}</span><div><i style={{ width: `${pct}%` }} /></div><span>-{clock(pos.d - pos.t)}</span></div>
                 <div className="ov-ctrls">
-                  <span className="ov-vol">{I('M4.5 9.5h2.8L11.6 6a.6.6 0 0 1 .9.5v11a.6.6 0 0 1-.9.5l-4.3-3.5H4.5a1 1 0 0 1-1-1v-3a1 1 0 0 1 1-1ZM15.8 9a4.2 4.2 0 0 1 0 6M18.6 6.4a8 8 0 0 1 0 11.2')}<i><b /></i></span>
+                  <span className="ov-vol">
+                    <button className="ov-vol-btn" onClick={(e) => { e.stopPropagation(); applyVolume(volume > 0 ? 0 : 0.62); }} aria-label={volume > 0 ? 'Mute' : 'Unmute'}>
+                      {I(volume === 0 ? 'M4.5 9.5h2.8L11.6 6a.6.6 0 0 1 .9.5v11a.6.6 0 0 1-.9.5l-4.3-3.5H4.5a1 1 0 0 1-1-1v-3a1 1 0 0 1 1-1ZM16 9.5l5 5M21 9.5l-5 5' : 'M4.5 9.5h2.8L11.6 6a.6.6 0 0 1 .9.5v11a.6.6 0 0 1-.9.5l-4.3-3.5H4.5a1 1 0 0 1-1-1v-3a1 1 0 0 1 1-1ZM15.8 9a4.2 4.2 0 0 1 0 6M18.6 6.4a8 8 0 0 1 0 11.2')}
+                    </button>
+                    <i className="ov-vol-track" onPointerDown={dragVolume} role="slider" aria-label="Volume" aria-valuenow={Math.round(volume * 100)} style={{ background: `linear-gradient(90deg, #fff ${volume * 100}%, rgba(255,255,255,0.12) ${volume * 100}%)` }}><b style={{ left: `${volume * 100}%` }} /></i>
+                  </span>
                   <div className="ov-main">
                     <button className="ov-btn" onClick={(e) => seek(e, pos.t - 10)} aria-label="Back 10 seconds">{I(PREV, true)}</button>
                     <button className="ov-play" onClick={toggle} aria-label={playing ? 'Pause' : 'Play'}>{I(playing ? PAUSE : PLAY, true)}</button>
                     <button className="ov-btn" onClick={(e) => seek(e, pos.t + 10)} aria-label="Forward 10 seconds">{I(NEXT, true)}</button>
                   </div>
-                  <span className="ov-ly">{I('M4 6h11M4 11h8M4 16h5M17 19a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5ZM19.5 16.5V7.5l2-1')}</span>
+                  <span className="ov-ly"><button className={`ov-ly-btn${lyricsOn ? ' on' : ''}`} onClick={(e) => { e.stopPropagation(); setLyricsOn(!lyricsOn); }} aria-pressed={lyricsOn} aria-label="Lyrics">{I('M4 6h11M4 11h8M4 16h5M17 19a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5ZM19.5 16.5V7.5l2-1')}</button></span>
                 </div>
-                <div className="ov-lyrics"><p className="cur">{playing ? 'Lyrics scroll here in the app' : 'Press play to listen'}</p><p>Synced line by line on your PC</p></div>
+                <div className="ov-lyrics">{lyricsOn
+                  ? <><p className="cur">{playing ? 'Lyrics scroll here in the app' : 'Press play to listen'}</p><p>Synced line by line on your PC</p></>
+                  : <p>Lyrics hidden</p>}</div>
               </div>
             )}
 
@@ -278,13 +336,20 @@ export default function NotchDemo({ open, onOpen, onClose }: { open: boolean; on
                     ))}
                   </div>
                 ))}
+                <button className="ov-continue" onClick={(e) => { e.stopPropagation(); say('In the app, this opens Codex in your project with your context.'); }}>
+                  <Brand m={OPENAI} size="calc(var(--u) * 14)" />Continue in Codex
+                </button>
               </div>
             )}
 
             {space === 'todos' && (
               <div className="sp sp-todos">
+                <form className="ov-add" onClick={(e) => e.stopPropagation()} onSubmit={(e) => { e.preventDefault(); const t = draft.trim(); if (t) { setTodos([{ t, done: false }, ...todos]); setDraft(''); } }}>
+                  <span>{I('M12 5.5v13M5.5 12h13')}</span>
+                  <input value={draft} onChange={(e) => setDraft(e.target.value)} placeholder="Add a to-do and press Enter" maxLength={60} />
+                </form>
                 {todos.map((t, k) => (
-                  <button key={t.t} className={`ov-todo${t.done ? ' done' : ''}`} onClick={(e) => { e.stopPropagation(); setTodos(todos.map((x, j) => (j === k ? { ...x, done: !x.done } : x))); }}>
+                  <button key={t.t + k} className={`ov-todo${t.done ? ' done' : ''}`} onClick={(e) => { e.stopPropagation(); setTodos(todos.map((x, j) => (j === k ? { ...x, done: !x.done } : x))); }}>
                     <i>{t.done ? I('m5 12.5 4.5 4.5L19 7.5') : null}</i><span>{t.t}</span>
                   </button>
                 ))}
@@ -292,13 +357,28 @@ export default function NotchDemo({ open, onOpen, onClose }: { open: boolean; on
             )}
 
             {space === 'note' && (
-              <div className="sp sp-note"><p>Landing page: bigger laptop, smoother zoom, real notch.<br />Next: Mac build, then Linux.</p><span>12 words · saved</span></div>
+              <div className="sp sp-note">
+                <textarea value={note} onClick={(e) => e.stopPropagation()} onChange={(e) => setNote(e.target.value)} spellCheck={false} aria-label="Note" />
+                <span>{note.trim() ? note.trim().split(/\s+/).length : 0} words · saved</span>
+              </div>
             )}
 
             {space === 'clipboard' && (
               <div className="sp sp-clip">
                 {[['npm run electron:start', 'now'], ['https://github.com/overlay', '2m'], ['Meeting moved to 4:30', '8m']].map(([t, a]) => (
-                  <div className="ov-clip" key={t}><span>{t}</span><small>{a}</small></div>
+                  <button className={`ov-clip${copied === t ? ' copied' : ''}`} key={t} onClick={(e) => { e.stopPropagation(); void navigator.clipboard?.writeText(t); setCopied(t); window.setTimeout(() => setCopied(''), 1400); }}>
+                    <span>{t}</span><small>{copied === t ? 'Copied' : a}</small>
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {space === 'settings' && (
+              <div className="sp sp-settings">
+                {([['login', 'Start Overlay with Windows'], ['lyrics', 'Show lyrics while music plays'], ['autoswitch', 'Hand off when an AI limit runs out'], ['battery', 'Show battery in the notch']] as [keyof typeof prefs, string][]).map(([k, label]) => (
+                  <button key={k} className="ov-pref" onClick={(e) => { e.stopPropagation(); setPrefs({ ...prefs, [k]: !prefs[k] }); }} aria-pressed={prefs[k]}>
+                    <span>{label}</span><i className={prefs[k] ? 'on' : ''}><b /></i>
+                  </button>
                 ))}
               </div>
             )}
@@ -312,21 +392,17 @@ export default function NotchDemo({ open, onOpen, onClose }: { open: boolean; on
             )}
           </div>
 
+          {toast && <div className="ov-toast">{toast}</div>}
           <nav className="ov-dock">
             {DOCK.map((d) => (
               <button key={d.id} className={`ov-dot${d.id === space ? ' on' : ''}`} style={{ color: d.tint }} onClick={(e) => go(e, d.id)} aria-label={d.title} title={d.title}>{I(d.d, d.fill)}</button>
             ))}
             <span className="ov-dock-gap" />
-            <span className="ov-dot gear">{I(GEAR)}</span>
+            <button className={`ov-dot gear${space === 'settings' ? ' on' : ''}`} onClick={(e) => go(e, 'settings')} aria-label="Settings" title="Settings">{I(GEAR)}</button>
           </nav>
         </div>
       </div>
 
-      {mode === 'youtube' && (
-        <div className={`yt-window${ytShown ? ' show' : ''}`} onClick={(e) => e.stopPropagation()}>
-          <div className="yt-frame"><div ref={host} /></div>
-        </div>
-      )}
     </>
   );
 }

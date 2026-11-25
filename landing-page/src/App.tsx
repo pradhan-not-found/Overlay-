@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { Fragment, useEffect, useState } from 'react';
 import './index.css';
 import './notch.css';
 import './pages.css';
@@ -47,7 +47,21 @@ const TAGS: { label: string; node: React.ReactNode }[] = [
 
 const LINES = ['The notch, for Windows.', 'Your music, up top.', 'AI limits, at a glance.', 'Focus, one click away.'];
 
-/** Cycles its items with a soft blur crossfade. */
+/** Reveals a phrase word by word, each word rising out of a mask. */
+function Words({ text, delay = 0 }: { text: string; delay?: number }) {
+  return (
+    <>
+      {text.split(' ').map((w, k, all) => (
+        <Fragment key={k}>
+          <span className="word"><span style={{ animationDelay: `${delay + k * 70}ms` }}>{w}</span></span>
+          {k < all.length - 1 ? ' ' : null}
+        </Fragment>
+      ))}
+    </>
+  );
+}
+
+/** Cycles through items on a timer. */
 function useCycle(length: number, ms: number) {
   const [i, setI] = useState(0);
   useEffect(() => {
@@ -155,7 +169,7 @@ export default function App() {
         {view === 'home' && (
           <div className="hero">
             <aside className="side side-left" aria-live="polite">
-              <h1 key={line} className="blur-in">{LINES[line]}</h1>
+              <h1 key={line}><Words text={LINES[line]} /></h1>
             </aside>
 
             <div className="center">
@@ -187,9 +201,9 @@ export default function App() {
             </div>
 
             <aside className="side side-right" aria-live="polite">
-              <div key={tag} className="tag blur-in">
+              <div key={tag} className="tag">
                 <span className="tag-logo">{TAGS[tag].node}</span>
-                <span>{TAGS[tag].label}</span>
+                <span className="tag-text"><Words text={TAGS[tag].label} delay={120} /></span>
               </div>
             </aside>
           </div>
