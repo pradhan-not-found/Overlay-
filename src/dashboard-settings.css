@@ -92,18 +92,42 @@ kbd { display: inline-flex; align-items: center; height: 26px; padding: 0 9px; m
 .ds-status.wait { color: var(--warn); background: rgba(251, 191, 36, 0.12); }
 .ds-status.bad { color: var(--bad); background: rgba(255, 90, 78, 0.12); }
 
-/* ── Sign-in gate ─────────────────────────────────────────────────────── */
-body.ds-locked .dash-layout { filter: blur(18px) brightness(0.5); pointer-events: none; }
-#ds-gate { position: fixed; inset: 0; z-index: 100; display: grid; place-items: center; background: rgba(0, 0, 0, 0.45); -webkit-app-region: drag; }
-.ds-auth { width: 360px; padding: 32px 28px 26px; border-radius: 20px; background: #111; border: 1px solid var(--border); box-shadow: 0 40px 80px -30px rgba(0, 0, 0, 0.8); display: flex; flex-direction: column; gap: 10px; text-align: center; -webkit-app-region: no-drag; }
-.ds-auth-mark { width: 52px; height: 52px; border-radius: 14px; margin: 0 auto 6px; }
-.ds-auth h1 { font-size: 20px; font-weight: 600; letter-spacing: -0.02em; }
-.ds-auth p { font-size: 13px; color: var(--muted); line-height: 1.5; margin-bottom: 8px; }
-.ds-auth input { height: 42px; padding: 0 14px; border-radius: 11px; border: 1px solid var(--border); background: #0a0a0a; color: var(--text); font: inherit; font-size: 14px; outline: none; }
-.ds-auth input:focus { border-color: rgba(64, 104, 255, 0.75); }
-.ds-auth .ds-btn { height: 42px; margin-top: 4px; font-size: 14px; }
+/* ── Sign-in: brand panel on the left, the form on the right ─────────── */
+body.ds-locked .dash-layout { visibility: hidden; }
+#ds-gate { position: fixed; inset: 0; z-index: 100; display: flex; background: #0a0a0a; }
+.ds-gate-brand { position: relative; flex: 0 0 44%; display: flex; flex-direction: column; justify-content: space-between; padding: 36px 40px; overflow: hidden; background: #0027c4; color: #fff; -webkit-app-region: drag; }
+.ds-gate-logo { display: flex; align-items: center; gap: 10px; font-size: 15px; font-weight: 600; letter-spacing: -0.01em; }
+.ds-gate-logo img { width: 26px; height: 26px; border-radius: 7px; box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.25); }
+.ds-gate-mark { position: absolute; right: -22%; top: 50%; width: 92%; transform: translateY(-50%); opacity: 0.16; pointer-events: none; animation: gate-turn 40s linear infinite; }
+@keyframes gate-turn { to { transform: translateY(-50%) rotate(360deg); } }
+.ds-gate-copy { position: relative; max-width: 330px; }
+.ds-gate-copy h2 { font-size: 30px; font-weight: 600; line-height: 1.1; letter-spacing: -0.03em; }
+.ds-gate-copy p { margin-top: 12px; font-size: 13.5px; line-height: 1.55; color: rgba(255, 255, 255, 0.75); }
+.ds-gate-side { flex: 1; display: grid; place-items: center; padding: 32px; -webkit-app-region: drag; }
+.ds-auth { width: 100%; max-width: 380px; display: flex; flex-direction: column; gap: 14px; -webkit-app-region: no-drag; animation: gate-in 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+@keyframes gate-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+.ds-auth h1 { font-size: 24px; font-weight: 600; letter-spacing: -0.025em; }
+.ds-auth > p { margin-top: -8px; font-size: 13px; color: var(--muted); }
+.ds-auth-id { display: flex; align-items: flex-end; gap: 16px; margin-top: 10px; }
+.ds-auth-id .ds-field { flex: 1; }
+.ds-auth-who { display: flex; align-items: center; gap: 12px; margin-top: 6px; }
+.ds-auth-who b { font-size: 15px; font-weight: 600; }
+.ds-field { display: flex; flex-direction: column; gap: 6px; }
+.ds-field label { font-size: 11.5px; font-weight: 500; color: var(--muted); }
+.ds-auth input { height: 40px; padding: 0 13px; border-radius: 10px; border: 1px solid var(--border); background: #111; color: var(--text); font: inherit; font-size: 13.5px; outline: none; transition: border-color 0.15s ease; }
+.ds-auth input:focus { border-color: #3d6bff; }
+.ds-avatar-pick { position: relative; flex-shrink: 0; cursor: pointer; border-radius: 50%; }
+.ds-avatar-pick .ds-avatar { box-shadow: 0 0 0 1px var(--border); transition: box-shadow 0.15s ease; }
+.ds-avatar-pick:hover .ds-avatar { box-shadow: 0 0 0 2px #3d6bff; }
+.ds-avatar-plus { position: absolute; right: -2px; bottom: -2px; width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; background: #fff; color: #000; font-size: 15px; font-weight: 600; line-height: 1; box-shadow: 0 0 0 3px #0a0a0a; }
+.ds-found { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 12px; border-radius: 10px; background: #111; border: 1px solid var(--border); font-size: 12px; color: var(--muted); }
+.ds-found div { display: flex; gap: 6px; }
+.ds-found em { width: 26px; height: 26px; border-radius: 7px; display: grid; place-items: center; background: rgba(255, 255, 255, 0.06); }
+.ds-auth .ds-btn { height: 42px; font-size: 14px; margin-top: 4px; }
 .ds-auth.shake { animation: ds-shake 0.36s ease; }
 @keyframes ds-shake { 20%, 60% { transform: translateX(-6px); } 40%, 80% { transform: translateX(6px); } }
+img.ds-avatar { object-fit: cover; padding: 0; }
+@media (max-width: 760px) { .ds-gate-brand { display: none; } }
 
 .ds-swatches { display: flex; flex-wrap: wrap; gap: 10px; padding: 14px 0 6px; }
 .ds-swatch { position: relative; width: 30px; height: 30px; border-radius: 50%; border: none; background: var(--c); cursor: pointer; box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.14); transition: transform 0.15s ease; }
@@ -111,3 +135,43 @@ body.ds-locked .dash-layout { filter: blur(18px) brightness(0.5); pointer-events
 .ds-swatch.on { box-shadow: 0 0 0 2px var(--bg-card), 0 0 0 4px var(--c); }
 .ds-swatch.custom { background: conic-gradient(#ff5a4e, #facc15, #32d27a, #14b8a6, #3d6bff, #8b5cf6, #ec4899, #ff5a4e); overflow: hidden; }
 .ds-swatch.custom input { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; border: none; padding: 0; }
+
+/* ── One face everywhere ─────────────────────────────────────────────── */
+html, body, button, input, select, textarea { font-family: 'Instrument Sans Variable', 'Instrument Sans', system-ui, sans-serif; }
+.ds-page, .ds-auth, .ds-menu { font-feature-settings: 'ss01' on; }
+.ds-btn > input[type=file] { display: none; }
+label.ds-btn { display: inline-flex; align-items: center; }
+
+/* ── Responsive: the sidebar folds to icons in a narrow window ────────── */
+@media (max-width: 980px) {
+  :root { --rail-w: 68px; }
+  .nav-rail { padding: 16px 10px 10px; }
+  .nav-brand span, .nav-label, .nav-group, .ds-profile-text, .ds-profile-btn > svg { display: none; }
+  .nav-brand { justify-content: center; padding: 0; }
+  .nav-group { display: block; height: 1px; padding: 0; margin: 10px 8px; background: var(--border); font-size: 0; }
+  .nav-group:first-child { display: none; }
+  .nav-item { justify-content: center; padding: 0; height: 40px; }
+  .ds-profile-btn { justify-content: center; padding: 6px 0; }
+  .ds-menu { left: 0; right: auto; width: 220px; }
+  .ds-page { padding: 32px 24px 48px; }
+}
+@media (max-width: 720px) {
+  .ds-grid2 { grid-template-columns: 1fr; }
+  .ds-row { flex-wrap: wrap; }
+  .ds-inline { flex-wrap: wrap; }
+}
+
+/* The white mark, no tile. */
+.nav-brand img { width: 24px; height: auto; border-radius: 0; }
+.ds-gate-logo img { width: 24px; height: auto; border-radius: 0; box-shadow: none; }
+/* Room for the window controls that float over the top edge. */
+.dash-main { padding-top: 0; }
+.ds-page { padding-top: 52px; }
+.nav-rail { padding-top: 22px; }
+
+/* ── Share report ─────────────────────────────────────────────────────── */
+#ds-share { position: fixed; inset: 0; z-index: 90; display: grid; place-items: center; padding: 24px; background: rgba(0, 0, 0, 0.72); backdrop-filter: blur(6px); animation: gate-in 0.3s ease both; }
+.ds-share-card { display: flex; flex-direction: column; gap: 14px; max-height: 100%; }
+.ds-share-card img { display: block; height: min(72vh, 640px); width: auto; border-radius: 18px; box-shadow: 0 40px 80px -30px rgba(0, 0, 0, 0.9), 0 0 0 1px rgba(255, 255, 255, 0.08); }
+.ds-share-actions { display: flex; align-items: center; gap: 8px; }
+.ds-share-note { flex: 1; font-size: 12.5px; color: var(--muted); }

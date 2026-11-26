@@ -2,12 +2,7 @@
 // with (hover for its limits, click for all of them), browser utilities when a
 // browser is in front, and a line in the middle for greetings, reminders and
 // updates. Everything here is switched on or off from the Dashboard.
-import claudeCode from '../assets/logos/claudecode.png';
-import cursorMark from '../assets/logos/cursor-mark.png';
-import gemini from '../assets/logos/gemini.svg';
-import github from '../assets/logos/github.svg';
-import openai from '../assets/logos/openai.svg';
-import opencode from '../assets/logos/opencode.png';
+import { aiMark } from '../assets/ai-logos';
 
 type Invoke = (ch: string, ...a: any[]) => Promise<any>;
 type Send = (ch: string, ...a: any[]) => void;
@@ -15,11 +10,7 @@ type On = (ch: string, fn: (...a: any[]) => void) => void;
 type Ctx = { app: string; kind: 'code' | 'terminal' | 'browser' | 'other' };
 type Limit = { kind: string; source: string; label: string; usedPercent: number; resetsAt: number | null };
 
-const NAMES: Record<string, string> = { 'claude-code': 'Claude Code', codex: 'Codex', cursor: 'Cursor', 'gemini-cli': 'Gemini CLI', opencode: 'OpenCode', copilot: 'Copilot CLI' };
-const LOGOS: Record<string, { src: string; invert: boolean }> = {
-  'claude-code': { src: claudeCode, invert: false }, codex: { src: openai, invert: true }, cursor: { src: cursorMark, invert: false },
-  'gemini-cli': { src: gemini, invert: false }, opencode: { src: opencode, invert: true }, copilot: { src: github, invert: true },
-};
+const NAMES: Record<string, string> = { 'claude-code': 'Claude Code', codex: 'Codex', cursor: 'Cursor', 'gemini-cli': 'Gemini CLI', opencode: 'OpenCode', copilot: 'Copilot CLI', antigravity: 'Antigravity' };
 const esc = (v: unknown) => String(v ?? '').replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
 const svg = (d: string, s = 15) => `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
 const I = {
@@ -36,7 +27,7 @@ const I = {
   find: svg('<circle cx="11" cy="11" r="6.5"/><path d="m20 20-4.4-4.4"/>', 14),
   link: svg('<path d="M9.5 14.5 14.5 9.5"/><path d="M11 6.5 12.6 4.9a4 4 0 0 1 5.7 5.7L16.7 12"/><path d="m13 17.5-1.6 1.6a4 4 0 0 1-5.7-5.7L7.3 12"/>', 14),
 };
-const logo = (k: string, s = 16) => `<img class="ctx-logo${LOGOS[k]?.invert ? ' invert' : ''}" src="${LOGOS[k]?.src || ''}" width="${s}" height="${s}" alt=""/>`;
+const logo = (k: string, s = 16) => `<span class="ctx-logo">${aiMark(k, s)}</span>`;
 function resets(ts: number | null) {
   if (!ts) return '';
   const m = Math.max(0, Math.floor((ts - Date.now()) / 60000)), h = Math.floor(m / 60), d = Math.floor(h / 24);
@@ -65,11 +56,22 @@ export function mountContext(opts: { invoke: Invoke; send: Send; on: On; openSpa
   let message: { text: string; ico: string; tone: string; until: number; act?: string } | null = null;
   let popKind = '';
   let lastWater = Date.now();
+  let shownKey = '';
+  const alerted = new Set<string>();
 
   const opt = (k: string, fallback: boolean) => (cfg[k] === undefined ? fallback : cfg[k] !== false);
 
   // ── Agent and browser chip ──
+  // An agent that wrote to its log in the last two minutes is working right now.
+  let activity: Record<string, number> = {};
+  const working = () => {
+    let best: string | null = null, at = 0;
+    for (const [k, t] of Object.entries(activity)) if (t > at && Date.now() - t < 120000) { best = k; at = t; }
+    return best;
+  };
   const agent = () => {
+    const busy = working();
+    if (busy) return busy;
     if (!snap?.current) return null;
     const src = (snap.sources || []).find((s: any) => s.kind === snap.current);
     // Only a tool you used in the last half hour counts as the one you are on.
@@ -81,18 +83,47 @@ export function mountContext(opts: { invoke: Invoke; send: Send; on: On; openSpa
     let html = '';
     if (opt('idleContext', true) && auth.signedIn) {
       const k = agent();
-      if (k && (ctx.kind === 'code' || ctx.kind === 'terminal')) {
+      if (k && (working() || ctx.kind === 'code' || ctx.kind === 'terminal')) {
         const lim = limitsOf(k);
         const top = lim.reduce((m, l) => Math.max(m, l.usedPercent), 0);
         const tip = [NAMES[k] || k, ...lim.map((l) => `${l.label} ${Math.round(l.usedPercent)}%`)].join(' · ');
-        html = `<button type="button" class="ctx-chip${top >= 80 ? ' hot' : ''}" data-pop="agent" title="${esc(tip)}">${logo(k)}${lim.length ? `<span>${Math.round(top)}%</span>` : ''}</button>`;
+        void tip;
+        html = `<span class="ctx-chip${top >= 80 ? ' hot' : ''}" data-pop="agent" data-hover="agent" role="button" tabindex="0" aria-label="${esc(NAMES[k] || k)} limits">${logo(k, 15)}${lim.length ? `<span>${Math.round(top)}%</span>` : ''}</span>`;
       } else if (ctx.kind === 'browser') {
-        html = `<button type="button" class="ctx-chip" data-pop="browser" title="Browser tools">${I.browser}</button>`;
+        html = `<span class="ctx-chip" data-pop="browser" role="button" tabindex="0" aria-label="Browser tools">${I.browser}</span>`;
       }
     }
     slot.innerHTML = html;
     if (!html && !pop.hidden) closePop();
   }
+
+  // ── Hover card: the limits of the tool you are on, without a click ──
+  const hover = document.createElement('div');
+  hover.className = 'ctx-hover';
+  hover.hidden = true;
+  document.body.appendChild(hover);
+  let hoverTimer = 0;
+  function showHover() {
+    const k = agent();
+    if (!k || !pop.hidden) return;
+    const lim = limitsOf(k);
+    hover.innerHTML = `<div class="ctx-hover-head">${logo(k, 16)}<b>${esc(NAMES[k] || k)}</b><span>Click for every tool</span></div>
+      ${lim.map((l) => `<div class="ctx-lim"><span>${esc(l.label)}</span><i><em style="width:${Math.min(100, Math.max(2, l.usedPercent))}%" class="${l.usedPercent >= 80 ? 'hot' : ''}"></em></i><b>${Math.round(l.usedPercent)}%</b><small>${l.resetsAt ? `resets in ${resets(l.resetsAt)}` : ''}</small></div>`).join('') || '<p class="ctx-empty">No plan limits read yet.</p>'}`;
+    const r = pill.getBoundingClientRect();
+    hover.style.top = `${r.bottom + 8}px`;
+    hover.style.left = `${r.left + r.width / 2}px`;
+    hover.hidden = false;
+  }
+  const hideHover = () => { clearTimeout(hoverTimer); hover.hidden = true; };
+  slot.addEventListener('mouseover', (e) => {
+    if (!(e.target as HTMLElement).closest('[data-hover="agent"]')) return;
+    clearTimeout(hoverTimer);
+    hoverTimer = window.setTimeout(showHover, 180);
+  });
+  slot.addEventListener('mouseout', (e) => {
+    const to = (e as MouseEvent).relatedTarget as HTMLElement | null;
+    if (!to || !to.closest('[data-hover="agent"]')) hideHover();
+  });
 
   // ── Dropdown under the notch ──
   function placePop() {
@@ -100,8 +131,9 @@ export function mountContext(opts: { invoke: Invoke; send: Send; on: On; openSpa
     pop.style.top = `${r.bottom + 8}px`;
     pop.style.left = `${r.left + r.width / 2}px`;
   }
-  function closePop() { pop.hidden = true; popKind = ''; pill.classList.remove('pop-open'); }
+  function closePop() { hideHover(); pop.hidden = true; popKind = ''; pill.classList.remove('pop-open'); }
   function openPop(kind: string) {
+    hideHover();
     popKind = kind;
     if (kind === 'agent') {
       const tools = [...new Set((snap?.limits || []).map((l: Limit) => l.kind))] as string[];
@@ -159,7 +191,7 @@ export function mountContext(opts: { invoke: Invoke; send: Send; on: On; openSpa
     const h = new Date().getHours();
     const part = h < 5 ? 'Good night' : h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening';
     const first = (auth.name || '').trim().split(/\s+/)[0];
-    return { text: first ? `${part}, ${first}` : part, ico: h >= 6 && h < 18 ? I.sun : I.moon };
+    return { text: first ? `${part}, ${first}` : part, ico: '' };
   };
   function say(text: string, ico: string, secs: number, tone = '', act?: string) {
     message = { text, ico, tone, until: Date.now() + secs * 1000, act };
@@ -173,7 +205,12 @@ export function mountContext(opts: { invoke: Invoke; send: Send; on: On; openSpa
     msg.classList.toggle('on', show);
     msg.dataset.tone = message?.tone || '';
     msg.dataset.act = message?.act || '';
-    msg.innerHTML = message ? `${message.ico}<span>${esc(message.text)}</span>` : '';
+    const key = message ? `${message.tone}|${message.text}` : '';
+    if (key !== shownKey) {
+      shownKey = key;
+      const words = message ? message.text.split(' ').map((w, n) => `<span class="w" style="--i:${n}">${esc(w)}</span>`).join(' ') : '';
+      msg.innerHTML = message ? `${message.ico ? `<span class="msg-ico">${message.ico}</span>` : ''}<span class="msg-text">${words}</span>` : '';
+    }
     if (clock) clock.style.display = opt('idleClock', true) && !show ? '' : 'none';
   }
   msg.addEventListener('click', (e) => {
@@ -203,7 +240,22 @@ export function mountContext(opts: { invoke: Invoke; send: Send; on: On; openSpa
   }
 
   // ── Wiring ──
-  const loadSnap = () => invoke('count:snapshot').then((s) => { snap = s; paintChip(); if (!pop.hidden && popKind === 'agent') openPop('agent'); }).catch(() => {});
+  // A limit getting close: the tool's own mark breathes in the middle of the notch.
+  function checkLimits() {
+    const k = agent() || snap?.current;
+    if (!k || !auth.signedIn) return;
+    for (const l of limitsOf(k)) {
+      const step = l.usedPercent >= 100 ? 100 : l.usedPercent >= 90 ? 90 : l.usedPercent >= 80 ? 80 : 0;
+      if (!step) continue;
+      const id = `${k}|${l.label}|${step}|${l.resetsAt || ''}`;
+      if (alerted.has(id)) continue;
+      alerted.add(id);
+      const when = l.resetsAt ? ` · resets in ${resets(l.resetsAt)}` : '';
+      const text = step >= 100 ? `${NAMES[k] || k} ${l.label.toLowerCase()} limit reached${when}` : `${NAMES[k] || k} ${l.label.toLowerCase()} at ${Math.round(l.usedPercent)}%${when}`;
+      say(text, `<span class="limit-mark${step >= 100 ? ' full' : ''}">${logo(k, 15)}</span>`, 14, 'limit');
+    }
+  }
+  const loadSnap = () => invoke('count:snapshot').then((s) => { snap = s; paintChip(); checkLimits(); if (!pop.hidden && popKind === 'agent') openPop('agent'); }).catch(() => {});
   void invoke('get-config').then((c) => { cfg = c || {}; applyCfg(); });
   void invoke('context:app').then((c) => { if (c) { ctx = c; paintChip(); } });
   void invoke('auth:state').then((a) => {
@@ -225,6 +277,13 @@ export function mountContext(opts: { invoke: Invoke; send: Send; on: On; openSpa
     if (s?.event === 'available' || s?.event === 'downloaded') say(s.event === 'downloaded' ? `Update ${s.version || ''} is ready`.replace('  ', ' ') : `Overlay ${s.version || ''} is on its way`, I.update, 3600, 'update', 'update');
   });
   setInterval(loadSnap, 60000);
+  const loadActivity = () => invoke('count:active').then((a) => {
+    const before = working();
+    activity = a || {};
+    if (working() !== before) paintChip();
+  }).catch(() => {});
+  void loadActivity();
+  setInterval(loadActivity, 15000);
   setInterval(() => {
     const every = Number(cfg.waterEvery ?? 30);
     if (auth.signedIn && every > 0 && Date.now() - lastWater >= every * 60000) {

@@ -148,18 +148,15 @@ export function mountLinks(opts: { invoke: Invoke; send: Send; on?: (ch: string,
         ${chip}
       </div>`;
 
-    if (dc.status === 'setup') {
+    if (dc.status === 'setup' || dc.status === 'unavailable') {
+      const off = dc.status === 'unavailable';
       dcEl.innerHTML = `<div class="link-panel">
-        ${head('Your voice call, right in the notch')}
-        <p class="link-lead">Create an app in the Discord Developer Portal, add <b>http://localhost</b> as a redirect under OAuth2, then paste its Client ID and Secret. The secret is encrypted on this PC.</p>
-        <form class="dc-setup" data-dc-setup>
-          <input name="id" placeholder="Client ID" inputmode="numeric" spellcheck="false" autocomplete="off"/>
-          <input name="secret" type="password" placeholder="Client Secret" spellcheck="false" autocomplete="off"/>
-          <button class="btn btn-p" type="submit">Connect</button>
-          <button class="btn btn-g" type="button" data-dc="portal">Open the portal</button>
-        </form>
-        <button class="dc-link" type="button" data-dc="sample">See a sample call</button>
-        ${dc.error ? `<p class="dc-err">${esc(dc.error)}</p>` : ''}
+        ${head(off ? 'Not available in this build' : 'Your voice call, right in the notch')}
+        <p class="link-lead">${off ? 'This copy of Overlay was built without Discord.' : 'Connect once and approve Overlay in the Discord app. Then calls show here with who is talking, mute, deafen and leave.'}</p>
+        <div class="link-actions">
+          ${off ? '' : '<button class="btn btn-p" type="button" data-dc="connect">Connect Discord</button>'}
+          <button class="btn btn-g" type="button" data-dc="sample">See a sample call</button>
+        </div>
       </div>`;
       return;
     }
@@ -176,7 +173,7 @@ export function mountLinks(opts: { invoke: Invoke; send: Send; on?: (ch: string,
         <div class="link-actions">
           ${dc.status === 'closed' ? '<button class="btn btn-p" data-open="discord" type="button">Open Discord</button>' : ''}
           <button class="btn btn-g" data-dc="retry" type="button">Try again</button>
-          <button class="btn btn-g" data-dc="forget" type="button">Change app</button>
+          <button class="btn btn-g" data-dc="forget" type="button">Disconnect</button>
         </div>
       </div>`;
       return;
@@ -325,16 +322,6 @@ export function mountLinks(opts: { invoke: Invoke; send: Send; on?: (ch: string,
     renderDiscord();
     paintIdle();
   }, 1400);
-  dcEl.addEventListener('submit', (e) => {
-    const form = (e.target as HTMLElement).closest<HTMLFormElement>('form[data-dc-setup]');
-    if (!form) return;
-    e.preventDefault();
-    e.stopPropagation();
-    const data = new FormData(form);
-    void invoke('discord:setup', { clientId: String(data.get('id') || ''), secret: String(data.get('secret') || '') }).then((r) => {
-      if (r && !r.ok) { dc = { ...dc, error: r.error }; renderDiscord(); }
-    });
-  });
   dcEl.addEventListener('click', (e) => {
     const btn = (e.target as HTMLElement).closest<HTMLElement>('[data-dc]');
     if (!btn) return;
@@ -354,7 +341,7 @@ export function mountLinks(opts: { invoke: Invoke; send: Send; on?: (ch: string,
     if (act === 'leave') void invoke('discord:leave');
     if (act === 'retry') void invoke('discord:retry');
     if (act === 'forget') void invoke('discord:forget');
-    if (act === 'portal') void invoke('discord:portal');
+    if (act === 'connect') void invoke('discord:connect');
   });
 
   return {
@@ -370,7 +357,7 @@ export function mountLinks(opts: { invoke: Invoke; send: Send; on?: (ch: string,
 
 type DcMember = { id: string; name: string; avatar: string; mute: boolean; deaf: boolean; speaking: boolean };
 type DcState = {
-  status: 'setup' | 'connecting' | 'authorize' | 'ready' | 'closed' | 'error';
+  status: 'setup' | 'unavailable' | 'connecting' | 'authorize' | 'ready' | 'closed' | 'error';
   user: { id: string; name: string } | null;
   channel: { id: string; name: string; guild: string } | null;
   members: DcMember[];

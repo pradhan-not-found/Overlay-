@@ -1,6 +1,7 @@
 // Settings, connections and the account, inside the one Dashboard. Every
 // switch here does something; nothing is decorative.
 import overlayMark from './assets/overlay-mark.png';
+import { aiMark, aiName } from './assets/ai-logos';
 import './dashboard-settings.css';
 
 const ipc: any = (() => { try { return (window as any).require('electron').ipcRenderer; } catch { return null; } })();
@@ -26,8 +27,9 @@ const DISCORD = `<svg viewBox="0 0 24 24" width="20" height="20" fill="currentCo
 const GITHUB = `<svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true"><path d="M12 .3a12 12 0 0 0-3.8 23.4c.6.1.8-.3.8-.6v-2c-3.3.7-4-1.6-4-1.6-.6-1.4-1.4-1.8-1.4-1.8-1-.7.1-.7.1-.7 1.2.1 1.8 1.2 1.8 1.2 1 1.8 2.8 1.3 3.5 1 0-.8.4-1.3.7-1.6-2.7-.3-5.5-1.3-5.5-6 0-1.2.5-2.3 1.3-3.1-.2-.4-.6-1.6 0-3.2 0 0 1-.3 3.4 1.2a11.5 11.5 0 0 1 6 0c2.3-1.5 3.3-1.2 3.3-1.2.6 1.6.2 2.8.1 3.2.8.8 1.3 1.9 1.3 3.2 0 4.6-2.8 5.6-5.5 5.9.5.4.9 1 .9 2.2v3.3c0 .3.1.7.8.6A12 12 0 0 0 12 .3"/></svg>`;
 const LEETCODE = `<svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true"><path d="M13.48 0a1.37 1.37 0 0 0-.96.44L7.12 6.22l-2.68 2.87a5.27 5.27 0 0 0-1.38 2.94 5.3 5.3 0 0 0 .07 1.8 5.2 5.2 0 0 0 .62 1.6c.25.42.56.81.92 1.15l4.4 4.53a5.7 5.7 0 0 0 7.95.12l2.4-2.36a1.38 1.38 0 1 0-1.93-1.97l-2.4 2.36a2.96 2.96 0 0 1-4.1-.06l-4.38-4.52a2.6 2.6 0 0 1-.66-1.27 2.5 2.5 0 0 1 .05-1.21 2.4 2.4 0 0 1 .61-1.07l3.88-4.15 4.97-5.33A1.37 1.37 0 0 0 13.48 0Zm-2.87 13.24a1.38 1.38 0 1 0 0 2.75h9.74a1.38 1.38 0 1 0 0-2.75Z"/></svg>`;
 
-type Auth = { hasAccount: boolean; signedIn: boolean; name: string; since: number };
-let auth: Auth = { hasAccount: false, signedIn: false, name: '', since: 0 };
+type Auth = { hasAccount: boolean; signedIn: boolean; name: string; avatar?: string; since: number };
+let auth: Auth = { hasAccount: false, signedIn: false, name: '', avatar: '', since: 0 };
+let draftAvatar = '';
 let config: any = {};
 
 const sw = (on: boolean, attrs: string) => `<button type="button" class="ds-switch${on ? ' on' : ''}" ${attrs} role="switch" aria-checked="${on}"><i></i></button>`;
@@ -35,25 +37,85 @@ const row = (title: string, sub: string, control: string) => `<div class="ds-row
 const card = (title: string, body: string, note = '') => `<section class="ds-card">${title ? `<h3>${title}</h3>` : ''}<div class="ds-card-body">${body}</div>${note ? `<p class="ds-note">${note}</p>` : ''}</section>`;
 const head = (title: string, sub: string) => `<header class="ds-head"><h2>${title}</h2><p>${sub}</p></header>`;
 
-// ── Account gate ────────────────────────────────────────────────────────────
-function paintGate() {
+// ── Account gate: brand panel on the left, the form on the right ────────────
+// Shrinks a picked photo to a 192 px square so it stays small in the database.
+function shrink(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = () => reject(new Error('Could not read the image.'));
+    reader.onload = () => {
+      const img = new Image();
+      img.onload = () => {
+        const size = 192, c = document.createElement('canvas');
+        c.width = size; c.height = size;
+        const g = c.getContext('2d')!;
+        const k = Math.max(size / img.width, size / img.height);
+        g.drawImage(img, (size - img.width * k) / 2, (size - img.height * k) / 2, img.width * k, img.height * k);
+        resolve(c.toDataURL('image/jpeg', 0.86));
+      };
+      img.onerror = () => reject(new Error('That file is not an image.'));
+      img.src = String(reader.result);
+    };
+    reader.readAsDataURL(file);
+  });
+}
+export function avatarHtml(name: string, src: string | undefined, size: number) {
+  const initials = esc(name.split(/\s+/).filter(Boolean).map((w) => w[0]).slice(0, 2).join('').toUpperCase() || 'O');
+  return src ? `<img class="ds-avatar" src="${esc(src)}" alt="" style="width:${size}px;height:${size}px"/>` : `<span class="ds-avatar" style="width:${size}px;height:${size}px;font-size:${Math.round(size * 0.38)}px">${initials}</span>`;
+}
+
+async function paintGate() {
   let gate = $('#ds-gate');
   if (auth.signedIn) { gate?.remove(); document.body.classList.remove('ds-locked'); return; }
   document.body.classList.add('ds-locked');
   if (!gate) { gate = document.createElement('div'); gate.id = 'ds-gate'; document.body.appendChild(gate); }
   const create = !auth.hasAccount;
-  gate.innerHTML = `<form class="ds-auth" data-auth="${create ? 'create' : 'signin'}">
-    <img src="${overlayMark}" alt="" class="ds-auth-mark"/>
-    <h1>${create ? 'Create your Overlay account' : `Welcome back${auth.name ? `, ${esc(auth.name)}` : ''}`}</h1>
-    <p>${create ? 'It lives on this PC only. Your password protects the Dashboard and the notch.' : 'Enter your password to unlock Overlay.'}</p>
-    ${create ? '<input name="name" placeholder="Your name" autocomplete="name" maxlength="40" required/>' : ''}
-    <input name="password" type="password" placeholder="${create ? 'Choose a password' : 'Password'}" autocomplete="${create ? 'new-password' : 'current-password'}" required/>
-    ${create ? '<input name="confirm" type="password" placeholder="Repeat the password" autocomplete="new-password" required/>' : ''}
-    <button class="ds-btn primary" type="submit">${create ? 'Create account' : 'Unlock'}</button>
-    <span class="ds-err" data-auth-err></span>
-  </form>`;
-  setTimeout(() => $<HTMLInputElement>('#ds-gate input')?.focus(), 50);
+  const snap: any = create ? await invoke('count:snapshot').catch(() => null) : null;
+  const found: string[] = [...new Set<string>((snap?.sources || []).map((x: any) => x.kind))];
+  gate.innerHTML = `<div class="ds-gate-brand">
+      <div class="ds-gate-logo"><img src="${overlayMark}" alt=""/><span>Overlay</span></div>
+      <img class="ds-gate-mark" src="${overlayMark}" alt=""/>
+      <div class="ds-gate-copy">
+        <h2>Everything you reach for, at the top of the screen.</h2>
+        <p>Music, focus, your calendar and every AI tool's limits, in a notch that opens on a click. It all stays on this PC.</p>
+      </div>
+    </div>
+    <div class="ds-gate-side">
+      <form class="ds-auth" data-auth="${create ? 'create' : 'signin'}">
+        <h1>${create ? 'Welcome to Overlay' : 'Welcome back'}</h1>
+        <p>${create ? 'Set up your profile. It stays on this device.' : 'Enter your password to unlock Overlay.'}</p>
+        ${create ? `<div class="ds-auth-id">
+            <label class="ds-avatar-pick" title="Add a photo">${avatarHtml('', draftAvatar, 64)}<span class="ds-avatar-plus">+</span><input type="file" accept="image/*" data-avatar-file hidden/></label>
+            <div class="ds-field"><label>Your name</label><input name="name" placeholder="Your name" autocomplete="name" maxlength="40" required/></div>
+          </div>` : `<div class="ds-auth-who">${avatarHtml(auth.name, auth.avatar, 56)}<b>${esc(auth.name)}</b></div>`}
+        <div class="ds-field"><label>${create ? 'Password' : 'Password'}</label><input name="password" type="password" placeholder="${create ? 'At least 6 characters' : 'Your password'}" autocomplete="${create ? 'new-password' : 'current-password'}" required/></div>
+        ${create ? '<div class="ds-field"><label>Repeat the password</label><input name="confirm" type="password" placeholder="Same again" autocomplete="new-password" required/></div>' : ''}
+        ${create ? `<div class="ds-found"><span>${found.length ? 'Found on this PC' : 'No AI tools found yet'}</span><div>${found.map((k) => `<em title="${esc(aiName(k))}">${aiMark(k, 15)}</em>`).join('')}</div></div>` : ''}
+        <button class="ds-btn primary" type="submit">${create ? 'Continue' : 'Unlock'}</button>
+        <span class="ds-err" data-auth-err></span>
+      </form>
+    </div>`;
+  setTimeout(() => $<HTMLInputElement>('#ds-gate input[name="name"], #ds-gate input[name="password"]')?.focus(), 50);
 }
+document.addEventListener('change', async (e) => {
+  const t = e.target as HTMLInputElement;
+  if (!t.matches('[data-avatar-file]') || !t.files?.[0]) return;
+  try {
+    const src = await shrink(t.files[0]);
+    if (t.closest('#ds-gate')) {
+      draftAvatar = src;
+      const pick = t.closest('.ds-avatar-pick');
+      pick?.querySelector('.ds-avatar')?.replaceWith(Object.assign(document.createElement('img'), { className: 'ds-avatar', src, style: 'width:64px;height:64px' }));
+    } else {
+      const r = await invoke('auth:avatar', src);
+      if (r?.ok) { auth = r.state; paintProfile(); repaintActiveSoon(); }
+    }
+  } catch (err) {
+    const box = $('[data-auth-err]') || $('[data-pw-msg]');
+    if (box) box.textContent = err instanceof Error ? err.message : 'Could not use that image.';
+  }
+});
+let repaintActiveSoon = () => {};
 document.addEventListener('submit', async (e) => {
   const form = (e.target as HTMLElement).closest<HTMLFormElement>('form[data-auth]');
   if (!form) return;
@@ -64,23 +126,22 @@ document.addEventListener('submit', async (e) => {
   let res: any;
   if (form.dataset.auth === 'create') {
     if (password !== String(data.get('confirm') || '')) { err.textContent = 'The two passwords are different.'; return; }
-    res = await invoke('auth:create', { name: String(data.get('name') || ''), password });
+    res = await invoke('auth:create', { name: String(data.get('name') || ''), password, avatar: draftAvatar });
   } else {
     res = await invoke('auth:signin', { password });
   }
   if (!res?.ok) { err.textContent = res?.error || 'That did not work.'; form.classList.remove('shake'); void form.offsetWidth; form.classList.add('shake'); return; }
   auth = res.state;
-  paintGate();
+  void paintGate();
   paintProfile();
 });
 
 // ── Profile, at the foot of the sidebar ─────────────────────────────────────
 export function profileHtml() {
-  const initial = esc((auth.name || 'O').trim().charAt(0).toUpperCase());
   return `<div class="ds-profile" id="ds-profile">
     <button type="button" class="ds-profile-btn" data-profile-toggle>
-      <span class="ds-avatar">${initial}</span>
-      <span class="ds-profile-text"><b>${esc(auth.name || 'Overlay')}</b><small>Signed in on this PC</small></span>
+      ${avatarHtml(auth.name || 'Overlay', auth.avatar, 32)}
+      <span class="ds-profile-text"><b>${esc(auth.name || 'Overlay')}</b><small>Signed in to this PC</small></span>
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m7 14 5-5 5 5"/></svg>
     </button>
     <div class="ds-menu" data-profile-menu hidden>
@@ -98,7 +159,8 @@ document.addEventListener('click', async (e) => {
   const menu = $('[data-profile-menu]');
   if (t.closest('[data-profile-toggle]')) { if (menu) menu.hidden = !menu.hidden; return; }
   if (menu && !t.closest('[data-profile-menu]')) menu.hidden = true;
-  if (t.closest('[data-signout]')) { auth = await invoke('auth:signout'); paintGate(); }
+  if (t.closest('[data-signout]')) { auth = await invoke('auth:signout'); void paintGate(); }
+  if (t.closest('[data-avatar-clear]')) { const r = await invoke('auth:avatar', ''); if (r?.ok) { auth = r.state; paintProfile(); repaintActiveSoon(); } }
   const go = t.closest<HTMLElement>('[data-nav-go]');
   if (go) { (document.querySelector(`.nav-item[data-nav="${go.dataset.navGo}"]`) as HTMLElement | null)?.click(); if (menu) menu.hidden = true; }
 });
@@ -164,6 +226,7 @@ async function paintAbout(el: HTMLElement) {
 
 function paintAccount(el: HTMLElement) {
   el.innerHTML = `<div class="ds-page">${head('Account', 'Your Overlay account is stored on this PC only.')}
+    ${card('Photo', row('Profile photo', 'Shown in the sidebar and when you sign in.', `<div class="ds-actions">${avatarHtml(auth.name, auth.avatar, 40)}<label class="ds-btn">Choose a photo<input type="file" accept="image/*" data-avatar-file hidden/></label>${auth.avatar ? '<button type="button" class="ds-btn ghost" data-avatar-clear>Remove</button>' : ''}</div>`))}
     ${card('Profile', `<form class="ds-inline" data-rename><input name="name" value="${esc(auth.name)}" maxlength="40" required/><button class="ds-btn" type="submit">Save name</button></form>`, auth.since ? `Created ${new Date(auth.since).toLocaleDateString(undefined, { day: 'numeric', month: 'long', year: 'numeric' })}.` : '')}
     ${card('Password', `<form class="ds-stack" data-password><input name="current" type="password" placeholder="Current password" autocomplete="current-password" required/><input name="next" type="password" placeholder="New password, 6 characters or more" autocomplete="new-password" required/><div class="ds-inline-end"><span class="ds-err" data-pw-msg></span><button class="ds-btn" type="submit">Change password</button></div></form>`)}
     ${card('Session', row('Sign out', 'Locks the Dashboard and the notch until you sign in again.', `<button type="button" class="ds-btn danger" data-signout>Sign out</button>`))}
@@ -177,16 +240,15 @@ async function paintConnections(el: HTMLElement) {
   const gh = String((await invoke('get-setting', 'githubUser', '')) || '');
   const lc = String((await invoke('get-setting', 'leetcodeUser', '')) || '');
   const dcStatus: Record<string, [string, string]> = {
-    setup: ['Not set up', ''], connecting: ['Connecting', 'wait'], authorize: ['Approve in Discord', 'wait'],
+    setup: ['Not connected', ''], unavailable: ['Unavailable', ''], connecting: ['Connecting', 'wait'], authorize: ['Approve in Discord', 'wait'],
     ready: ['Connected', 'ok'], closed: ['Discord is closed', 'wait'], error: ['Problem', 'bad'],
   };
   const [dcLabel, dcTone] = dcStatus[dc.status] || ['', ''];
-  const discordBody = dc.status === 'setup' || dc.status === 'error'
-    ? `<p class="ds-note">Create an application at the Discord Developer Portal. Under OAuth2, add <code>http://localhost</code> as a redirect, then paste the Client ID and Client Secret here. The secret is encrypted on this PC.</p>
-       <form class="ds-grid2" data-dc-setup><input name="id" placeholder="Client ID" inputmode="numeric" autocomplete="off" required/><input name="secret" type="password" placeholder="Client Secret" autocomplete="off" required/>
-       <div class="ds-inline-end"><button type="button" class="ds-btn ghost" data-dc-portal>Open the portal</button><button class="ds-btn primary" type="submit">Connect Discord</button></div></form>
-       ${dc.error ? `<p class="ds-err">${esc(dc.error)}</p>` : ''}`
-    : row(dc.user ? `Signed in as ${esc(dc.user.name)}` : 'Discord', dc.status === 'ready' ? (dc.channel ? `In ${esc(dc.channel.name)} now` : 'Calls show up in the notch with who is talking.') : dc.status === 'authorize' ? 'Discord is asking you to approve Overlay.' : 'Open Discord and Overlay connects by itself.',
+  const discordBody = dc.status === 'unavailable'
+    ? `<p class="ds-note">This copy of Overlay was built without Discord.</p>`
+    : dc.status === 'setup' || dc.status === 'error'
+    ? row('Connect with Discord', 'Discord opens and asks you to approve Overlay. Nothing to copy or paste.', `<button type="button" class="ds-btn primary" data-dc-connect>${DISCORD}<span>Connect</span></button>`) + (dc.error ? `<p class="ds-err">${esc(dc.error)}</p>` : '')
+    : row(dc.user ? `Signed in as ${esc(dc.user.name)}` : 'Discord', dc.status === 'ready' ? (dc.channel ? `In ${esc(dc.channel.name)} now` : 'Calls show up in the notch with who is talking.') : dc.status === 'authorize' ? 'Approve Overlay in the Discord window.' : 'Open Discord and Overlay connects by itself.',
         `<div class="ds-actions"><button type="button" class="ds-btn ghost" data-dc-retry>Reconnect</button><button type="button" class="ds-btn ghost" data-dc-forget>Disconnect</button></div>`);
   el.innerHTML = `<div class="ds-page">${head('Connections', 'Link the accounts the notch shows. Everything is read on this PC.')}
     <section class="ds-card ds-conn">
@@ -228,11 +290,12 @@ const saveConfig = () => send('save-config', config);
 
 export async function mountSettings() {
   // Outside the app (a plain browser preview) there is no account to check.
-  auth = (await invoke('auth:state')) || (ipc ? auth : { hasAccount: true, signedIn: true, name: 'Preview', since: Date.now() });
+  auth = (await invoke('auth:state')) || (ipc ? auth : { hasAccount: !location.hash.includes('gate=create'), signedIn: !location.hash.includes('gate='), name: 'Souradeep', since: Date.now() });
   config = (await invoke('get-config')) || {};
-  paintGate();
+  await paintGate();
   paintProfile();
-  ipc?.on('auth-changed', (_e: unknown, s: Auth) => { auth = s; paintGate(); paintProfile(); });
+  ipc?.on('auth-changed', (_e: unknown, s: Auth) => { auth = s; void paintGate(); paintProfile(); });
+  repaintActiveSoon = () => repaintActive();
   ipc?.on('discord:state', (_e: unknown, s: any) => { dc = s; if ($('#panel-connections.active')) void paintSettings('connections'); });
   ipc?.on('update-status', (_e: unknown, s: any) => {
     const note = $('[data-update-note]');
@@ -250,7 +313,7 @@ export async function mountSettings() {
     const del = t.closest<HTMLElement>('[data-sc-del]');
     if (del) { const list = [...(config.shortcuts || [])]; list.splice(Number(del.dataset.scDel), 1); config.shortcuts = list; send('save-shortcuts', list); saveConfig(); repaintActive(); return; }
     if (t.closest('[data-update]')) { const n = $('[data-update-note]'); if (n) n.textContent = 'Checking…'; send('check-for-updates'); return; }
-    if (t.closest('[data-dc-portal]')) { void invoke('discord:portal'); return; }
+    if (t.closest('[data-dc-connect]')) { void invoke('discord:connect'); return; }
     if (t.closest('[data-dc-retry]')) { void invoke('discord:retry'); return; }
     if (t.closest('[data-dc-forget]')) { dc = await invoke('discord:forget').then(() => invoke('discord:state')); repaintActive(); return; }
     if (t.closest('[data-gh-detect]')) {
@@ -281,10 +344,6 @@ export async function mountSettings() {
       send('save-shortcuts', config.shortcuts);
       saveConfig();
       repaintActive();
-    }
-    if (form.matches('[data-dc-setup]')) {
-      const r = await invoke('discord:setup', { clientId: String(data.get('id') || ''), secret: String(data.get('secret') || '') });
-      if (r && !r.ok) { dc = { ...(dc || {}), status: 'setup', error: r.error }; repaintActive(); }
     }
     if (form.matches('[data-link]')) {
       const key = form.dataset.link!;

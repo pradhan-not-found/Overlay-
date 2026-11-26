@@ -328,6 +328,8 @@ ipcMain.on('toggle-mute', async () => {
 });
 
 // ─── Pill window ──────────────────────────────────────────────────────────────
+// One app icon everywhere: the multi-size .ico on Windows keeps the taskbar crisp.
+const APP_ICON = () => nativeImage.createFromPath(path.join(__dirname, process.platform === 'win32' ? '../build/icon.ico' : '../applogo.png'));
 const PAD = 32;
 let settingsWindow = null;
 
@@ -372,7 +374,7 @@ function createPillWindow() {
     movable:     false,
     hasShadow:   false,
     skipTaskbar: true,
-    icon: nativeImage.createFromPath(path.join(__dirname, '../applogo.png')),
+    icon: APP_ICON(),
     webPreferences: {
       nodeIntegration:  true,
       contextIsolation: false,
@@ -589,7 +591,9 @@ function createDashWindow(options) {
   }
   dashWindow = new BrowserWindow({
     width: 1040, height: 700,
-    frame: true,
+    // No title bar: the window controls float over the Dashboard's own top edge.
+    titleBarStyle: 'hidden',
+    titleBarOverlay: { color: '#0a0a0a', symbolColor: '#a1a1aa', height: 38 },
     transparent: false,
     backgroundColor: '#111111',
     resizable: true,
@@ -601,7 +605,7 @@ function createDashWindow(options) {
     title: 'Overlay',
     autoHideMenuBar: true,
     show: false,
-    icon: nativeImage.createFromPath(path.join(__dirname, '../applogo.png')),
+    icon: APP_ICON(),
     webPreferences: { nodeIntegration: true, contextIsolation: false }
   });
   const devUrl = process.env.VITE_DEV_SERVER_URL || 'http://localhost:5173';

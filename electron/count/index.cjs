@@ -306,6 +306,8 @@ function init() {
   loadSettings();
   ipcMain.handle('count:history', (_e, days) => history(days));
   ipcMain.handle('count:snapshot', () => snapshot());
+  // When each tool last wrote to its log; the notch keeps a working agent in view.
+  ipcMain.handle('count:active', () => src.lastActivity(src.SOURCES.map((d) => d.kind)));
   ipcMain.handle('count:refresh', async () => { await sync(); await refreshLimits(true); broadcast(); return snapshot(); });
   ipcMain.handle('count:continue', async (_e, from, to) => {
     const kind = from || currentTool();

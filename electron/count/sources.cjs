@@ -24,6 +24,7 @@ const SOURCES = [
   { kind: 'gemini-cli', name: 'Gemini CLI', env: 'GEMINI_DATA_DIR', roots: () => [home('.gemini', 'tmp')] },
   { kind: 'opencode', name: 'OpenCode', env: 'OPENCODE_DATA_DIR', roots: () => [home('.local', 'share', 'opencode')] },
   { kind: 'copilot', name: 'Copilot CLI', env: 'COPILOT_OTEL_DIR', roots: () => [home('.copilot', 'otel')] },
+  { kind: 'antigravity', name: 'Antigravity', env: 'ANTIGRAVITY_DATA_DIR', roots: () => [home('.gemini', 'antigravity', 'conversations')] },
 ];
 
 const NAMES = Object.fromEntries(SOURCES.map((s) => [s.kind, s.name]));
@@ -67,7 +68,8 @@ function listFiles(kind) {
       try { const st = fs.statSync(root); out.push({ file: root, mtime: st.mtimeMs, size: st.size }); } catch {}
       continue;
     }
-    const match = kind === 'gemini-cli' ? (n) => n.startsWith('session-') && n.endsWith('.json')
+    const match = kind === 'antigravity' ? (n) => n.endsWith('.db')
+      : kind === 'gemini-cli' ? (n) => n.startsWith('session-') && n.endsWith('.json')
       : kind === 'opencode' ? (n) => n.endsWith('.json') || n.endsWith('.db')
         : (n) => n.endsWith('.jsonl');
     walk(root, match, out);
@@ -282,12 +284,80 @@ async function scanCopilot() {
   return rows;
 }
 
+// ── Antigravity ─────────────────────────────────────────────────────────────
+// Each conversation is a SQLite file. Every model call leaves a protobuf record
+// in gen_metadata: field 1 holds the call, with the model's display name in 21
+// and the token counts in 4 (2 new input, 5 cached input, 3 output). Records
+// carry no time, so a conversation counts on the day its file last changed.
+function pbFields(buf) {
+  const out = [];
+  let i = 0;
+  const varint = () => { let r = 0, m = 1, x; do { x = buf[i++]; r += (x & 0x7f) * m; m *= 128; } while (x >= 0x80 && i < buf.length); return r; };
+  while (i < buf.length) {
+    const key = varint(); const f = Math.floor(key / 8); const wt = key % 8;
+    if (!f) break;
+    if (wt === 0) out.push([f, varint()]);
+    else if (wt === 2) { const l = varint(); out.push([f, buf.subarray(i, i + l)]); i += l; }
+    else if (wt === 1) i += 8;
+    else if (wt === 5) i += 4;
+    else break;
+  }
+  return out;
+}
+const pbGet = (fields, f) => { const hit = fields.find((x) => x[0] === f); return hit ? hit[1] : undefined; };
+
+function scanAntigravity() {
+  let Database;
+  try { Database = require('better-sqlite3'); } catch { return []; }
+  const rows = [];
+  for (const item of listFiles('antigravity')) {
+    let db;
+    try {
+      db = new Database(item.file, { readonly: true, fileMustExist: true });
+      const has = db.prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name='gen_metadata'").get();
+      if (!has) continue;
+      const perModel = new Map();
+      for (const r of db.prepare('SELECT data FROM gen_metadata').iterate()) {
+        if (!r.data) continue;
+        try {
+          const call = pbGet(pbFields(Buffer.from(r.data)), 1);
+          if (!call || typeof call === 'number') continue;
+          const f = pbFields(call);
+          const usage = pbGet(f, 4);
+          if (!usage || typeof usage === 'number') continue;
+          const u = pbFields(usage);
+          const input = Number(pbGet(u, 2)) || 0, cache = Number(pbGet(u, 5)) || 0, output = Number(pbGet(u, 3)) || 0;
+          if (!input && !cache && !output) continue;
+          const nameBuf = pbGet(f, 21) || pbGet(f, 19);
+          const model = nameBuf && typeof nameBuf !== 'number' ? nameBuf.toString('utf8') : 'Antigravity';
+          const t = perModel.get(model) || { i: 0, c: 0, o: 0 };
+          perModel.set(model, { i: t.i + input, c: t.c + cache, o: t.o + output });
+        } catch {}
+      }
+      for (const [model, t] of perModel) rows.push(row(model, item.mtime, 'antigravity', t.i, t.c, t.o));
+    } catch {} finally { try { db && db.close(); } catch {} }
+  }
+  return rows;
+}
+
+/** Newest log write per tool: an agent writing right now is an agent at work. */
+function lastActivity(kinds) {
+  const out = {};
+  for (const kind of kinds) {
+    if (!SOURCES.some((d) => d.kind === kind)) continue;
+    const files = listFiles(kind);
+    out[kind] = files.length ? files[0].mtime : 0;
+  }
+  return out;
+}
+
 async function scan(kind) {
   if (kind === 'claude-code') return scanClaude();
   if (kind === 'codex') return scanCodex();
   if (kind === 'gemini-cli') return scanGemini();
   if (kind === 'cursor') return scanCursor();
   if (kind === 'opencode') return scanOpenCode();
+  if (kind === 'antigravity') return scanAntigravity();
   return scanCopilot();
 }
 
@@ -390,4 +460,4 @@ async function latestSession(kind) {
   return ctx;
 }
 
-module.exports = { SOURCES, NAMES, detect, fingerprint, scan, codexLimits, claudeLimitHit, latestSession, dayKey };
+module.exports = { SOURCES, NAMES, detect, fingerprint, scan, lastActivity, codexLimits, claudeLimitHit, latestSession, dayKey };

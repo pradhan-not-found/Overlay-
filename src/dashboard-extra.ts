@@ -1,25 +1,16 @@
 // Dashboard pages for AI usage, to-dos and notes. All data comes from the main
 // process database, and every change is broadcast so the notch stays in step.
-import claudeCode from './assets/logos/claudecode.png';
-import cursorMark from './assets/logos/cursor-mark.png';
-import gemini from './assets/logos/gemini.svg';
-import github from './assets/logos/github.svg';
-import openai from './assets/logos/openai.svg';
-import opencode from './assets/logos/opencode.png';
+import { aiMark } from './assets/ai-logos';
 
-type Kind = 'claude-code' | 'codex' | 'cursor' | 'gemini-cli' | 'opencode' | 'copilot';
-const NAMES: Record<Kind, string> = { 'claude-code': 'Claude Code', codex: 'Codex', cursor: 'Cursor', 'gemini-cli': 'Gemini CLI', opencode: 'OpenCode', copilot: 'Copilot CLI' };
-const LOGOS: Record<Kind, { src: string; invert: boolean }> = {
-  'claude-code': { src: claudeCode, invert: false }, codex: { src: openai, invert: true }, cursor: { src: cursorMark, invert: false },
-  'gemini-cli': { src: gemini, invert: false }, opencode: { src: opencode, invert: true }, copilot: { src: github, invert: true },
-};
+type Kind = 'claude-code' | 'codex' | 'cursor' | 'gemini-cli' | 'opencode' | 'copilot' | 'antigravity';
+const NAMES: Record<Kind, string> = { 'claude-code': 'Claude Code', codex: 'Codex', cursor: 'Cursor', 'gemini-cli': 'Gemini CLI', opencode: 'OpenCode', copilot: 'Copilot CLI', antigravity: 'Antigravity' };
 
 const ipc: any = (() => { try { return (window as any).require('electron').ipcRenderer; } catch { return null; } })();
 const invoke = (ch: string, ...a: any[]) => (ipc ? ipc.invoke(ch, ...a) : Promise.resolve(null));
 const send = (ch: string, ...a: any[]) => ipc?.send(ch, ...a);
 
 const esc = (v: string) => String(v).replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
-const logo = (k: Kind, size = 18) => `<img class="dx-logo${LOGOS[k]?.invert ? ' invert' : ''}" src="${LOGOS[k]?.src || ''}" width="${size}" height="${size}" alt="${NAMES[k] || k}"/>`;
+const logo = (k: Kind, size = 18) => `<span class="dx-logo">${aiMark(k, size)}</span>`;
 const ico = (d: string, size = 16) => `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${d}</svg>`;
 function tokens(n: number): string {
   if (n < 1000) return String(Math.round(n));

@@ -27,3 +27,6 @@ Trace/
 
 temp/
 landing-page/public/Overlay-Setup.exe
+
+# Overlay's Discord application details stay out of git
+electron/discord-app.json

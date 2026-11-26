@@ -20,7 +20,7 @@ const hash = (password, salt) => crypto.scryptSync(String(password), Buffer.from
 
 function state() {
   const a = account();
-  return { hasAccount: !!a, signedIn: !!a && get('authSession', '') === '1', name: a ? a.name : '', since: a ? a.created : 0 };
+  return { hasAccount: !!a, signedIn: !!a && get('authSession', '') === '1', name: a ? a.name : '', avatar: a && a.avatar ? a.avatar : '', since: a ? a.created : 0 };
 }
 
 function publish() {
@@ -30,6 +30,8 @@ function publish() {
 }
 
 function validName(name) { return typeof name === 'string' && name.trim().length >= 1 && name.trim().length <= 40; }
+// A small square photo, shrunk in the window before it is sent.
+const validAvatar = (v) => v === '' || (typeof v === 'string' && /^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/.test(v) && v.length < 400000);
 function validPassword(p) { return typeof p === 'string' && p.length >= 6 && p.length <= 200; }
 
 function init() {
@@ -40,7 +42,8 @@ function init() {
     if (!validName(p && p.name)) return { ok: false, error: 'Add your name.' };
     if (!validPassword(p && p.password)) return { ok: false, error: 'Use at least 6 characters.' };
     const salt = crypto.randomBytes(16).toString('hex');
-    set('account', JSON.stringify({ name: p.name.trim(), salt, hash: hash(p.password, salt), created: Date.now() }));
+    const avatar = validAvatar(p.avatar || '') ? (p.avatar || '') : '';
+    set('account', JSON.stringify({ name: p.name.trim(), avatar, salt, hash: hash(p.password, salt), created: Date.now() }));
     set('authSession', '1');
     return { ok: true, state: publish() };
   });
@@ -72,6 +75,13 @@ function init() {
     const salt = crypto.randomBytes(16).toString('hex');
     set('account', JSON.stringify({ ...a, salt, hash: hash(p.next, salt) }));
     return { ok: true };
+  });
+
+  ipcMain.handle('auth:avatar', (_e, avatar) => {
+    const a = account();
+    if (!a || !validAvatar(avatar)) return { ok: false };
+    set('account', JSON.stringify({ ...a, avatar }));
+    return { ok: true, state: publish() };
   });
 
   ipcMain.handle('auth:rename', (_e, name) => {

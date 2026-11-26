@@ -1,12 +1,7 @@
-import claudeCode from '../assets/logos/claudecode.png';
-import cursorMark from '../assets/logos/cursor-mark.png';
-import gemini from '../assets/logos/gemini.svg';
-import github from '../assets/logos/github.svg';
-import openai from '../assets/logos/openai.svg';
-import opencode from '../assets/logos/opencode.png';
+import { aiMark } from '../assets/ai-logos';
 import { countMark, countTile } from './mark';
 
-type Kind = 'claude-code' | 'codex' | 'cursor' | 'gemini-cli' | 'opencode' | 'copilot';
+type Kind = 'claude-code' | 'codex' | 'cursor' | 'gemini-cli' | 'opencode' | 'copilot' | 'antigravity';
 
 interface Limit { kind: Kind; source: string; label: string; usedPercent: number; resetsAt: number | null }
 interface Source { kind: Kind; name: string; path: string; lastActive: number | null; today: number; todayUsd: number; week: number; weekUsd: number; month: number; estimated: boolean }
@@ -26,24 +21,15 @@ interface Snapshot {
 }
 
 const NAMES: Record<Kind, string> = {
-  'claude-code': 'Claude Code', codex: 'Codex', cursor: 'Cursor', 'gemini-cli': 'Gemini CLI', opencode: 'OpenCode', copilot: 'Copilot CLI',
+  'claude-code': 'Claude Code', codex: 'Codex', cursor: 'Cursor', 'gemini-cli': 'Gemini CLI', opencode: 'OpenCode', copilot: 'Copilot CLI', antigravity: 'Antigravity',
 };
 // Transparent marks; `invert` turns a black mark white on the dark notch.
-const LOGOS: Record<Kind, { src: string; invert: boolean }> = {
-  'claude-code': { src: claudeCode, invert: false },
-  codex: { src: openai, invert: true },
-  cursor: { src: cursorMark, invert: false },
-  'gemini-cli': { src: gemini, invert: false },
-  opencode: { src: opencode, invert: true },
-  copilot: { src: github, invert: true },
-};
 const COLORS: Record<Kind, string> = {
-  'claude-code': '#d97757', codex: '#10a37f', cursor: '#9a9aa6', 'gemini-cli': '#8e75b2', opencode: '#f5a524', copilot: '#8b5cf6',
+  'claude-code': '#d97757', codex: '#10a37f', cursor: '#9a9aa6', 'gemini-cli': '#8e75b2', opencode: '#f5a524', copilot: '#8b5cf6', antigravity: '#4f8cff',
 };
 
 const esc = (v: string) => v.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
-const logo = (kind: Kind, size = 16) =>
-  `<img class="tool-logo${LOGOS[kind].invert ? ' invert' : ''}" src="${LOGOS[kind].src}" width="${size}" height="${size}" alt="${NAMES[kind]}" draggable="false">`;
+const logo = (kind: Kind, size = 16) => `<span class="tool-logo">${aiMark(kind, size)}</span>`;
 
 function tokens(n: number): string {
   if (n < 1000) return String(Math.round(n));

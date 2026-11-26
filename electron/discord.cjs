@@ -45,7 +45,21 @@ function readSecret(key) {
   if (!raw.startsWith('enc:')) return '';
   try { return safeStorage.decryptString(Buffer.from(raw.slice(4), 'base64')); } catch { return ''; }
 }
-const clientId = () => String(get('discordClientId', '')).trim();
+// Overlay's own Discord application, built into the app: people only click
+// Connect and approve in Discord. The details come from electron/discord-app.json
+// (kept out of git) or OVERLAY_DISCORD_ID and OVERLAY_DISCORD_SECRET.
+const APP = (() => {
+  let file = {};
+  try { file = JSON.parse(require('fs').readFileSync(require('path').join(__dirname, 'discord-app.json'), 'utf8')); } catch {}
+  return {
+    id: String(process.env.OVERLAY_DISCORD_ID || file.clientId || '').trim(),
+    secret: String(process.env.OVERLAY_DISCORD_SECRET || file.clientSecret || '').trim(),
+  };
+})();
+const clientId = () => APP.id;
+const available = () => /^\d{15,22}$/.test(APP.id) && !!APP.secret;
+// Connect is a choice: nothing talks to Discord until the person asks.
+const wanted = () => get('discordConnect', '') === '1';
 
 // ── State out to every window ────────────────────────────────────────────────
 function publish(patch) {
@@ -145,8 +159,8 @@ const byName = (a, b) => a.name.localeCompare(b.name);
 
 // ── Sign in: refresh token first, the approval prompt only when needed ──────
 async function token(params) {
-  const secret = readSecret('discordSecret');
-  if (!secret) throw new Error('Add your Client Secret.');
+  const secret = APP.secret;
+  if (!secret) throw new Error('Discord is not available in this build.');
   const body = new URLSearchParams({ client_id: clientId(), client_secret: secret, redirect_uri: REDIRECT, ...params });
   const res = await fetch('https://discord.com/api/oauth2/token', {
     method: 'POST',
@@ -217,7 +231,7 @@ function fail(message) {
   close();
   // A wrong Client ID will never work on retry: back to setup with a clear line.
   if (/client.?id/i.test(message)) {
-    publish({ ...blank(), status: 'setup', error: 'Discord does not know that Client ID. Copy it again from the Developer Portal.' });
+    publish({ ...blank(), status: 'unavailable', error: 'Discord did not accept this build of Overlay.' });
     return;
   }
   publish({ status: 'error', error: message, channel: null, members: [] });
@@ -234,7 +248,7 @@ function close() {
 
 function schedule() {
   clearTimeout(retry);
-  if (!stopped && clientId()) retry = setTimeout(connect, RETRY_MS);
+  if (!stopped && available() && wanted()) retry = setTimeout(connect, RETRY_MS);
 }
 
 function tryPipe(n) {
@@ -248,8 +262,8 @@ function tryPipe(n) {
 async function connect() {
   clearTimeout(retry);
   close();
-  if (!clientId()) { publish({ ...blank(), status: 'setup' }); return; }
-  if (!readSecret('discordSecret')) { publish({ ...blank(), status: 'setup', error: 'Add your Client Secret.' }); return; }
+  if (!available()) { publish({ ...blank(), status: 'unavailable' }); return; }
+  if (!wanted()) { publish({ ...blank(), status: 'setup' }); return; }
   publish({ status: 'connecting', error: '' });
   for (let n = 0; n < 10; n++) {
     const s = await tryPipe(n);
@@ -267,29 +281,24 @@ async function connect() {
 
 function init() {
   ipcMain.handle('discord:state', () => state);
-  ipcMain.handle('discord:setup', (_e, p) => {
-    const id = String(p && p.clientId || '').trim();
-    const secret = String(p && p.secret || '').trim();
-    if (!/^\d{15,22}$/.test(id)) return { ok: false, error: 'The Client ID is a long number from the Developer Portal.' };
-    if (id !== clientId()) putSecret('discordRefresh', '');
-    set('discordClientId', id);
-    if (secret) putSecret('discordSecret', secret);
+  // One click: remember the choice and connect; Discord shows its own approval.
+  ipcMain.handle('discord:connect', () => {
+    if (!available()) return { ok: false, error: 'Discord is not available in this build.' };
+    set('discordConnect', '1');
     void connect();
     return { ok: true };
   });
   ipcMain.handle('discord:forget', () => {
-    set('discordClientId', '');
-    putSecret('discordSecret', '');
+    set('discordConnect', '');
     putSecret('discordRefresh', '');
     close();
-    publish(blank());
+    publish(available() ? blank() : { ...blank(), status: 'unavailable' });
     return true;
   });
   ipcMain.handle('discord:retry', () => { void connect(); return true; });
   ipcMain.handle('discord:mute', () => request('SET_VOICE_SETTINGS', { mute: !state.self.mute }).then((d) => { publish({ self: { mute: !!d.mute, deaf: !!d.deaf } }); return true; }).catch(() => false));
   ipcMain.handle('discord:deaf', () => request('SET_VOICE_SETTINGS', { deaf: !state.self.deaf }).then((d) => { publish({ self: { mute: !!d.mute, deaf: !!d.deaf } }); return true; }).catch(() => false));
   ipcMain.handle('discord:leave', () => request('SELECT_VOICE_CHANNEL', { channel_id: null, force: true }).then(() => { publish({ channel: null, members: [] }); return true; }).catch(() => false));
-  ipcMain.handle('discord:portal', () => shell.openExternal('https://discord.com/developers/applications'));
   void connect();
 }
 

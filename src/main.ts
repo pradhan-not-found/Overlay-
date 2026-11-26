@@ -1371,7 +1371,7 @@ let pDown = false, dragging = false, origin = { x: 0, y: 0 }, start = { x: 0, y:
 pill.addEventListener('pointerdown', e => {
   const t = e.target as HTMLElement;
   if (e.button !== 0) return;
-  if (t.closest('button') || ['INPUT', 'SELECT', 'TEXTAREA'].includes(t.tagName) || t.closest('.cam-popup')) return;
+  if (t.closest('button') || t.closest('.ctx-slot') || ['INPUT', 'SELECT', 'TEXTAREA'].includes(t.tagName) || t.closest('.cam-popup')) return;
   if (t.closest('#cal-card-btn') || t.closest('#view-cal') || t.closest('.vol-wrap') || t.closest('#view-count') || t.closest('.np-track')) return;
   pDown = true;
   dragging = false;
@@ -1405,7 +1405,7 @@ pill.addEventListener('pointerup', e => {
     return; // a drag never toggles the notch
   }
   const t = e.target as HTMLElement;
-  if (t.closest('button') || t.tagName === 'INPUT') return;
+  if (t.closest('button') || t.closest('.ctx-slot') || t.tagName === 'INPUT') return;
   if (t.closest('.cal-card') || t.closest('#view-cal') || t.closest('#view-count') || t.closest('.dock')) return;
   if (appPhase === 'count') return;
   if (appPhase === 'expanded' && (t.closest('.space-stage') || t.closest('.exp-head'))) return;

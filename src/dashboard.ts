@@ -3,6 +3,8 @@ import './dashboard.css';
 import { DASH_ICONS, mountDashExtras } from './dashboard-extra';
 import { SET_ICONS, SETTINGS_PAGES, mountSettings, paintSettings, profileHtml } from './dashboard-settings';
 import overlayMark from './assets/overlay-mark.png';
+import { countMark } from './count/mark';
+import { openShare } from './dashboard-share';
 
 // ─── IPC ────────────────────────────────────────────────────────────────────
 let ipc: any = null;
@@ -110,6 +112,8 @@ async function boot() {
   render();
   startTick();
   bindIPC();
+  // Browser preview only: #share opens the report straight away.
+  if (!ipc && location.hash.includes('share')) void openShare({ [todayKey()]: { totalSecs: 9420 } }, 4);
 }
 
 function computeStats() {
@@ -148,7 +152,7 @@ function render() {
           <div class="nav-group">Track</div>
           ${navItem('stats',     SET_ICONS.overview,  'Overview')}
           ${navItem('calendar',  icons.calendar,      'Calendar')}
-          ${navItem('ai',        DASH_ICONS.ai,       'AI Usage')}
+          ${navItem('ai',        countMark(18),       'AI Usage')}
           ${navItem('todos',     DASH_ICONS.todos,    'To-Dos')}
           ${navItem('notes',     DASH_ICONS.notes,    'Note')}
           <div class="nav-group">Settings</div>
@@ -160,10 +164,6 @@ function render() {
           ${navItem('about',     SET_ICONS.about,     'About')}
         </div>
         <div class="nav-footer">
-          <div class="nav-chips">
-            <div class="nav-stat-chip" title="Focus level"><span class="nav-chip-label">Level</span><span class="nav-chip-val">${level}</span></div>
-            <div class="nav-stat-chip" title="${streak} day streak" style="color:${streakColor(streak)};">${icons.flame}<span class="nav-chip-val">${streak}d</span></div>
-          </div>
           ${profileHtml()}
         </div>
       </nav>
@@ -269,7 +269,7 @@ function renderStats() {
   return `<div class="panel-inner">
     <div class="panel-hdr" style="flex-direction:row;align-items:center;justify-content:space-between;">
       <div><div class="panel-label">OVERVIEW</div><div class="panel-sub">Your focus, from Lock In in the notch</div></div>
-      <button class="ctrl-btn secondary" id="btn-share" style="width:auto;padding:8px 14px;">${icons.share}<span>Share</span></button>
+      <button class="ctrl-btn secondary" id="btn-share" style="width:auto;padding:8px 14px;">${icons.share}<span>Share report</span></button>
     </div>
     <div class="stats-grid">
       <div class="stat-card"><div class="stat-lbl">Today</div><div class="stat-val">${fmtHMS(todaySecs)}</div></div>
@@ -381,7 +381,7 @@ function bindEvents() {
   bindSwEvents();
 
   // Stats
-  document.getElementById('btn-share')?.addEventListener('click', () => document.getElementById('share-card')?.classList.remove('hidden'));
+  document.getElementById('btn-share')?.addEventListener('click', () => void openShare(stats, streak));
   document.getElementById('btn-share-close')?.addEventListener('click', () => document.getElementById('share-card')?.classList.add('hidden'));
 
   // Calendar
