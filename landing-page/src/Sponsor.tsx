@@ -45,6 +45,7 @@ const KEY = 'overlay-sponsor';
 type RzpInstance = { open: () => void; on: (e: string, fn: (d: { error?: { description?: string } }) => void) => void };
 declare global { interface Window { Razorpay?: new (o: Record<string, unknown>) => RzpInstance } }
 let rzp: Promise<boolean> | null = null;
+const unlockScroll = () => { for (const el of [document.body, document.documentElement]) { el.style.overflow = ''; el.style.position = ''; el.style.top = ''; el.style.height = ''; } };
 const loadRazorpay = () => (rzp ||= new Promise<boolean>((resolve) => {
   const s = document.createElement('script');
   s.src = 'https://checkout.razorpay.com/v1/checkout.js';
@@ -93,15 +94,24 @@ export function SponsorPage({ onHome }: { onHome: () => void }) {
       if (!ok || !window.Razorpay) throw new Error("The payment window couldn't load. Check your connection.");
       const pay = new window.Razorpay({
         key: order.keyId, order_id: order.orderId, amount: order.amount, currency: order.currency,
+        // Overlay's own name, logo and colour at the top of the payment window
         name: 'Overlay', description: `Sponsor · ${d.product}`, image: `${location.origin}/logo.png`,
-        prefill: { name: d.name, email: d.email, contact: d.phone }, theme: { color: '#0027c4' },
+        // reuse what the sponsor already typed, so the window asks only for the card
+        prefill: { name: d.name, email: d.email, ...(d.phone.trim() ? { contact: d.phone.replace(/\s/g, '') } : {}) },
+        readonly: { email: true, ...(d.phone.trim() ? { contact: true } : {}) },
+        hidden: { email: true, ...(d.phone.trim() ? { contact: true } : {}) },
+        remember_customer: false,
+        notes: { product: d.product },
+        theme: { color: '#0027c4', backdrop_color: 'rgba(244, 245, 248, 0.92)' },
+        config: { display: { blocks: { card: { name: 'Pay by card', instruments: [{ method: 'card' }] } }, sequence: ['block.card'], preferences: { show_default_blocks: false } } },
         handler: async (res: Record<string, string>) => {
+          unlockScroll();
           const v = await fetch('/api/razorpay/verify', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(res) });
           if (v.ok) done(); else setError('We could not confirm the payment. If you were charged, it will be confirmed by email shortly.');
         },
-        modal: { ondismiss: () => setBusy(false) },
+        modal: { ondismiss: () => { unlockScroll(); setBusy(false); } },
       });
-      pay.on('payment.failed', (x) => { setError(x.error?.description || 'The payment did not go through.'); setBusy(false); });
+      pay.on('payment.failed', (x) => { unlockScroll(); setError(x.error?.description || 'The payment did not go through.'); setBusy(false); });
       pay.open();
     } catch (e) { setError(e instanceof Error ? e.message : 'Something went wrong.'); setBusy(false); }
   };
