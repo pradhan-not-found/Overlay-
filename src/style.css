@@ -874,10 +874,12 @@ kbd { font: 600 10px var(--font); color: var(--muted); padding: 2px 6px; border-
   -webkit-mask-image: linear-gradient(180deg, transparent 0, #000 10px, #000 calc(100% - 22px), transparent 100%);
   mask-image: linear-gradient(180deg, transparent 0, #000 10px, #000 calc(100% - 22px), transparent 100%);
 }
-.dock {
-  -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 14px, #000 calc(100% - 26px), transparent 100%);
-  mask-image: linear-gradient(90deg, transparent 0, #000 14px, #000 calc(100% - 26px), transparent 100%);
+.dock { --fl: 0px; --fr: 0px;
+  -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 var(--fl), #000 calc(100% - var(--fr)), transparent 100%);
+  mask-image: linear-gradient(90deg, transparent 0, #000 var(--fl), #000 calc(100% - var(--fr)), transparent 100%);
 }
+.dock.more-left { --fl: 18px; }
+.dock.more-right { --fr: 30px; }
 
 /* Tighter tool rows. */
 .kit { gap: 6px; }

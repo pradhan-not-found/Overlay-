@@ -758,6 +758,19 @@ const links = mountLinks({ invoke, send, on: (ch, fn) => ipc?.on(ch, fn) });
 const studio = mountStudio({ invoke, send });
 const desk = mountDesk({ invoke, send });
 const kit = mountKit({ invoke, send });
+// The dock fades only on a side that still has more to scroll to.
+{
+  const dock = document.getElementById('space-dots');
+  const edges = () => {
+    if (!dock) return;
+    dock.classList.toggle('more-left', dock.scrollLeft > 2);
+    dock.classList.toggle('more-right', dock.scrollLeft + dock.clientWidth < dock.scrollWidth - 2);
+  };
+  dock?.addEventListener('scroll', edges, { passive: true });
+  window.addEventListener('resize', edges);
+  new ResizeObserver(edges).observe(dock || document.body);
+  setTimeout(edges, 300);
+}
 setInterval(() => more.tick(), 15_000);
 
 document.querySelectorAll<HTMLElement>('[data-go]').forEach((card) => {
