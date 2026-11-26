@@ -46,7 +46,12 @@ try {
   console.warn('[Updater] electron-updater not available:', e.message);
 }
 
+// The last update state, so a window opened later still knows it.
+let lastUpdate = { event: 'idle' };
+let lastChecked = 0;
 function sendUpdateStatus(event, data) {
+  lastUpdate = { event, ...data, at: Date.now() };
+  if (event === 'not-available' || event === 'available' || event === 'error') lastChecked = Date.now();
   [mainWindow, settingsWindow, dashWindow].forEach(win => {
     if (win && !win.isDestroyed()) {
       win.webContents.send('update-status', { event, ...data });
@@ -343,6 +348,7 @@ function openSettings(tab) {
 ipcMain.handle('login-item:get', () => app.getLoginItemSettings().openAtLogin);
 ipcMain.handle('login-item:set', (_e, on) => {
   app.setLoginItemSettings({ openAtLogin: !!on });
+  try { db.setSetting('startupChosen', on ? 'on' : 'off'); } catch {}
   return app.getLoginItemSettings().openAtLogin;
 });
 
@@ -755,9 +761,20 @@ if (!gotTheLock) {
     // ── Auto-update: wire up events then check after 10 s (let app load first) ──
     initAutoUpdater();
     if (app.isPackaged && autoUpdater) {
-      setTimeout(() => {
-        autoUpdater.checkForUpdates().catch(e => console.warn('[Updater] check failed:', e.message));
-      }, 10_000);
+      const check = () => autoUpdater.checkForUpdates().catch(e => { console.warn('[Updater] check failed:', e.message); sendUpdateStatus('error', { message: e.message }); });
+      setTimeout(check, 10_000);
+      // Look again every four hours while Overlay runs.
+      setInterval(() => { if (lastUpdate.event !== 'downloading' && lastUpdate.event !== 'downloaded') check(); }, 4 * 60 * 60 * 1000);
+    }
+
+    // Start with Windows by default after installing; the Dashboard switch turns it off for good.
+    if (app.isPackaged) {
+      try {
+        if (!db.getSetting('startupChosen', '')) {
+          app.setLoginItemSettings({ openAtLogin: true });
+          db.setSetting('startupChosen', 'default');
+        }
+      } catch {}
     }
 
     app.on('activate', () => {
@@ -787,10 +804,12 @@ ipcMain.on('check-for-updates', () => {
       sendUpdateStatus('error', { message: e.message });
     });
   } else {
-    // In dev, simulate the response
-    sendUpdateStatus('not-available', { version: app.getVersion() });
+    // Running from source: updates apply only to the installed app.
+    sendUpdateStatus('not-available', { version: app.getVersion(), dev: true });
   }
 });
+
+ipcMain.handle('update:state', () => ({ ...lastUpdate, current: app.getVersion(), lastChecked, packaged: app.isPackaged }));
 
 ipcMain.on('install-update', () => {
   if (autoUpdater) autoUpdater.quitAndInstall(false, true);

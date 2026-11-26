@@ -175,3 +175,16 @@ label.ds-btn { display: inline-flex; align-items: center; }
 .ds-share-card img { display: block; height: min(72vh, 640px); width: auto; border-radius: 18px; box-shadow: 0 40px 80px -30px rgba(0, 0, 0, 0.9), 0 0 0 1px rgba(255, 255, 255, 0.08); }
 .ds-share-actions { display: flex; align-items: center; gap: 8px; }
 .ds-share-note { flex: 1; font-size: 12.5px; color: var(--muted); }
+
+/* ── Updates ──────────────────────────────────────────────────────────── */
+.ds-upd { display: flex; align-items: center; gap: 14px; padding: 14px 0 10px; }
+.ds-upd .ds-row-text { flex: 1; }
+.ds-upd-dot { width: 10px; height: 10px; border-radius: 50%; background: rgba(255, 255, 255, 0.25); flex-shrink: 0; }
+.ds-upd-dot.ok { background: var(--ok); box-shadow: 0 0 0 4px rgba(50, 210, 122, 0.15); }
+.ds-upd-dot.wait { background: #3d6bff; box-shadow: 0 0 0 4px rgba(61, 107, 255, 0.18); animation: upd-pulse 1.4s ease-in-out infinite; }
+.ds-upd-dot.bad { background: var(--bad); }
+@keyframes upd-pulse { 50% { box-shadow: 0 0 0 7px rgba(61, 107, 255, 0.05); } }
+.ds-upd-bar { height: 6px; border-radius: 3px; background: rgba(255, 255, 255, 0.08); overflow: hidden; margin: 2px 0 10px; }
+.ds-upd-bar i { display: block; height: 100%; border-radius: 3px; background: #3d6bff; transition: width 0.4s ease; }
+.ds-btn:disabled { opacity: 0.5; cursor: default; }
+.nav-item.has-update::after { content: ''; position: absolute; right: 10px; top: 50%; width: 7px; height: 7px; margin-top: -3.5px; border-radius: 50%; background: #3d6bff; box-shadow: 0 0 0 3px rgba(61, 107, 255, 0.2); }

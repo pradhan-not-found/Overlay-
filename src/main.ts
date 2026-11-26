@@ -251,7 +251,7 @@ document.getElementById('app')!.innerHTML = `
       <div class="idle-links">
         <button class="link-chip" id="btn-idle-github" title="GitHub">${marks.github}<span id="gh-idle-count"></span></button>
         <button class="link-chip" id="btn-idle-discord" title="Discord">${marks.discord}<i id="dc-idle-dot"></i></button>
-        <button class="update-chip" id="update-chip" type="button">Update available</button>
+        <button class="update-chip" id="update-chip" type="button" aria-label="Update"><svg class="uc-ring" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10" class="uc-track"/><circle cx="12" cy="12" r="10" class="uc-prog" pathLength="100"/><path d="M12 7.5v8M8.5 12.5 12 16l3.5-3.5" class="uc-arrow"/></svg></button>
       </div>
       <div class="idle-shortcuts" id="idle-shortcuts"></div>
     </div>
@@ -1112,29 +1112,25 @@ if (ipc) {
     }
   });
 
+  // Update badge in the closed notch: a ring while it downloads, a bright
+  // badge when it is ready. Click a ready update to restart into it.
   const updateChip = document.getElementById('update-chip') as HTMLButtonElement | null;
-  ipc.on('update-status', (_: any, status: any) => {
+  const paintUpdate = (status: any) => {
     if (!updateChip || !status) return;
-    const event = status.event;
-    if (event === 'available') {
-      updateChip.classList.add('show');
-      updateChip.dataset.action = 'wait';
-      updateChip.textContent = status.version ? `Update ${status.version}` : 'Update available';
-    } else if (event === 'downloading') {
-      updateChip.classList.add('show');
-      updateChip.dataset.action = 'wait';
-      updateChip.textContent = `Updating ${status.percent ?? 0}%`;
-    } else if (event === 'downloaded') {
-      updateChip.classList.add('show');
-      updateChip.dataset.action = 'install';
-      updateChip.textContent = 'Restart to update';
-    } else if (event === 'not-available' || event === 'error') {
-      updateChip.classList.remove('show');
-    }
-  });
+    const ev = status.event;
+    const show = ev === 'available' || ev === 'downloading' || ev === 'downloaded';
+    updateChip.classList.toggle('show', show);
+    updateChip.classList.toggle('ready', ev === 'downloaded');
+    updateChip.style.setProperty('--p', String(ev === 'downloaded' ? 100 : ev === 'downloading' ? status.percent ?? 0 : 6));
+    updateChip.dataset.action = ev === 'downloaded' ? 'install' : 'open';
+    updateChip.title = ev === 'downloaded' ? `Overlay ${status.version || ''} is ready. Click to restart and update.` : ev === 'downloading' ? `Downloading the update · ${status.percent ?? 0}%` : `Overlay ${status.version || ''} is available`;
+  };
+  ipc.on('update-status', (_: any, status: any) => paintUpdate(status));
+  void invoke('update:state').then(paintUpdate);
   updateChip?.addEventListener('click', (e) => {
     e.stopPropagation();
     if (updateChip.dataset.action === 'install') send('install-update');
+    else send('open-dashboard', { nav: 'about' });
   });
 
   ipc.on('media-info', (_: any, info: { title: string; artist: string; isPlaying: boolean; albumArt?: string; sourceApp?: string }) => {

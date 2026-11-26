@@ -1178,3 +1178,15 @@ kbd { font: 600 10px var(--font); color: var(--muted); padding: 2px 6px; border-
 .space.active.enter-left { animation: in-left 0.32s cubic-bezier(0.2, 0.8, 0.2, 1); }
 @keyframes in-right { from { opacity: 0; transform: translateX(10px); } to { opacity: 1; transform: none; } }
 @keyframes in-left { from { opacity: 0; transform: translateX(-10px); } to { opacity: 1; transform: none; } }
+
+/* ── Update badge in the closed notch ─────────────────────────────────── */
+.update-chip { width: 26px; height: 26px; padding: 0; border-radius: 50%; background: transparent; justify-content: center; }
+.update-chip.show { display: inline-flex; animation: msg-in 0.4s ease both; }
+.uc-ring { width: 20px; height: 20px; transform: rotate(-90deg); overflow: visible; }
+.uc-track { fill: none; stroke: rgba(255, 255, 255, 0.16); stroke-width: 2; }
+.uc-prog { fill: none; stroke: var(--accent); stroke-width: 2; stroke-linecap: round; stroke-dasharray: 100; stroke-dashoffset: calc(100 - var(--p, 0)); transition: stroke-dashoffset 0.5s ease; }
+.uc-arrow { fill: none; stroke: var(--ink); stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; transform: rotate(90deg); transform-origin: 12px 12px; }
+.update-chip.ready .uc-ring { filter: drop-shadow(0 0 5px color-mix(in srgb, var(--accent) 70%, transparent)); animation: uc-breathe 2s ease-in-out infinite; }
+.update-chip.ready .uc-track { stroke: var(--accent); }
+@keyframes uc-breathe { 50% { transform: rotate(-90deg) scale(1.1); } }
+.update-chip:hover { background: rgba(255, 255, 255, 0.08); }

@@ -166,12 +166,17 @@ document.addEventListener('click', async (e) => {
 });
 
 // ── Pages ───────────────────────────────────────────────────────────────────
+function paintUpdateBadge() {
+  const item = document.querySelector('.nav-item[data-nav="about"]');
+  if (!item) return;
+  item.classList.toggle('has-update', upd.event === 'downloaded' || upd.event === 'available' || upd.event === 'downloading');
+}
 export const SETTINGS_PAGES = ['connections', 'general', 'notch', 'media', 'shortcuts', 'about', 'account'];
 
 async function paintGeneral(el: HTMLElement) {
   const login = !!(await invoke('login-item:get'));
   el.innerHTML = `<div class="ds-page">${head('General', 'How Overlay starts and how long a focus session runs.')}
-    ${card('Startup', row('Open at sign-in', 'Start Overlay when you sign in to Windows.', sw(login, 'data-login')))}
+    ${card('Startup', row('Launch at startup', 'Open Overlay every time you sign in to Windows. Turn it off and it stays off.', sw(login, 'data-login')))}
     ${card('Focus', row('Session length', 'Used by Lock In in the notch.', `<select class="ds-select" data-cfg-num="pomodoroDuration">${[15, 25, 45, 50, 60, 90].map((m) => `<option value="${m}"${(config.pomodoroDuration || 25) === m ? ' selected' : ''}>${m} min</option>`).join('')}</select>`))}
   </div>`;
 }
@@ -218,10 +223,32 @@ function paintShortcuts(el: HTMLElement) {
   </div>`;
 }
 
+// ── Updates ─────────────────────────────────────────────────────────────────
+let upd: any = { event: 'idle' };
+function updateBody() {
+  const ago = (t: number) => { if (!t) return ''; const m = Math.round((Date.now() - t) / 60000); return m < 1 ? 'just now' : m < 60 ? `${m} min ago` : `${Math.round(m / 60)} h ago`; };
+  const e = upd.event;
+  const status: [string, string, string] =
+    e === 'checking' ? ['Checking for updates…', '', 'wait']
+    : e === 'available' ? [`Overlay ${esc(upd.version)} is available`, 'Downloading in the background.', 'wait']
+    : e === 'downloading' ? [`Downloading ${esc(upd.version || 'the update')}`, `${upd.percent ?? 0}% · ${upd.total ? `${(upd.transferred / 1048576).toFixed(1)} of ${(upd.total / 1048576).toFixed(1)} MB` : ''}`, 'wait']
+    : e === 'downloaded' ? [`Overlay ${esc(upd.version)} is ready`, 'Restart to finish. It also installs the next time Overlay quits.', 'ok']
+    : e === 'error' ? ['Could not check for updates', 'Check your connection and try again.', 'bad']
+    : upd.dev ? ['Running from source', 'Updates install in the downloaded app, not in a development copy.', '']
+    : ['You are up to date', upd.lastChecked ? `Checked ${ago(upd.lastChecked)}` : 'Overlay checks by itself every few hours.', 'ok'];
+  const bar = e === 'downloading' ? `<div class="ds-upd-bar"><i style="width:${upd.percent ?? 0}%"></i></div>` : '';
+  const action = e === 'downloaded'
+    ? `<button type="button" class="ds-btn primary" data-install>Restart and update</button>`
+    : `<button type="button" class="ds-btn" data-update ${e === 'checking' || e === 'downloading' || e === 'available' ? 'disabled' : ''}>Check for updates</button>`;
+  return `<div class="ds-upd"><span class="ds-upd-dot ${status[2]}"></span><div class="ds-row-text"><b>${status[0]}</b><span>${status[1]}</span></div>${action}</div>${bar}`;
+}
 async function paintAbout(el: HTMLElement) {
   const version = (await invoke('get-app-version')) || '';
+  const st = await invoke('update:state');
+  if (st) upd = { ...upd, ...st };
   el.innerHTML = `<div class="ds-page">${head('About', 'Overlay for Windows.')}
-    ${card('', `<div class="ds-about"><img src="${overlayMark}" alt=""/><div><b>Overlay</b><span>Version ${esc(version)}</span></div><button type="button" class="ds-btn" data-update>Check for updates</button></div><p class="ds-note" data-update-note></p>`)}
+    ${card('', `<div class="ds-about"><img src="${overlayMark}" alt=""/><div><b>Overlay</b><span>Version ${esc(version)}</span></div></div>`)}
+    ${card('Updates', `<div data-upd>${updateBody()}</div>`, 'New versions download in the background and never interrupt you.')}
   </div>`;
 }
 
@@ -299,10 +326,12 @@ export async function mountSettings() {
   repaintActiveSoon = () => repaintActive();
   ipc?.on('discord:state', (_e: unknown, s: any) => { dc = s; if ($('#panel-connections.active')) void paintSettings('connections'); });
   ipc?.on('update-status', (_e: unknown, s: any) => {
-    const note = $('[data-update-note]');
-    if (!note) return;
-    note.textContent = s.event === 'checking' ? 'Checking…' : s.event === 'not-available' ? 'You have the latest version.' : s.event === 'available' ? `Version ${s.version} is downloading.` : s.event === 'downloaded' ? 'The update is ready. It installs when Overlay restarts.' : s.event === 'error' ? 'Could not check for updates.' : '';
+    upd = { ...upd, ...s, lastChecked: s.event === 'not-available' || s.event === 'available' ? Date.now() : upd.lastChecked };
+    const box = $('[data-upd]');
+    if (box) box.innerHTML = updateBody();
+    paintUpdateBadge();
   });
+  void invoke('update:state').then((st: any) => { if (st) { upd = { ...upd, ...st }; paintUpdateBadge(); } });
 
   document.addEventListener('click', async (e) => {
     const t = e.target as HTMLElement;
@@ -313,7 +342,8 @@ export async function mountSettings() {
     if (t.closest('.ds-switch[data-login]')) { await invoke('login-item:set', !t.closest('.ds-switch')!.classList.contains('on')); repaintActive(); return; }
     const del = t.closest<HTMLElement>('[data-sc-del]');
     if (del) { const list = [...(config.shortcuts || [])]; list.splice(Number(del.dataset.scDel), 1); config.shortcuts = list; send('save-shortcuts', list); saveConfig(); repaintActive(); return; }
-    if (t.closest('[data-update]')) { const n = $('[data-update-note]'); if (n) n.textContent = 'Checking…'; send('check-for-updates'); return; }
+    if (t.closest('[data-update]')) { upd = { ...upd, event: 'checking' }; const box = $('[data-upd]'); if (box) box.innerHTML = updateBody(); send('check-for-updates'); return; }
+    if (t.closest('[data-install]')) { send('install-update'); return; }
     if (t.closest('[data-dc-connect]')) { void invoke('discord:connect'); return; }
     if (t.closest('[data-dc-retry]')) { void invoke('discord:retry'); return; }
     if (t.closest('[data-dc-forget]')) { dc = await invoke('discord:forget').then(() => invoke('discord:state')); repaintActive(); return; }
