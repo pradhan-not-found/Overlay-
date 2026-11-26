@@ -866,3 +866,29 @@ kbd { font: 600 10px var(--font); color: var(--muted); padding: 2px 6px; border-
 .brk-ring { --p: 0; width: 96px; height: 96px; border-radius: 50%; display: grid; place-items: center; background: conic-gradient(var(--tint) calc(var(--p) * 360deg), rgba(255, 255, 255, 0.08) 0); position: relative; }
 .brk-ring::before { content: ''; position: absolute; inset: 7px; border-radius: 50%; background: #000; }
 .brk-ring span { position: relative; font-size: 28px; font-weight: 600; font-variant-numeric: tabular-nums; letter-spacing: -0.03em; }
+
+/* Slim, dark scrollbars everywhere in the notch: never the white default. */
+.pill * { scrollbar-width: thin; scrollbar-color: rgba(255, 255, 255, 0.16) transparent; }
+.pill *::-webkit-scrollbar { width: 6px; height: 6px; background: transparent; }
+.pill *::-webkit-scrollbar-track { background: transparent; }
+.pill *::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.14); border-radius: 3px; }
+.pill *::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.26); }
+.pill *::-webkit-scrollbar-button { display: none; height: 0; width: 0; }
+.dock::-webkit-scrollbar { height: 0; display: none; }
+
+/* Tighter tool rows. */
+.kit { gap: 6px; }
+.kit-head { height: 26px; }
+.kit-head b { color: var(--ink); font-weight: 600; }
+.kit-icon-btn { width: 26px; height: 26px; border: none; background: rgba(255, 255, 255, 0.06); }
+.kit-row { padding: 5px 8px; gap: 10px; }
+.kit-row + .kit-row { border-top: 1px solid rgba(255, 255, 255, 0.04); }
+.kit-row:hover + .kit-row, .kit-row:hover { border-color: transparent; }
+.kit-ico { width: 26px; height: 26px; border-radius: 8px; }
+.kit-ico svg { width: 14px; height: 14px; }
+.kit-main b { font-size: 12.5px; }
+.kit-main small { font-size: 11px; display: flex; align-items: center; gap: 5px; }
+.kit-port { min-width: 52px; height: 22px; padding: 0 7px; border-radius: 6px; background: rgba(255, 255, 255, 0.06); color: var(--ink); font-size: 11.5px; font-weight: 500; }
+.kit-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--green); flex-shrink: 0; }
+.kit-dot.net { background: #fbbf24; }
+.kit-list { margin-right: -10px; padding-right: 4px; }

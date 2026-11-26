@@ -108,10 +108,10 @@ export function mountKit(opts: { invoke: Invoke; send: Send }) {
     pt.innerHTML = pt.innerHTML || '<div class="kit"><p class="kit-empty">Reading local servers…</p></div>';
     const rows: PortRow[] = (await invoke('kit:ports').catch(() => [])) || [];
     pt.innerHTML = `<div class="kit">
-      <div class="kit-head"><span>${rows.length} listening on this PC</span><button type="button" class="kit-icon-btn" data-pt-refresh title="Refresh">${I.refresh}</button></div>
+      <div class="kit-head"><span><b>${rows.length}</b> listening</span><button type="button" class="kit-icon-btn" data-pt-refresh title="Refresh">${I.refresh}</button></div>
       <div class="kit-list">${rows.map((r) => `<div class="kit-row port" data-port="${r.port}" data-pid="${r.pid}">
           <span class="kit-port">:${r.port}</span>
-          <span class="kit-main"><b>${esc(r.name)}</b><small>PID ${r.pid} · ${r.local ? 'This PC only' : 'Open to the network'}</small></span>
+          <span class="kit-main"><b>${esc(r.name)}</b><small><i class="kit-dot${r.local ? '' : ' net'}"></i>${r.local ? 'Local' : 'Network'} · PID ${r.pid}</small></span>
           <span class="kit-acts">
             <button type="button" data-port-act="open" title="Open in browser">${I.open}</button>
             <button type="button" data-port-act="stop" class="danger" title="Stop">${I.stop}</button>
