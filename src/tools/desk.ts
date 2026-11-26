@@ -76,19 +76,90 @@ export function mountDesk(opts: { invoke: Invoke; send: Send }) {
   };
   paintRec('Ready');
 
-  camera.innerHTML = `<div class="link-panel cam">
-    <video data-cam autoplay playsinline muted></video>
-    <div class="link-actions"><button class="btn btn-p" type="button" data-cam-on>Start camera</button><button class="btn btn-g" type="button" data-flip>Flip</button></div>
-    <p class="link-lead" data-cam-note>The picture stays in this panel. Nothing is saved.</p>
+  // Camera: a mirror to check yourself before a call. It runs only while this
+  // tool is on screen; leaving it, closing the notch or hiding the window stops
+  // every track. Nothing is recorded or sent anywhere.
+  camera.innerHTML = `<div class="cam">
+    <div class="cam-stage">
+      <video data-cam autoplay playsinline muted></video>
+      <div class="cam-msg" data-cam-msg><span>Starting the camera…</span></div>
+    </div>
+    <div class="cam-tools">
+      <span class="cam-live" data-cam-live><i></i>Live · never recorded</span>
+      <select class="cam-pick" data-cam-pick hidden></select>
+      <button class="cam-btn" type="button" data-flip title="Mirror">${CAM_ICON.flip}</button>
+    </div>
   </div>`;
 
   let camStream: MediaStream | null = null;
+  let camWanted = false;
+  let camTicket = 0;
+  let camId = localStorage.getItem('cameraId') || '';
+  let camMirror = localStorage.getItem('cameraMirror') !== '0';
+  const camVideo = camera.querySelector<HTMLVideoElement>('[data-cam]')!;
+  const camMsg = camera.querySelector<HTMLElement>('[data-cam-msg]')!;
+  const camPick = camera.querySelector<HTMLSelectElement>('[data-cam-pick]')!;
+  const camLive = camera.querySelector<HTMLElement>('[data-cam-live]')!;
+  const paintMirror = () => {
+    camVideo.classList.toggle('flip', camMirror);
+    camera.querySelector('[data-flip]')?.classList.toggle('on', camMirror);
+  };
+  paintMirror();
+
+  const camProblem = (text: string, retry = true) => {
+    camMsg.innerHTML = `<span>${esc(text)}</span>${retry ? '<button class="btn btn-g" type="button" data-cam-retry>Try again</button>' : ''}`;
+    camMsg.hidden = false;
+    camLive.classList.remove('on');
+  };
   const stopCam = () => {
+    camWanted = false;
+    camTicket++;
     camStream?.getTracks().forEach((t) => t.stop());
     camStream = null;
-    const video = camera.querySelector<HTMLVideoElement>('[data-cam]');
-    if (video) video.srcObject = null;
+    camVideo.srcObject = null;
+    camLive.classList.remove('on');
   };
+  const startCam = async () => {
+    stopCam();
+    camWanted = true;
+    const ticket = ++camTicket;
+    camMsg.innerHTML = '<span>Starting the camera…</span>';
+    camMsg.hidden = false;
+    if (!navigator.mediaDevices?.getUserMedia) { camProblem('This PC has no camera.', false); return; }
+    try {
+      // `ideal`, so a remembered camera that was unplugged falls back to another one.
+      const s = await navigator.mediaDevices.getUserMedia({ video: camId ? { deviceId: { ideal: camId } } : true, audio: false });
+      if (ticket !== camTicket || !camWanted) { s.getTracks().forEach((t) => t.stop()); return; }
+      camStream = s;
+      camVideo.srcObject = s;
+      camMsg.hidden = true;
+      camLive.classList.add('on');
+      // Names are only readable once access is granted.
+      const cams = (await navigator.mediaDevices.enumerateDevices()).filter((d) => d.kind === 'videoinput');
+      const used = s.getVideoTracks()[0]?.getSettings().deviceId || camId;
+      camPick.innerHTML = cams.map((c, n) => `<option value="${esc(c.deviceId)}"${c.deviceId === used ? ' selected' : ''}>${esc(c.label || `Camera ${n + 1}`)}</option>`).join('');
+      camPick.hidden = cams.length < 2;
+    } catch (err) {
+      if (ticket !== camTicket) return;
+      const name = (err as DOMException)?.name || '';
+      if (name === 'NotAllowedError' || name === 'SecurityError') camProblem('Camera access is off. Allow it in Windows Settings › Privacy › Camera.');
+      else if (name === 'NotFoundError' || name === 'OverconstrainedError') camProblem('No camera was found.');
+      else if (name === 'NotReadableError' || name === 'AbortError') camProblem('Another app is using the camera.');
+      else camProblem('The camera could not start.');
+    }
+  };
+  camPick.addEventListener('change', () => {
+    camId = camPick.value;
+    localStorage.setItem('cameraId', camId);
+    void startCam();
+  });
+  camPick.addEventListener('click', (e) => e.stopPropagation());
+  // A hidden window never keeps the camera on.
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) { if (camStream) { stopCam(); camWanted = true; } }
+    else if (camWanted && !camStream && activeSpace === 'camera') void startCam();
+  });
+  let activeSpace = '';
 
   const loadAsk = () => invoke('desk:ask-ready').then((ready) => paintAsk(Boolean(ready))).catch(() => paintAsk(false));
   const loadTrade = () => {
@@ -230,21 +301,15 @@ export function mountDesk(opts: { invoke: Invoke; send: Send }) {
     paintRec('Recording');
   });
 
-  camera.addEventListener('click', async (e) => {
+  camera.addEventListener('click', (e) => {
     const t = e.target as HTMLElement;
-    const video = camera.querySelector<HTMLVideoElement>('[data-cam]');
-    if (t.closest('[data-flip]') && video) video.classList.toggle('flip');
-    if (!t.closest('[data-cam-on]') || !video) return;
-    if (camStream) { stopCam(); return; }
-    try {
-      camStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
-      video.srcObject = camStream;
-      const note = camera.querySelector('[data-cam-note]');
-      if (note) note.textContent = 'Camera is on. Leaving this panel turns it off.';
-    } catch {
-      const note = camera.querySelector('[data-cam-note]');
-      if (note) note.textContent = 'The camera is not available.';
+    if (t.closest('[data-flip]')) {
+      e.stopPropagation();
+      camMirror = !camMirror;
+      localStorage.setItem('cameraMirror', camMirror ? '1' : '0');
+      paintMirror();
     }
+    if (t.closest('[data-cam-retry]')) { e.stopPropagation(); void startCam(); }
   });
 
   notices.addEventListener('click', (e) => {
@@ -275,7 +340,8 @@ export function mountDesk(opts: { invoke: Invoke; send: Send }) {
 
   return {
     onSpace(name: string) {
-      if (name !== 'camera') stopCam();
+      activeSpace = name;
+      if (name === 'camera') void startCam(); else stopCam();
       if (name === 'ask') loadAsk();
       if (name === 'trading') loadTrade();
       if (name === 'vault') loadVault();
@@ -286,3 +352,7 @@ export function mountDesk(opts: { invoke: Invoke; send: Send }) {
     },
   };
 }
+
+const CAM_ICON = {
+  flip: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3.5v17"/><path d="M8.5 7 3.5 17h5Z"/><path d="M15.5 7l5 10h-5Z"/></svg>',
+};

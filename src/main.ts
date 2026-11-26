@@ -677,6 +677,8 @@ function setPhase(next: Phase) {
   appPhase = next;
   if (prev === 'count' && next !== 'count') send('count-sidebar', false);
   if (next === 'expanded') extra.onSpace(currentSpace); else extra.stop();
+  if (prev === 'expanded' && next !== 'expanded') desk.onSpace('');
+  if (next === 'expanded' && prev !== 'expanded' && currentSpace === 'camera') desk.onSpace('camera');
 
   viewIdle.classList.toggle('active', false);
   viewExp.classList.toggle('active', false);
@@ -742,7 +744,7 @@ document.querySelectorAll<HTMLElement>('.space-dot').forEach((dot) => {
 });
 const extra = mountExtraTools({ invoke, send, on: (ch, fn) => ipc?.on(ch, fn) });
 const more = mountMoreTools({ invoke, send });
-const links = mountLinks({ invoke, send });
+const links = mountLinks({ invoke, send, on: (ch, fn) => ipc?.on(ch, fn) });
 const studio = mountStudio({ invoke, send });
 const desk = mountDesk({ invoke, send });
 setInterval(() => more.tick(), 15_000);

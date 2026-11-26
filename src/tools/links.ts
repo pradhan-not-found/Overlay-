@@ -66,8 +66,8 @@ const COPY: Record<string, string> = {
   offline: 'No connection.',
 };
 
-export function mountLinks(opts: { invoke: Invoke; send: Send }) {
-  const { invoke, send } = opts;
+export function mountLinks(opts: { invoke: Invoke; send: Send; on?: (ch: string, fn: (...a: any[]) => void) => void }) {
+  const { invoke, send, on } = opts;
   const ghEl = document.querySelector<HTMLElement>('[data-space="github"]')!;
   const dcEl = document.querySelector<HTMLElement>('[data-space="discord"]')!;
   const lcEl = document.querySelector<HTMLElement>('[data-space="leetcode"]')!;
@@ -77,10 +77,11 @@ export function mountLinks(opts: { invoke: Invoke; send: Send }) {
 
   let githubUser = 'pradhan-not-found';
   let leetUser = '';
-  let invite = '';
+  let sample: DcState | null = null;
+  let real: DcState | null = null;
+  let dc: DcState = { status: 'setup', user: null, channel: null, members: [], self: { mute: false, deaf: false }, error: '' };
   let ghData: any = null;
   let lcData: any = null;
-  let discordOn = false;
 
   const setting = async (key: string, fallback: string) => {
     try {
@@ -97,7 +98,10 @@ export function mountLinks(opts: { invoke: Invoke; send: Send }) {
     if (lcCount) {
       lcCount.textContent = lcData && !lcData.error && lcData.streak ? String(lcData.streak) : '';
     }
-    if (dcDot) dcDot.classList.toggle('on', discordOn);
+    if (dcDot) {
+      dcDot.classList.toggle('on', dc.status === 'ready' && !!dc.channel);
+      dcDot.classList.toggle('talk', dc.members.some((m) => m.speaking));
+    }
   }
 
   function userForm(kind: string, value: string, placeholder: string) {
@@ -134,25 +138,81 @@ export function mountLinks(opts: { invoke: Invoke; send: Send }) {
     ghEl.innerHTML = `<div class="link-panel">${body}${userForm('github', githubUser, 'GitHub name')}</div>`;
   }
 
+  // Voice call, through Discord's own app on this PC (see electron/discord.cjs).
   function renderDiscord() {
     if (!dcEl) return;
-    const join = INVITE_OK(invite);
-    dcEl.innerHTML = `<div class="link-panel">
-      <div class="link-top">
+    if (sample) dc = sample;
+    const head = (sub: string, chip = '') => `<div class="link-top">
         <span class="link-badge dc">${marks.discord}</span>
-        <div class="link-id"><b>Discord</b><span>${discordOn ? 'Discord is open on this PC' : 'Discord is not running'}</span></div>
-        <span class="chip${discordOn ? ' live' : ''}">${discordOn ? 'Running' : 'Closed'}</span>
+        <div class="link-id"><b>${dc.channel ? esc(dc.channel.name) : 'Discord'}</b><span>${sub}</span></div>
+        ${chip}
+      </div>`;
+
+    if (dc.status === 'setup') {
+      dcEl.innerHTML = `<div class="link-panel">
+        ${head('Your voice call, right in the notch')}
+        <p class="link-lead">Create an app in the Discord Developer Portal, add <b>http://localhost</b> as a redirect under OAuth2, then paste its Client ID and Secret. The secret is encrypted on this PC.</p>
+        <form class="dc-setup" data-dc-setup>
+          <input name="id" placeholder="Client ID" inputmode="numeric" spellcheck="false" autocomplete="off"/>
+          <input name="secret" type="password" placeholder="Client Secret" spellcheck="false" autocomplete="off"/>
+          <button class="btn btn-p" type="submit">Connect</button>
+          <button class="btn btn-g" type="button" data-dc="portal">Open the portal</button>
+        </form>
+        <button class="dc-link" type="button" data-dc="sample">See a sample call</button>
+        ${dc.error ? `<p class="dc-err">${esc(dc.error)}</p>` : ''}
+      </div>`;
+      return;
+    }
+
+    if (dc.status !== 'ready') {
+      const copy: Record<string, string> = {
+        connecting: 'Connecting to Discord…',
+        authorize: 'Approve Overlay in the Discord window',
+        closed: 'Discord is not running',
+        error: dc.error || 'Discord did not answer',
+      };
+      dcEl.innerHTML = `<div class="link-panel">
+        ${head(esc(copy[dc.status] || ''), `<span class="chip">${dc.status === 'authorize' ? 'Waiting' : dc.status === 'connecting' ? 'Connecting' : 'Offline'}</span>`)}
+        <div class="link-actions">
+          ${dc.status === 'closed' ? '<button class="btn btn-p" data-open="discord" type="button">Open Discord</button>' : ''}
+          <button class="btn btn-g" data-dc="retry" type="button">Try again</button>
+          <button class="btn btn-g" data-dc="forget" type="button">Change app</button>
+        </div>
+      </div>`;
+      return;
+    }
+
+    if (!dc.channel) {
+      dcEl.innerHTML = `<div class="link-panel">
+        ${head(`Signed in as ${esc(dc.user?.name || 'you')}`, '<span class="chip live">Connected</span>')}
+        <div class="dc-empty">
+          <span class="dc-empty-ico">${marks.discord}</span>
+          <b>Not in a call</b>
+          <span>Join a voice channel and it shows up here, with who is talking.</span>
+          <button class="dc-link" type="button" data-dc="sample">See a sample call</button>
+        </div>
+      </div>`;
+      return;
+    }
+
+    const initials = (n: string) => esc(n.trim().slice(0, 1).toUpperCase() || '?');
+    const people = dc.members.map((m) => `<div class="dc-person${m.speaking ? ' speaking' : ''}" title="${esc(m.name)}">
+        <span class="dc-av">${m.avatar ? `<img src="${esc(m.avatar)}" alt="" onerror="this.remove()"/>` : ''}<i>${initials(m.name)}</i>
+          ${m.deaf ? `<em class="dc-flag">${ICON.deaf}</em>` : m.mute ? `<em class="dc-flag">${ICON.micOff}</em>` : ''}
+        </span>
+        <small>${esc(m.name)}</small>
+      </div>`).join('');
+    const talking = dc.members.filter((m) => m.speaking).map((m) => m.name);
+    dcEl.innerHTML = `<div class="link-panel">
+      ${sample ? '<span class="dc-sample">Sample call · nothing here is real</span>' : ''}
+      ${head(esc(dc.channel.guild ? `${dc.channel.guild} · ${dc.members.length} in call` : `${dc.members.length} in call`), `<span class="dc-eq${talking.length ? ' on' : ''}"><i></i><i></i><i></i><i></i></span>`)}
+      <div class="dc-people">${people}</div>
+      <div class="dc-bar">
+        <span class="dc-talk">${talking.length ? `${esc(talking.slice(0, 2).join(', '))}${talking.length > 2 ? ` +${talking.length - 2}` : ''} talking` : 'Quiet'}</span>
+        <button class="dc-btn${dc.self.mute ? ' on' : ''}" data-dc="mute" type="button" title="${dc.self.mute ? 'Unmute' : 'Mute'}">${dc.self.mute ? ICON.micOff : ICON.mic}</button>
+        <button class="dc-btn${dc.self.deaf ? ' on' : ''}" data-dc="deaf" type="button" title="${dc.self.deaf ? 'Undeafen' : 'Deafen'}">${dc.self.deaf ? ICON.deaf : ICON.head}</button>
+        <button class="dc-btn leave" data-dc="leave" type="button" title="Leave call">${ICON.hang}</button>
       </div>
-      <p class="link-lead">Mute, calls and servers stay in Discord. Overlay only opens it.</p>
-      <div class="link-actions">
-        <button class="btn btn-p" data-open="discord" type="button">Open Discord</button>
-        <button class="btn btn-g" data-open="discord-web" type="button">Open on the web</button>
-        ${join ? `<button class="btn btn-g" data-open="discord-invite" type="button">Join server</button>` : ''}
-      </div>
-      <form class="link-user" data-form="discord">
-        <input data-name value="${esc(invite)}" placeholder="https://discord.gg/your-server" spellcheck="false" autocomplete="off"/>
-        <button class="btn btn-g" type="submit">Save</button>
-      </form>
     </div>`;
   }
 
@@ -203,8 +263,8 @@ export function mountLinks(opts: { invoke: Invoke; send: Send }) {
   }
 
   async function loadDiscord() {
-    const res = await invoke('links:discord');
-    discordOn = !!(res && res.running);
+    const res = await invoke('discord:state').catch(() => null);
+    if (res) { real = res; if (!sample) dc = res; }
     renderDiscord();
     paintIdle();
   }
@@ -218,7 +278,6 @@ export function mountLinks(opts: { invoke: Invoke; send: Send }) {
       const value = (form.querySelector('input')?.value || '').trim();
       if (kind === 'github') { githubUser = value; send('set-setting', 'githubUser', value); void loadGithub(); }
       if (kind === 'leetcode') { leetUser = value; send('set-setting', 'leetcodeUser', value); void loadLeet(); }
-      if (kind === 'discord') { invite = value; send('set-setting', 'discordInvite', value); renderDiscord(); }
     });
     root.addEventListener('click', (e) => {
       const btn = (e.target as HTMLElement).closest<HTMLElement>('[data-open]');
@@ -229,8 +288,6 @@ export function mountLinks(opts: { invoke: Invoke; send: Send }) {
       if (open === 'github') void invoke('links:open', { kind: 'github', user: githubUser });
       if (open === 'leetcode') void invoke('links:open', { kind: 'leetcode', user: leetUser });
       if (open === 'discord') void invoke('links:open', { kind: 'discord' });
-      if (open === 'discord-web') void invoke('links:open', { kind: 'discord-web' });
-      if (open === 'discord-invite') void invoke('links:open', { kind: 'discord-invite', url: invite });
     });
   }
 
@@ -251,7 +308,6 @@ export function mountLinks(opts: { invoke: Invoke; send: Send }) {
       }
     }
     leetUser = (await setting('leetcodeUser', '')).trim();
-    invite = (await setting('discordInvite', '')).trim();
     renderGithub();
     renderDiscord();
     renderLeet();
@@ -260,7 +316,46 @@ export function mountLinks(opts: { invoke: Invoke; send: Send }) {
     if (leetUser) void loadLeet();
   })();
 
-  setInterval(() => { void loadDiscord(); }, 20000);
+  on?.('discord:state', (_e: unknown, next: DcState) => { real = next; if (!sample) { dc = next; renderDiscord(); paintIdle(); } });
+  // The sample's speakers take turns, so the view moves like a real call.
+  setInterval(() => {
+    if (!sample) return;
+    const turn = Math.floor(Math.random() * sample.members.length);
+    sample = { ...sample, members: sample.members.map((m, n) => ({ ...m, speaking: n === turn && !m.mute })) };
+    renderDiscord();
+    paintIdle();
+  }, 1400);
+  dcEl.addEventListener('submit', (e) => {
+    const form = (e.target as HTMLElement).closest<HTMLFormElement>('form[data-dc-setup]');
+    if (!form) return;
+    e.preventDefault();
+    e.stopPropagation();
+    const data = new FormData(form);
+    void invoke('discord:setup', { clientId: String(data.get('id') || ''), secret: String(data.get('secret') || '') }).then((r) => {
+      if (r && !r.ok) { dc = { ...dc, error: r.error }; renderDiscord(); }
+    });
+  });
+  dcEl.addEventListener('click', (e) => {
+    const btn = (e.target as HTMLElement).closest<HTMLElement>('[data-dc]');
+    if (!btn) return;
+    e.stopPropagation();
+    const act = btn.dataset.dc;
+    if (act === 'sample') { real = dc; sample = sampleCall(); renderDiscord(); paintIdle(); return; }
+    if (sample) {
+      if (act === 'mute') sample = { ...sample, self: { ...sample.self, mute: !sample.self.mute } };
+      if (act === 'deaf') sample = { ...sample, self: { ...sample.self, deaf: !sample.self.deaf } };
+      if (act === 'leave') { sample = null; if (real) dc = real; }
+      renderDiscord();
+      paintIdle();
+      return;
+    }
+    if (act === 'mute') void invoke('discord:mute');
+    if (act === 'deaf') void invoke('discord:deaf');
+    if (act === 'leave') void invoke('discord:leave');
+    if (act === 'retry') void invoke('discord:retry');
+    if (act === 'forget') void invoke('discord:forget');
+    if (act === 'portal') void invoke('discord:portal');
+  });
 
   return {
     onSpace(name: string) {
@@ -271,6 +366,35 @@ export function mountLinks(opts: { invoke: Invoke; send: Send }) {
   };
 }
 
-function INVITE_OK(url: string) {
-  return /^https:\/\/(?:discord\.gg|discord\.com\/invite)\/[A-Za-z0-9-]+$/.test(url);
+
+
+type DcMember = { id: string; name: string; avatar: string; mute: boolean; deaf: boolean; speaking: boolean };
+type DcState = {
+  status: 'setup' | 'connecting' | 'authorize' | 'ready' | 'closed' | 'error';
+  user: { id: string; name: string } | null;
+  channel: { id: string; name: string; guild: string } | null;
+  members: DcMember[];
+  self: { mute: boolean; deaf: boolean };
+  error: string;
+};
+
+const svg = (d: string) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
+const ICON = {
+  mic: svg('<rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21"/>'),
+  micOff: svg('<path d="M15 9.5V6a3 3 0 0 0-5.6-1.5M9 9v2a3 3 0 0 0 4.6 2.5M5.5 11a6.5 6.5 0 0 0 10.3 5.3M18.5 11a6.5 6.5 0 0 1-.6 2.7M12 17.5V21M3.5 3.5l17 17"/>'),
+  head: svg('<path d="M4 14v-2a8 8 0 0 1 16 0v2"/><rect x="3.5" y="13.5" width="4.5" height="7" rx="2"/><rect x="16" y="13.5" width="4.5" height="7" rx="2"/>'),
+  deaf: svg('<path d="M4 14v-2a8 8 0 0 1 12.5-6.6M20 12v2"/><rect x="3.5" y="13.5" width="4.5" height="7" rx="2"/><path d="M16 16v2.5a2 2 0 0 0 2 2h.5a2 2 0 0 0 2-2v-3M3.5 3.5l17 17"/>'),
+  hang: svg('<path d="M3.2 14.6c-.6-.6-.6-1.6.1-2.2 4.9-4.3 12.5-4.3 17.4 0 .7.6.7 1.6.1 2.2l-1.6 1.6c-.5.5-1.3.6-1.9.2l-2-1.3c-.5-.3-.7-.8-.7-1.4V12a11 11 0 0 0-5.2 0v1.7c0 .6-.3 1.1-.7 1.4l-2 1.3c-.6.4-1.4.3-1.9-.2Z"/>'),
+};
+
+function sampleCall(): DcState {
+  const m = (id: string, name: string, extra: Partial<DcMember> = {}): DcMember => ({ id, name, avatar: '', mute: false, deaf: false, speaking: false, ...extra });
+  return {
+    status: 'ready',
+    user: { id: '0', name: 'You' },
+    channel: { id: 'sample', name: 'Design sync', guild: 'Studio' },
+    members: [m('1', 'Ava'), m('2', 'Kabir'), m('3', 'Mina', { mute: true }), m('4', 'Leo'), m('5', 'You')],
+    self: { mute: false, deaf: false },
+    error: '',
+  };
 }

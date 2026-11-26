@@ -13,6 +13,7 @@ const tools  = require('./tools.cjs');
 const links  = require('./links.cjs');
 const term   = require('./term.cjs');
 const desk   = require('./desk.cjs');
+const discord = require('./discord.cjs');
 
 // ─── Auto Updater ─────────────────────────────────────────────────────────────
 let autoUpdater = null;
@@ -734,6 +735,8 @@ if (!gotTheLock) {
     links.init();
     term.init();
     desk.init();
+    discord.init();
+    app.once('before-quit', () => discord.stop());
     const cfg = readConfig();
     
     if (!cfg.setupComplete) {
