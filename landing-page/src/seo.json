@@ -1,0 +1,45 @@
+{
+  "name": "Overlay",
+  "tagline": "The notch for Windows",
+  "author": { "name": "Souradeep", "url": "https://souradeep.me" },
+  "pages": {
+    "home": {
+      "path": "/",
+      "title": "Overlay — the notch for Windows",
+      "description": "Overlay puts a Dynamic Island–style notch at the top of your Windows screen: music with synced lyrics, a focus timer, your calendar, AI usage limits for Claude Code, Codex and Cursor, Discord calls and more. Everything stays on your PC."
+    },
+    "features": {
+      "path": "/features",
+      "title": "Features — Overlay, the notch for Windows",
+      "description": "Now Playing with synced lyrics, AI usage limits for Claude Code, Codex, Cursor and Antigravity, Google Calendar, a focus timer, Discord voice calls, GitHub, to-dos, clipboard history, hardware stats and more, in one notch."
+    },
+    "pricing": {
+      "path": "/pricing",
+      "title": "Pricing — Overlay, the notch for Windows",
+      "description": "Overlay is free to start. Basic is $0 forever, Pro is $49 a year for AI tool tracking and one-click handoff, and Lifetime is $149 once with every future update."
+    },
+    "changelog": {
+      "path": "/changelog",
+      "title": "Changelog — What's new in Overlay",
+      "description": "Every change that ships in Overlay for Windows, newest first, with the version and date of each release."
+    },
+    "privacy": {
+      "path": "/privacy",
+      "title": "Privacy Policy — Overlay",
+      "description": "How Overlay handles your data: it runs on your PC, reads your AI tools' local logs on your machine, and keeps your account, notes and history locally."
+    },
+    "terms": {
+      "path": "/terms",
+      "title": "Terms of Service — Overlay",
+      "description": "The terms for using Overlay for Windows, including the beta, plans and updates."
+    }
+  },
+  "faq": [
+    { "q": "What is Overlay?", "a": "Overlay is a free Windows app that adds a Dynamic Island–style notch to the top of the screen. It shows what is playing with synced lyrics, a focus timer, your next calendar event, the usage limits of AI coding tools and more, and opens into a full set of tools on a click or hover." },
+    { "q": "Which versions of Windows does Overlay support?", "a": "Overlay runs on Windows 10 and Windows 11, 64-bit." },
+    { "q": "Is Overlay free?", "a": "Yes. Basic is free forever. Pro costs $49 a year and Lifetime costs $149 once; the Windows beta is free while it lasts." },
+    { "q": "Which AI tools does Overlay track?", "a": "Overlay reads local usage for Claude Code, Codex, Cursor, Gemini CLI, OpenCode, GitHub Copilot CLI and Antigravity, shows session and weekly limits, and can hand your work to another tool with its context when one runs low." },
+    { "q": "Does Overlay upload my data?", "a": "No. Overlay reads the logs your tools already keep on your PC and stores your account, notes, to-dos and history locally. Nothing is uploaded to Overlay." },
+    { "q": "Does Overlay work with Spotify?", "a": "Yes. Now Playing works with Spotify and any player that appears in the Windows media controls, with play, skip, volume and synced lyrics." }
+  ]
+}

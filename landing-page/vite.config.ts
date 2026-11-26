@@ -1,5 +1,6 @@
 import { defineConfig, type Plugin } from 'vite'
 import react from '@vitejs/plugin-react'
+import { seo } from './seo.plugin.ts'
 import { execFileSync } from 'node:child_process'
 import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -61,5 +62,5 @@ function changelog(): Plugin {
 
 // https://vite.dev/config/
 export default defineConfig({
-  plugins: [react(), changelog()],
+  plugins: [react(), changelog(), seo()],
 })

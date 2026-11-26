@@ -4,6 +4,7 @@ import './notch.css';
 import './pages.css';
 import NotchDemo, { type Space } from './NotchDemo';
 import changelog from 'virtual:changelog';
+import seoData from './seo.json';
 import { CLAUDE, DISCORD, GCAL, GITHUB, OPENAI, SPOTIFY } from './brand/marks';
 
 // The source repo is private, so installers live in the public overlay-releases
@@ -372,6 +373,22 @@ export default function App() {
     const path = pathOf(v);
     if (window.location.pathname !== path || window.location.hash) window.history.pushState(null, '', path);
   };
+  // Each page carries its own title and description for search and sharing.
+  useEffect(() => {
+    const p = (seoData.pages as Record<string, { path: string; title: string; description: string }>)[view];
+    if (!p) return;
+    document.title = p.title;
+    const set = (sel: string, attr: string, value: string) => { const el = document.head.querySelector(sel); if (el) el.setAttribute(attr, value); };
+    const abs = `${window.location.origin}${p.path}`;
+    set('meta[name="description"]', 'content', p.description);
+    set('link[rel="canonical"]', 'href', abs);
+    set('meta[property="og:url"]', 'content', abs);
+    set('meta[property="og:title"]', 'content', p.title);
+    set('meta[property="og:description"]', 'content', p.description);
+    set('meta[name="twitter:title"]', 'content', p.title);
+    set('meta[name="twitter:description"]', 'content', p.description);
+  }, [view]);
+
   // Back and forward move between pages.
   useEffect(() => {
     const onPop = () => { setView(viewFromLocation()); setZoomed(false); };
