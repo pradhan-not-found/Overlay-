@@ -77,7 +77,7 @@ function createPad() {
   };
 }
 
-type Space = 'overview' | 'media' | 'focus' | 'today' | 'ai' | 'todos' | 'note' | 'clipboard' | 'hardware' | 'weather' | 'clocks' | 'calc' | 'shelf' | 'colour' | 'launcher' | 'github' | 'settings';
+export type Space = 'overview' | 'media' | 'focus' | 'today' | 'ai' | 'todos' | 'note' | 'clipboard' | 'hardware' | 'weather' | 'clocks' | 'calc' | 'shelf' | 'colour' | 'launcher' | 'github' | 'settings';
 
 const I = (d: string, fill = false) => (
   <svg viewBox="0 0 24 24" aria-hidden="true" {...(fill ? { fill: 'currentColor' } : { fill: 'none', stroke: 'currentColor', strokeWidth: 2, strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const })}>
@@ -166,8 +166,8 @@ function Ring({ pct, color }: { pct: number; color: string }) {
   );
 }
 
-export default function NotchDemo({ open, onOpen, onClose }: { open: boolean; onOpen: () => void; onClose: () => void }) {
-  const [space, setSpace] = useState<Space>('media');
+export default function NotchDemo({ open, onOpen, onClose, start = 'media' }: { open: boolean; onOpen: () => void; onClose: () => void; start?: Space }) {
+  const [space, setSpace] = useState<Space>(start);
   const [playing, setPlaying] = useState(false);
   const [mode, setMode] = useState<'file' | 'loop'>('loop');
   const [pos, setPos] = useState({ t: LOOP.start, d: LOOP.length });

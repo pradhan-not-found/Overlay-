@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import './index.css';
 import './notch.css';
 import './pages.css';
-import NotchDemo from './NotchDemo';
+import NotchDemo, { type Space } from './NotchDemo';
 import changelog from 'virtual:changelog';
 import { CLAUDE, DISCORD, GCAL, GITHUB, OPENAI, SPOTIFY } from './brand/marks';
 
@@ -177,8 +177,15 @@ const LOGO_RULES: [RegExp, string, React.ReactNode][] = [
 ];
 const FALLBACK_LOGO = { key: 'spark', node: tint(ICON.spark, '#0027c4') };
 // "a, b and c" → ["A", "B", "C"], for the checklist in each release shot.
-function splitTitle(t: string) {
-  return t.split(/,\s*|\s+and\s+/i).map((x) => x.trim()).filter(Boolean).map(sentence).slice(0, 6);
+function splitTitle(t: string, points: string[] = []) {
+  const out = t.split(/,\s*|\s+and\s+/i).map((x) => x.trim()).filter(Boolean).map(sentence);
+  // A one-line title borrows short phrases from its notes, so every picture has a few items.
+  for (const pt of points) {
+    if (out.length >= 4) break;
+    const short = pt.split(/[:;,.]|\s+-\s+/)[0].split(/\s+/).slice(0, 5).join(' ');
+    if (short && !out.includes(sentence(short))) out.push(sentence(short));
+  }
+  return out.slice(0, 6);
 }
 function sentence(t: string) { return t.charAt(0).toUpperCase() + t.slice(1); }
 function logoFor(text: string) {
@@ -191,6 +198,145 @@ const PLANS = [
   { name: 'Pro', price: '$49', per: '/year', note: 'For people who live in AI tools all day.', items: ['Everything in Basic', 'AI Usage for every tool', 'One-click handoff between tools', 'Synced lyrics', 'Priority updates'], cta: 'Download', featured: true },
   { name: 'Lifetime', price: '$149', per: '/once', note: 'Pay once and keep every update.', items: ['Everything in Pro', 'Every future update', 'Early builds'], cta: 'Download' },
 ];
+
+// ── Release pictures ────────────────────────────────────────────────────
+// Each release gets one of five scenes, picked from what it is about, and
+// never the same scene twice in a row.
+type ShotKind = 'list' | 'notch' | 'chart' | 'browser' | 'stack';
+const SHOT_ORDER: ShotKind[] = ['list', 'notch', 'chart', 'browser', 'stack'];
+function shotKinds(titles: string[]): ShotKind[] {
+  const out: ShotKind[] = [];
+  titles.forEach((t, k) => {
+    let kind: ShotKind =
+      /\bai\b|usage|limit|dashboard|history|stat|chart/i.test(t) ? 'chart'
+      : /notch|player|music|song|lyric|zoom|island/i.test(t) ? 'notch'
+      : /website|page|pricing|changelog|heading|footer|nav/i.test(t) ? 'browser'
+      : /feature|folder|tool|logo|icon|svg/i.test(t) ? 'stack'
+      : SHOT_ORDER[k % SHOT_ORDER.length];
+    if (k > 0 && out[k - 1] === kind) kind = SHOT_ORDER[(SHOT_ORDER.indexOf(kind) + 1 + (k % 3)) % SHOT_ORDER.length];
+    if (k > 0 && out[k - 1] === kind) kind = SHOT_ORDER[(SHOT_ORDER.indexOf(kind) + 1) % SHOT_ORDER.length];
+    out.push(kind);
+  });
+  return out;
+}
+function seeded(text: string) {
+  let h = 2166136261;
+  for (let i = 0; i < text.length; i++) h = Math.imul(h ^ text.charCodeAt(i), 16777619);
+  return () => ((h = Math.imul(h ^ (h >>> 15), 2246822507) >>> 0) % 1000) / 1000;
+}
+
+function Shot({ kind, items, version, when, seed }: { kind: ShotKind; items: string[]; version: string; when: string; seed: string }) {
+  const rnd = seeded(seed);
+  const list = items.length ? items : ['Polish'];
+
+  if (kind === 'notch') {
+    const start: Space = /\bai\b|usage|limit|claude|codex/i.test(seed) ? 'ai'
+      : /calendar|today|event/i.test(seed) ? 'today'
+      : /focus|timer/i.test(seed) ? 'focus'
+      : /to-?do/i.test(seed) ? 'todos'
+      : /hardware|battery|cpu/i.test(seed) ? 'hardware'
+      : 'media';
+    return (
+      <figure className="rel-shot shot-notch">
+        <div className="display shot-display">
+          <div className="wall" aria-hidden="true" />
+          <NotchDemo open start={start} onOpen={() => {}} onClose={() => {}} />
+        </div>
+      </figure>
+    );
+  }
+
+  if (kind === 'chart') {
+    const bars = Array.from({ length: 14 }, () => 0.25 + rnd() * 0.75);
+    const pct = 55 + Math.round(rnd() * 40);
+    const r = 34, circ = 2 * Math.PI * r;
+    return (
+      <figure className="rel-shot shot-chart" aria-hidden="true">
+        <div className="sc-card">
+          <div className="sc-top"><img src="/mark.png" alt="" /><b>Dashboard</b><span>{when}</span></div>
+          <div className="sc-body">
+            <svg className="sc-bars" viewBox="0 0 420 160" preserveAspectRatio="none">
+              {[40, 80, 120].map((y) => <line key={y} x1="0" x2="420" y1={y} y2={y} stroke="#0d0f16" strokeOpacity="0.06" />)}
+              {bars.map((b, n) => (
+                <rect key={n} x={n * 30 + 6} y={160 - b * 150} width="18" height={b * 150} rx="5" fill={n === bars.length - 1 ? '#0027c4' : '#c9d2ff'} />
+              ))}
+            </svg>
+            <div className="sc-ring">
+              <svg viewBox="0 0 84 84">
+                <circle cx="42" cy="42" r={r} fill="none" stroke="#e8ebf3" strokeWidth="8" />
+                <circle cx="42" cy="42" r={r} fill="none" stroke="#0027c4" strokeWidth="8" strokeLinecap="round" strokeDasharray={`${(circ * pct) / 100} ${circ}`} transform="rotate(-90 42 42)" />
+              </svg>
+              <b>{pct}%</b>
+            </div>
+          </div>
+          <ul className="sc-legend">
+            {list.slice(0, 4).map((it, n) => <li key={n}><span className="it-logo">{logoFor(it).node}</span>{it}</li>)}
+          </ul>
+        </div>
+      </figure>
+    );
+  }
+
+  if (kind === 'browser') {
+    return (
+      <figure className="rel-shot shot-browser" aria-hidden="true">
+        <div className="sb-win">
+          <div className="sb-bar"><i /><i /><i /><span className="sb-url"><img src="/mark.png" alt="" />overlay.app</span></div>
+          <div className="sb-page">
+            <div className="sb-nav"><img src="/mark.png" alt="" /><span /><span /><span /><em /></div>
+            <h5>{list[0]}</h5>
+            <div className="sb-lines"><span /><span /></div>
+            <div className="sb-cards">
+              {list.slice(0, 3).map((it, n) => (
+                <div className="sb-card" key={n}><span className="it-logo">{logoFor(it).node}</span><b>{it}</b><span /><span /></div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </figure>
+    );
+  }
+
+  if (kind === 'stack') {
+    const tones = ['#0027c4', '#1ed760', '#ffd23f', '#ff5a4e', '#5865f2', '#14171f'];
+    return (
+      <figure className="rel-shot shot-stack" aria-hidden="true">
+        <div className="ss-fan">
+          {list.slice(0, 4).map((it, n, arr) => (
+            <div className="ss-card" key={n} style={{ '--n': n, '--c': arr.length, '--tone': tones[(n + Math.floor(rnd() * 6)) % tones.length] } as React.CSSProperties}>
+              <span className="ss-logo">{logoFor(it).node}</span>
+              <b>{it}</b>
+            </div>
+          ))}
+        </div>
+      </figure>
+    );
+  }
+
+  return (
+    <figure className="rel-shot shot-list" aria-hidden="true">
+      <svg className="shot-bg" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice">
+        <defs>
+          <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#2f6fd6" /><stop offset="0.45" stopColor="#7aa6e8" /><stop offset="0.75" stopColor="#cdb7d8" /><stop offset="1" stopColor="#f3b88f" /></linearGradient>
+          <radialGradient id="sun" cx="0.5" cy="0.5" r="0.5"><stop offset="0" stopColor="#fff" /><stop offset="0.35" stopColor="#fff" stopOpacity="0.7" /><stop offset="1" stopColor="#fff" stopOpacity="0" /></radialGradient>
+        </defs>
+        <rect width="1600" height="900" fill="url(#sky)" />
+        <circle cx="1200" cy="260" r="200" fill="url(#sun)" />
+        <path d="M0 620Q300 500 620 580T1240 540T1600 560V900H0Z" fill="#fff" fillOpacity="0.16" />
+        <path d="M0 720Q380 600 820 690T1600 650V900H0Z" fill="#fff" fillOpacity="0.26" />
+        <path d="M0 820Q500 740 1000 800T1600 780V900H0Z" fill="#fff" fillOpacity="0.32" />
+      </svg>
+      <div className="display shot-display shot-over"><NotchDemo open={false} onOpen={() => {}} onClose={() => {}} /></div>
+      <div className="rel-win">
+        <div className="rel-bar"><img src="/mark.png" alt="" /><b>Overlay</b><span>{version === 'Beta' ? 'Beta build' : `Version ${version}`}</span></div>
+        <time>{when}</time>
+        <h4>Overlay {version === 'Beta' ? 'beta' : version}</h4>
+        <p>What's new:</p>
+        <ul>{list.map((it, n) => <li key={n}><span className="tick" /><span className="it-logo">{logoFor(it).node}</span>{it}</li>)}</ul>
+      </div>
+    </figure>
+  );
+}
 
 export default function App() {
   // Each page has a link: #features, #pricing, #changelog, #privacy, #terms.
@@ -376,8 +522,9 @@ export default function App() {
             </header>
             <ol className="changelog">
               {changelog.map((c, k) => {
+                const kinds = shotKinds(changelog.map((e) => e.title));
                 const when = new Date(`${c.date}T12:00`).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-                const items = splitTitle(c.title);
+                const items = splitTitle(c.title, c.points);
                 const id = `v-${c.date}-${k}`;
                 return (
                   <li key={k} id={id}>
@@ -390,27 +537,7 @@ export default function App() {
                     <article className="rel">
                       <h3>{sentence(c.title)}</h3>
                       {c.points.length > 0 && <p className="rel-text">{c.points.map((pt) => pt.replace(/\.?$/, '.')).join(' ')}</p>}
-                      <figure className="rel-shot" aria-hidden="true">
-                        <div className="rel-sky" />
-                        <svg className="rel-hills" viewBox="0 0 1000 260" preserveAspectRatio="none">
-                          <path d="M0 150Q180 70 360 130T720 110T1000 120V260H0Z" fill="rgba(255,255,255,0.18)" />
-                          <path d="M0 200Q220 120 470 180T1000 160V260H0Z" fill="rgba(255,255,255,0.28)" />
-                        </svg>
-                        <span className="rel-notch"><img src="/mark.png" alt="" /><i /></span>
-                        <div className="rel-win">
-                          <div className="rel-bar">
-                            <img src="/mark.png" alt="" />
-                            <b>Overlay</b>
-                            <span>{c.version === 'Beta' ? 'Beta build' : `Version ${c.version}`}</span>
-                          </div>
-                          <time>{when}</time>
-                          <h4>Overlay {c.version === 'Beta' ? 'beta' : c.version}</h4>
-                          <p>What's new:</p>
-                          <ul>
-                            {items.map((it, n) => <li key={n}><span className="tick" /><span className="it-logo">{logoFor(it).node}</span>{it}</li>)}
-                          </ul>
-                        </div>
-                      </figure>
+                      <Shot kind={kinds[k]} items={items} version={c.version} when={when} seed={c.title} />
                     </article>
                   </li>
                 );

@@ -3,6 +3,7 @@ import react from '@vitejs/plugin-react'
 import { execFileSync } from 'node:child_process'
 import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { readFileSync } from 'node:fs'
 
 const here = dirname(fileURLToPath(import.meta.url))
 
@@ -15,13 +16,14 @@ type Entry = { date: string; title: string; points: string[]; version: string }
  */
 function changelog(): Plugin {
   const id = 'virtual:changelog'
-  // The release a change first shipped in, or Beta if it has not shipped yet.
+  // The release a change first shipped in; newer changes carry the app's current version.
+  const current = (() => { try { return JSON.parse(readFileSync(resolve(here, '../package.json'), 'utf8')).version as string } catch { return 'Beta' } })()
   const shipped = (hash: string) => {
     try {
       const t = execFileSync('git', ['describe', '--tags', '--contains', hash], { cwd: resolve(here, '..'), encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim()
-      return t.replace(/[~^].*$/, '').replace(/^v/, '') || 'Beta'
+      return t.replace(/[~^].*$/, '').replace(/^v/, '') || current
     } catch {
-      return 'Beta'
+      return current
     }
   }
   const read = (): Entry[] => {
