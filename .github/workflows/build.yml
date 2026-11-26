@@ -54,7 +54,8 @@ jobs:
           printf '{"clientId":"%s","clientSecret":"%s"}' "$DISCORD_ID" "$DISCORD_SECRET" > electron/discord-app.json
 
       - name: Package the installer
-        run: npx electron-builder --win nsis --publish never -c.directories.output=release
+        shell: bash
+        run: npx electron-builder --win nsis --publish never --config.directories.output=release
         env:
           CSC_IDENTITY_AUTO_DISCOVERY: 'false'
 
