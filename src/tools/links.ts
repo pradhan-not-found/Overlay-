@@ -155,7 +155,6 @@ export function mountLinks(opts: { invoke: Invoke; send: Send; on?: (ch: string,
         <p class="link-lead">${off ? 'This copy of Overlay was built without Discord.' : 'Connect once and approve Overlay in the Discord app. Then calls show here with who is talking, mute, deafen and leave.'}</p>
         <div class="link-actions">
           ${off ? '' : '<button class="btn btn-p" type="button" data-dc="connect">Connect Discord</button>'}
-          <button class="btn btn-g" type="button" data-dc="sample">See a sample call</button>
         </div>
       </div>`;
       return;
@@ -186,7 +185,6 @@ export function mountLinks(opts: { invoke: Invoke; send: Send; on?: (ch: string,
           <span class="dc-empty-ico">${marks.discord}</span>
           <b>Not in a call</b>
           <span>Join a voice channel and it shows up here, with who is talking.</span>
-          <button class="dc-link" type="button" data-dc="sample">See a sample call</button>
         </div>
       </div>`;
       return;

@@ -48,7 +48,7 @@ function kindIcon(name: string, folder = false) {
 }
 
 type FileRow = { name: string; path: string; size: number; at: number; dir?: string; folder?: boolean };
-type PortRow = { port: number; pid: number; name: string; local: boolean };
+type PortRow = { port: number; pid: number; name: string; local: boolean; icon?: string };
 
 const fileRow = (f: FileRow, sub: string) => {
   const k = kindIcon(f.name, f.folder);
@@ -105,16 +105,19 @@ export function mountKit(opts: { invoke: Invoke; send: Send }) {
 
   // ── Ports ──
   const loadPorts = async () => {
-    pt.innerHTML = pt.innerHTML || '<div class="kit"><p class="kit-empty">Reading local servers…</p></div>';
+    if (!pt.innerHTML) pt.innerHTML = '<div class="kit"><p class="kit-empty">Reading local servers…</p></div>';
+    pt.querySelector('[data-pt-refresh]')?.classList.add('spin');
     const rows: PortRow[] = (await invoke('kit:ports').catch(() => [])) || [];
+    const net = rows.filter((r) => !r.local).length;
     pt.innerHTML = `<div class="kit">
-      <div class="kit-head"><span><b>${rows.length}</b> listening</span><button type="button" class="kit-icon-btn" data-pt-refresh title="Refresh">${I.refresh}</button></div>
+      <div class="kit-head"><span><b>${rows.length}</b> listening${net ? ` · <em class="warn">${net} open to the network</em>` : ''}</span><button type="button" class="kit-icon-btn" data-pt-refresh title="Refresh">${I.refresh}</button></div>
       <div class="kit-list">${rows.map((r) => `<div class="kit-row port" data-port="${r.port}" data-pid="${r.pid}">
-          <span class="kit-port">:${r.port}</span>
-          <span class="kit-main"><b>${esc(r.name)}</b><small><i class="kit-dot${r.local ? '' : ' net'}"></i>${r.local ? 'Local' : 'Network'} · PID ${r.pid}</small></span>
+          <span class="pt-app">${r.icon ? `<img src="${r.icon}" alt=""/>` : `<i>${esc(r.name.charAt(0).toUpperCase())}</i>`}</span>
+          <span class="kit-main"><b>${esc(r.name)}</b><small>${r.local ? 'This PC only' : 'Open to the network'} · PID ${r.pid}</small></span>
+          <span class="pt-port${r.local ? '' : ' net'}">${r.port}</span>
           <span class="kit-acts">
-            <button type="button" data-port-act="open" title="Open in browser">${I.open}</button>
-            <button type="button" data-port-act="stop" class="danger" title="Stop">${I.stop}</button>
+            <button type="button" data-port-act="open" title="Open localhost:${r.port}">${I.open}</button>
+            <button type="button" data-port-act="stop" class="danger" title="Stop ${esc(r.name)}">${I.stop}</button>
           </span>
         </div>`).join('') || '<p class="kit-empty">No local servers are running.</p>'}</div>
     </div>`;
@@ -166,16 +169,22 @@ export function mountKit(opts: { invoke: Invoke; send: Send }) {
       </div>`;
       return;
     }
+    const keys = (Object.keys(KINDS) as Kind[]);
+    const next = running ? keys.filter((x) => on[x]).sort((a, b) => due[a] - due[b])[0] : undefined;
+    const nk = next ? KINDS[next] : null;
     br.innerHTML = `<div class="kit">
-      <div class="kit-head"><span>${running ? 'Breaks are on' : 'Breaks are paused'}</span><button type="button" class="chip-btn${running ? ' on' : ''}" data-brk="run">${running ? 'On' : 'Off'}</button></div>
-      <div class="brk-list">${(Object.keys(KINDS) as Kind[]).map((key) => {
+      <div class="brk-hero${running ? ' on' : ''}" style="--tint:${nk ? nk.tint : '#7dd3fc'}">
+        <span class="kit-ico">${nk ? nk.ico : I.eye}</span>
+        <div class="brk-hero-text">${running && nk ? `<small>Next · ${nk.label}</small><b>${mmss(due[next!] - Date.now())}</b>` : `<small>Gentle reminders to look away, stand and drink water</small><b>Breaks</b>`}</div>
+        <button type="button" class="brk-go${running ? ' on' : ''}" data-brk="run">${running ? 'Stop' : 'Start'}</button>
+      </div>
+      <div class="brk-list">${keys.map((key) => {
         const k = KINDS[key];
         return `<div class="brk${on[key] ? ' on' : ''}" style="--tint:${k.tint}">
           <span class="kit-ico">${k.ico}</span>
           <span class="kit-main"><b>${k.label}</b><small>Every ${k.every} min · ${k.secs < 60 ? `${k.secs} s` : `${k.secs / 60} min`}</small></span>
-          <span class="brk-next">${running && on[key] ? mmss(due[key] - Date.now()) : '—'}</span>
+          <button type="button" class="kit-link" data-brk-now="${key}">Now</button>
           <button type="button" class="brk-switch${on[key] ? ' on' : ''}" data-brk-kind="${key}" aria-label="${k.label}"><i></i></button>
-          <button type="button" class="kit-icon-btn" data-brk-now="${key}" title="Take it now">${k.ico}</button>
         </div>`;
       }).join('')}</div>
     </div>`;
@@ -215,8 +224,8 @@ export function mountKit(opts: { invoke: Invoke; send: Send }) {
 
   // ── Find ──
   fd.innerHTML = `<div class="kit">
-    <label class="kit-search">${I.search}<input data-find placeholder="Search your files by name" spellcheck="false" autocomplete="off"/></label>
-    <div class="kit-list" data-find-list><p class="kit-empty">Desktop, Documents, Downloads, Pictures, Music and Videos.</p></div>
+    <label class="kit-search">${I.search}<input data-find placeholder="Search files and folders on every drive" spellcheck="false" autocomplete="off"/></label>
+    <div class="kit-list" data-find-list><p class="kit-empty">Type a name. Enter opens the first result.</p></div>
   </div>`;
   const findInput = fd.querySelector<HTMLInputElement>('[data-find]')!;
   const findList = fd.querySelector<HTMLElement>('[data-find-list]')!;
@@ -228,10 +237,12 @@ export function mountKit(opts: { invoke: Invoke; send: Send }) {
     if (q.length < 2) { findList.innerHTML = '<p class="kit-empty">Type at least two letters.</p>'; return; }
     findTimer = window.setTimeout(async () => {
       const ticket = ++findTicket;
-      findList.innerHTML = '<p class="kit-empty">Searching…</p>';
+      findList.innerHTML = '<div class="kit-searching"><i></i><span>Searching every drive…</span></div>';
       const rows: FileRow[] = (await invoke('kit:find', q).catch(() => [])) || [];
       if (ticket !== findTicket) return;
-      findList.innerHTML = rows.map((f) => fileRow(f, `${esc(f.dir || '')}${f.folder ? '' : ` · ${size(f.size)}`}`)).join('') || `<p class="kit-empty">Nothing named “${esc(q)}”.</p>`;
+      findList.innerHTML = rows.length
+        ? `<div class="kit-count">${rows.length}${rows.length >= 40 ? '+' : ''} ${rows.length === 1 ? 'result' : 'results'}</div>` + rows.map((f) => fileRow(f, `${esc(f.dir || '')}${f.folder ? '' : ` · ${size(f.size)}`}`)).join('')
+        : `<p class="kit-empty">Nothing named “${esc(q)}” on this PC.</p>`;
     }, 220);
   });
   findInput.addEventListener('keydown', (e) => {

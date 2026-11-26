@@ -170,14 +170,32 @@ export function mountStudio(opts: { invoke: Invoke; send: Send }) {
   let goal = 8;
   const waterKey = () => `water:${dayKey()}`;
   const paintWater = () => {
-    water.innerHTML = `<div class="link-panel">
-      <div class="link-top">
-        <div class="link-id"><b>Water</b><span>${glasses} of ${goal} glasses today</span></div>
+    const pct = Math.min(1, glasses / goal);
+    const ml = glasses * 250;
+    water.innerHTML = `<div class="kit wt">
+      <div class="wt-glass" style="--fill:${pct}">
+        <svg viewBox="0 0 120 150" aria-hidden="true">
+          <defs><clipPath id="wt-clip"><path d="M20 12h80l-9 122a10 10 0 0 1-10 9H39a10 10 0 0 1-10-9Z"/></clipPath>
+          <linearGradient id="wt-grad" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#7dd3fc"/><stop offset="1" stop-color="#0ea5e9"/></linearGradient></defs>
+          <g clip-path="url(#wt-clip)">
+            <rect x="0" y="0" width="120" height="150" fill="rgba(125,211,252,0.06)"/>
+            <g class="wt-level" style="transform:translateY(${(1 - pct) * 131 + 12}px)">
+              <path class="wt-wave" d="M-120 6 Q-90 0 -60 6 T0 6 T60 6 T120 6 T180 6 T240 6 V160 H-120Z" fill="url(#wt-grad)"/>
+              <path class="wt-wave back" d="M-120 8 Q-90 2 -60 8 T0 8 T60 8 T120 8 T180 8 T240 8 V160 H-120Z" fill="rgba(56,189,248,0.45)"/>
+            </g>
+          </g>
+          <path d="M20 12h80l-9 122a10 10 0 0 1-10 9H39a10 10 0 0 1-10-9Z" fill="none" stroke="rgba(255,255,255,0.55)" stroke-width="2.5" stroke-linejoin="round"/>
+          <path d="M28 24l6 96" stroke="rgba(255,255,255,0.18)" stroke-width="4" stroke-linecap="round"/>
+        </svg>
       </div>
-      <div class="water-row">${Array.from({ length: goal }, (_, i) => `<button type="button" class="water-glass${i < glasses ? ' full' : ''}" data-glass="${i}" title="${i < glasses ? 'Remove this glass' : 'Add a glass'}" aria-label="Glass ${i + 1}"><svg viewBox="0 0 32 44" aria-hidden="true"><path class="glass" d="M9 5.5h14l-1.5 27.2A5.4 5.4 0 0 1 16.1 38h-.2a5.4 5.4 0 0 1-5.4-5.3L9 5.5Z"/><path class="pour" d="M10.4 16.5h11.1L20.2 31a3.6 3.6 0 0 1-3.5 2.8h-.4a3.6 3.6 0 0 1-3.5-2.8l-2.4-14.5Z"/></svg></button>`).join('')}</div>
-      <div class="link-actions">
-        <button class="btn btn-p" type="button" data-add>Add a glass</button>
-        <button class="btn btn-g" type="button" data-sub>Undo</button>
+      <div class="wt-side">
+        <div class="wt-count"><b>${glasses}</b><span>of ${goal} glasses</span></div>
+        <small>${ml >= 1000 ? `${(ml / 1000).toFixed(ml % 1000 ? 2 : 0)} L` : `${ml} ml`} today · ${glasses >= goal ? 'Goal reached' : `${goal - glasses} to go`}</small>
+        <div class="wt-dots">${Array.from({ length: goal }, (_, n) => `<i class="${n < glasses ? 'on' : ''}"></i>`).join('')}</div>
+        <div class="wt-acts">
+          <button type="button" class="wt-btn" data-sub aria-label="Remove a glass">−</button>
+          <button type="button" class="wt-btn main" data-add>Add a glass</button>
+        </div>
       </div>
     </div>`;
   };
@@ -186,31 +204,33 @@ export function mountStudio(opts: { invoke: Invoke; send: Send }) {
     const t = e.target as HTMLElement;
     if (t.closest('[data-add]')) { glasses = Math.min(goal, glasses + 1); saveWater(); }
     else if (t.closest('[data-sub]')) { glasses = Math.max(0, glasses - 1); saveWater(); }
-    else if (t.closest('[data-glass]')) {
-      const i = Number((t.closest('[data-glass]') as HTMLElement).dataset.glass);
-      glasses = i < glasses ? i : i + 1;
-      saveWater();
-    }
+
   });
 
   // ── Habits ──────────────────────────────────────────────────────────────
   type Habit = { id: string; name: string; days: string[] };
   let habitList: Habit[] = [];
+  const SUGGEST = ['Read 20 pages', 'Walk 30 min', 'Meditate', 'Stretch', 'No phone in bed', 'Code 1 hour'];
   const paintHabits = () => {
     const today = dayKey();
-    habits.innerHTML = `<div class="link-panel">
-      <div class="habit-list">${habitList.map((h) => {
+    const week = Array.from({ length: 7 }, (_, n) => { const d = new Date(); d.setDate(d.getDate() - (6 - n)); return dayKeyFrom(d); });
+    const done = habitList.filter((h) => h.days.includes(today)).length;
+    habits.innerHTML = `<div class="kit hb">
+      ${habitList.length ? `<div class="hb-top"><div class="hb-ring" style="--p:${habitList.length ? done / habitList.length : 0}"><span>${done}/${habitList.length}</span></div><div><b>${done === habitList.length ? 'All done today' : `${habitList.length - done} left today`}</b><small>Tap a habit to check it off</small></div></div>` : ''}
+      <div class="kit-list hb-list">${habitList.map((h) => {
         const on = h.days.includes(today);
         let streak = 0;
         const cursor = new Date(); cursor.setHours(0, 0, 0, 0);
         if (!on) cursor.setDate(cursor.getDate() - 1);
         while (h.days.includes(dayKeyFrom(cursor))) { streak += 1; cursor.setDate(cursor.getDate() - 1); }
-        return `<button type="button" class="habit${on ? ' on' : ''}" data-habit="${h.id}"><b>${esc(h.name)}</b><span>${on ? 'Done' : 'Today'} · ${streak}d</span></button>`;
-      }).join('') || '<p class="link-lead">Add a habit. Checking it records today on this PC.</p>'}</div>
-      <form class="link-user" data-habit-form>
-        <input data-habit-name placeholder="Habit name" maxlength="40"/>
-        <button class="btn btn-g" type="submit">Add</button>
-      </form>
+        return `<div class="hb-row${on ? ' on' : ''}" data-habit="${h.id}">
+          <span class="hb-check">${on ? '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg>' : ''}</span>
+          <span class="kit-main"><b>${esc(h.name)}</b><small>${streak ? `${streak} day streak` : 'Start today'}</small></span>
+          <span class="hb-week">${week.map((d) => `<i class="${h.days.includes(d) ? 'on' : ''}${d === today ? ' today' : ''}"></i>`).join('')}</span>
+          <button type="button" class="hb-del" data-habit-del="${h.id}" aria-label="Remove">×</button>
+        </div>`;
+      }).join('') || `<div class="hb-empty"><b>Build a habit</b><small>Pick one to start, or write your own below.</small><div class="hb-sugg">${SUGGEST.map((x) => `<button type="button" data-suggest="${esc(x)}">${esc(x)}</button>`).join('')}</div></div>`}</div>
+      <form class="kit-add" data-habit-form><span>+</span><input data-habit-name placeholder="New habit" maxlength="40" autocomplete="off"/></form>
     </div>`;
   };
   const saveHabits = () => { send('set-setting', 'habits', JSON.stringify(habitList)); paintHabits(); };
@@ -223,7 +243,12 @@ export function mountStudio(opts: { invoke: Invoke; send: Send }) {
     saveHabits();
   });
   habits.addEventListener('click', (e) => {
-    const row = (e.target as HTMLElement).closest<HTMLElement>('[data-habit]');
+    const tgt = e.target as HTMLElement;
+    const sug = tgt.closest<HTMLElement>('[data-suggest]');
+    if (sug) { e.stopPropagation(); habitList.push({ id: Math.random().toString(36).slice(2, 8), name: sug.dataset.suggest || '', days: [] }); saveHabits(); return; }
+    const del = tgt.closest<HTMLElement>('[data-habit-del]');
+    if (del) { e.stopPropagation(); habitList = habitList.filter((h) => h.id !== del.dataset.habitDel); saveHabits(); return; }
+    const row = tgt.closest<HTMLElement>('[data-habit]');
     if (!row) return;
     const h = habitList.find((x) => x.id === row.dataset.habit);
     if (!h) return;
@@ -294,7 +319,7 @@ export function mountStudio(opts: { invoke: Invoke; send: Send }) {
   return {
     onSpace(name: string) {
       if (name === 'terminal') setTimeout(() => cmd.focus(), 220);
-      if (name === 'scratch') setTimeout(() => area.focus(), 220);
+      if (name === 'scratch') requestAnimationFrame(() => area.focus({ preventScroll: true }));
     },
   };
 }

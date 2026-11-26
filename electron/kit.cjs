@@ -17,15 +17,18 @@ const FOLDERS = ['Desktop', 'Documents', 'Downloads', 'Pictures', 'Music', 'Vide
 // OneDrive often holds Desktop, Documents and Pictures instead of the home folder.
 const ROOTS = [...FOLDERS.map((d) => path.join(HOME, d)), ...['Desktop', 'Documents', 'Pictures'].map((d) => path.join(HOME, 'OneDrive', d))]
   .filter((d, i, all) => fs.existsSync(d) && all.indexOf(d) === i);
+// Other drives too (D:, E: …), where projects usually live.
+const DRIVES = 'DEFGHIJKLMNOPQRSTUVWXYZ'.split('').map((l) => `${l}:\\`).filter((d) => { try { return fs.existsSync(d); } catch { return false; } });
+const SKIP_DRIVE = /^(\$recycle\.bin|system volume information|windows|program files|program files \(x86\)|programdata|recovery|msocache|perflogs|config\.msi)$/i;
 // Windows' own services: listed nowhere, never stoppable from the notch.
 const SYSTEM = /^(system|svchost|lsass|wininit|services|spoolsv|smss|csrss|winlogon|dwm|explorer|searchindexer|msmpeng|nissrv|securityhealthservice|wmiprvse|dashost|fontdrvhost|unknown)$/i;
-const SKIP = new Set(['node_modules', '.git', '$RECYCLE.BIN', 'AppData', '.cache', '.vscode', '__pycache__', 'dist', 'build']);
+const SKIP = new Set(['node_modules', '.git', '$RECYCLE.BIN', 'AppData', '.cache', '.vscode', '__pycache__', 'dist', 'build', 'flutter', '.dart_tool', 'android', 'ios', '.gradle', 'venv', '.venv', 'env', 'site-packages', 'target', '.next', '.nuxt', 'vendor', 'Pods', 'bin', 'obj', 'packages', 'sdk', 'temp', 'tmp', '.idea', 'coverage', 'out']);
 
 // Only files we handed to the window may be opened, revealed or dragged.
 const known = new Set();
 const remember = (rows) => { rows.forEach((r) => known.add(r.path)); return rows; };
 const inHome = (p) => typeof p === 'string' && path.resolve(p).toLowerCase().startsWith(HOME.toLowerCase() + path.sep);
-const allowed = (p) => known.has(p) && inHome(p) && fs.existsSync(p);
+const allowed = (p) => known.has(p) && fs.existsSync(p);
 
 function run(cmd, args) {
   return new Promise((resolve) => {
@@ -72,6 +75,18 @@ async function ports() {
   }
   const rows = [...seen.values()].sort((a, b) => a.port - b.port);
   lastPids = new Set(rows.map((r) => r.pid));
+  // Icons from each app's .exe, read once per refresh.
+  const pids = [...lastPids];
+  if (pids.length) {
+    const out = await run('powershell.exe', ['-NoProfile', '-NonInteractive', '-Command', `Get-Process -Id ${pids.join(',')} -ErrorAction SilentlyContinue | ForEach-Object { "$($_.Id)|$($_.Path)" }`]);
+    const exe = new Map();
+    for (const line of out.split(/\r?\n/)) { const [id, p] = line.trim().split('|'); if (id && p) exe.set(Number(id), p); }
+    await Promise.all(rows.map(async (r) => {
+      const p = exe.get(r.pid);
+      if (!p) return;
+      try { r.icon = (await app.getFileIcon(p, { size: 'normal' })).toDataURL(); } catch {}
+    }));
+  }
   return rows;
 }
 
@@ -89,25 +104,39 @@ async function find(q) {
   const out = [];
   const started = Date.now();
   const walk = async (dir, depth) => {
-    if (out.length >= 40 || depth > 5 || Date.now() - started > 2500) return;
+    if (out.length >= 200 || depth > 6 || Date.now() - started > 2200) return;
     let entries = [];
     try { entries = await fs.promises.readdir(dir, { withFileTypes: true }); } catch { return; }
     for (const e of entries) {
-      if (out.length >= 40) return;
+      if (out.length >= 200) return;
       if (e.name.startsWith('.') || SKIP.has(e.name)) continue;
       const p = path.join(dir, e.name);
       if (e.name.toLowerCase().includes(q)) {
         let st = null;
         try { st = await fs.promises.stat(p); } catch {}
-        out.push({ name: e.name, path: p, dir: path.relative(HOME, dir) || '~', folder: e.isDirectory(), size: st ? st.size : 0, at: st ? st.mtimeMs : 0 });
+        const rel = path.relative(HOME, dir);
+        out.push({ name: e.name, path: p, dir: rel && !rel.startsWith('..') ? rel : dir, folder: e.isDirectory(), size: st ? st.size : 0, at: st ? st.mtimeMs : 0 });
       }
       if (e.isDirectory()) await walk(p, depth + 1);
     }
   };
   for (const root of ROOTS) await walk(root, 0);
+  for (const drive of DRIVES) {
+    let top = [];
+    try { top = await fs.promises.readdir(drive, { withFileTypes: true }); } catch { continue; }
+    for (const e of top) {
+      if (out.length >= 200 || Date.now() - started > 2200) break;
+      if (SKIP_DRIVE.test(e.name) || SKIP.has(e.name) || e.name.startsWith('.') || e.name.startsWith('$')) continue;
+      const p = path.join(drive, e.name);
+      if (e.name.toLowerCase().includes(q)) out.push({ name: e.name, path: p, dir: drive, folder: e.isDirectory(), size: 0, at: 0 });
+      if (e.isDirectory()) await walk(p, 1);
+    }
+  }
   // Names that start with the query first, then the newest.
-  out.sort((a, b) => (b.name.toLowerCase().startsWith(q) - a.name.toLowerCase().startsWith(q)) || b.at - a.at);
-  return remember(out);
+  // Exact names first, then names that start with the query, folders before files, newest first.
+  const score = (r) => { const n = r.name.toLowerCase(); const base = n.replace(/\.[^.]+$/, ''); return (base === q ? 4 : 0) + (n.startsWith(q) ? 2 : 0) + (r.folder ? 1 : 0); };
+  out.sort((a, b) => score(b) - score(a) || b.at - a.at);
+  return remember(out.slice(0, 40));
 }
 
 function init() {

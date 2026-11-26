@@ -1,6 +1,6 @@
 'use strict';
 
-const { ipcMain, desktopCapturer, dialog, shell, safeStorage, session } = require('electron');
+const { ipcMain, desktopCapturer, dialog, shell, safeStorage, session, nativeImage } = require('electron');
 const { execFile } = require('child_process');
 const fs = require('fs');
 const os = require('os');
@@ -119,6 +119,26 @@ function init() {
     return file;
   });
 
+  // Small previews, so the notch never loads a full-size picture.
+  const thumb = (file, width) => {
+    try { const img = nativeImage.createFromPath(file); return img.isEmpty() ? '' : img.resize({ width, quality: 'good' }).toDataURL(); } catch { return ''; }
+  };
+  const newest = (dir, re, n) => {
+    let names = [];
+    try { names = fs.readdirSync(dir); } catch { return []; }
+    return names.filter((x) => re.test(x)).map((name) => {
+      const file = path.join(dir, name);
+      try { const st = fs.statSync(file); return { file, name, at: st.mtimeMs, size: st.size }; } catch { return null; }
+    }).filter(Boolean).sort((a, b) => b.at - a.at).slice(0, n);
+  };
+  ipcMain.handle('desk:shots', () => newest(shotDir(), /\.(png|jpe?g)$/i, 6).map((f) => ({ ...f, thumb: thumb(f.file, 220) })));
+  ipcMain.handle('desk:recs', () => newest(recDir(), /\.(webm|ogg|wav|m4a)$/i, 6));
+  ipcMain.handle('desk:open', (_e, file) => {
+    const target = path.resolve(String(file || ''));
+    if ((target.startsWith(shotDir()) || target.startsWith(recDir())) && fs.existsSync(target)) return shell.openPath(target).then(() => true);
+    return false;
+  });
+
   ipcMain.handle('desk:reveal', (_e, file) => {
     if (typeof file === 'string' && fs.existsSync(file)) shell.showItemInFolder(file);
   });
@@ -135,7 +155,7 @@ function init() {
   ipcMain.handle('desk:walls', () => {
     const found = [];
     imagesIn(pictures(), found, 1);
-    return found.map((file) => ({ file, name: path.basename(file) }));
+    return found.slice(0, 18).map((file) => ({ file, name: path.basename(file), thumb: thumb(file, 240) }));
   });
 
   ipcMain.handle('desk:pick-wall', async () => {
