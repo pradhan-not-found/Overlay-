@@ -151,6 +151,42 @@ const COVERS: [string, string, string, string][] = [
   ['#2e3440', '#fff', '#3b82f6', '#dfe3ea'],
 ];
 
+// Changelog lines get the logo of the thing they are about.
+const LOGO_RULES: [RegExp, string, React.ReactNode][] = [
+  [/spotify|song|music|lyric|player|playing/i, 'music', <Mark m={SPOTIFY} />],
+  [/claude/i, 'claude', <Mark m={CLAUDE} />],
+  [/codex|gpt|openai|chatgpt/i, 'openai', <Mark m={{ ...OPENAI, color: '#0d0f16' }} />],
+  [/\bai\b|usage|limit|session|context|handoff|token/i, 'ai', tint(ICON.spark, '#6366f1')],
+  [/calendar|event|agenda/i, 'cal', <Mark m={GCAL} />],
+  [/discord|voice|call/i, 'discord', <Mark m={DISCORD} />],
+  [/\bgit\b|contribution|streak/i, 'github', <Mark m={GITHUB} />],
+  [/focus|timer|lock in|pomodoro/i, 'focus', tint(ICON.timer, '#ff9f43')],
+  [/to-?do|task/i, 'todo', tint(ICON.check, '#10b981')],
+  [/\bnote/i, 'note', tint(EXTRA.note, '#f59e0b')],
+  [/clipboard|copied|copy/i, 'clip', tint(ICON.clipboard, '#14b8a6')],
+  [/weather|forecast/i, 'weather', tint(EXTRA.weather, '#0ea5e9')],
+  [/clock|time ?zone|world/i, 'globe', tint(EXTRA.globe, '#ec4899')],
+  [/calc|convert/i, 'calc', tint(EXTRA.calc, '#65a30d')],
+  [/shelf|drag/i, 'tray', tint(EXTRA.tray, '#f97316')],
+  [/colou?r|picker|pipette/i, 'colour', tint(EXTRA.pipette, '#a855f7')],
+  [/launch|search/i, 'search', tint(EXTRA.search, '#ef4444')],
+  [/terminal|shell/i, 'term', tint(EXTRA.terminal, '#0d0f16')],
+  [/cpu|gpu|memory|hardware|battery|charg|disk|network/i, 'chip', tint(ICON.chip, '#3b82f6')],
+  [/dashboard|sync|stor|history/i, 'dash', tint(ICON.calendar, '#0027c4')],
+  [/privacy|secure|safe|local/i, 'shield', tint(ICON.shield, '#0d0f16')],
+];
+const FALLBACK_LOGO = { key: 'spark', node: tint(ICON.spark, '#0027c4') };
+function logoFor(text: string) {
+  const r = LOGO_RULES.find(([re]) => re.test(text));
+  return r ? { key: r[1], node: r[2] } : FALLBACK_LOGO;
+}
+function uniqueMarks(lines: string[]) {
+  const seen = new Set<string>();
+  const out: { key: string; node: React.ReactNode }[] = [];
+  for (const l of lines) for (const [re, key, node] of LOGO_RULES) if (re.test(l) && !seen.has(key)) { seen.add(key); out.push({ key, node }); }
+  return out.length ? out : [FALLBACK_LOGO];
+}
+
 const PLANS = [
   { name: 'Basic', price: '$0', per: '/forever', note: 'Everything you need to start, free for everyone.', items: ['The notch and Now Playing', 'Focus timer and Today', 'To-Dos, Note and Clipboard', 'Hardware'], cta: 'Download' },
   { name: 'Pro', price: '$49', per: '/year', note: 'For people who live in AI tools all day.', items: ['Everything in Basic', 'AI Usage for every tool', 'One-click handoff between tools', 'Synced lyrics', 'Priority updates'], cta: 'Download', featured: true },
@@ -166,6 +202,16 @@ export default function App() {
   const [risen, setRisen] = useState(false);
   // #zoom opens straight into the notch, so the close-up can be linked.
   const [zoomed, setZoomed] = useState(() => window.location.hash === '#zoom');
+  // Keep the stage clipped until the close-up has fully eased back out.
+  const [clip, setClip] = useState(zoomed);
+  useEffect(() => {
+    if (zoomed) { setClip(true); return; }
+    const t = window.setTimeout(() => setClip(false), 1400);
+    return () => window.clearTimeout(t);
+  }, [zoomed]);
+  useEffect(() => {
+    document.documentElement.classList.toggle('paged', view !== 'home');
+  }, [view]);
   const line = useCycle(LINES.length, 3400);
   const tag = useCycle(TAGS.length, 2400);
 
@@ -193,6 +239,7 @@ export default function App() {
         <a className="mark" href="#top" onClick={() => go('home')}>
           <img src="/mark.png" alt="" width="30" height="27" />
           <span>Overlay</span>
+          <em className="beta">Beta</em>
         </a>
         <nav>
           {NAV.map((item) => (
@@ -210,7 +257,7 @@ export default function App() {
             </aside>
 
             <div className="center">
-              <div className="stage" onClick={() => setZoomed(false)} title={zoomed ? 'Click outside the notch to zoom out' : ''}>
+              <div className={`stage${clip ? ' clip' : ''}`} onClick={() => setZoomed(false)} title={zoomed ? 'Click outside the notch to zoom out' : ''}>
                 <div className={`device${risen ? ' risen' : ''}${zoomed ? ' zoomed' : ''}`}>
                   <div className="lid">
                     <span className="cam" aria-hidden="true" />
@@ -278,9 +325,7 @@ export default function App() {
         {view === 'features' && (
           <section className="page">
             <header className="page-head">
-              <span className="kicker">Features</span>
               <h2>Everything you reach for, at the top of the screen.</h2>
-              <p>Overlay turns the space above your windows into a notch that opens on a click. These are the tools inside it today.</p>
             </header>
             <div className="feature-grid">
               {FEATURES.map((f, i) => {
@@ -291,11 +336,13 @@ export default function App() {
                       <span className="sheet-back" />
                       <span className="sheet-mid" />
                       <div className="cover">
-                        <span className="feature-logo">{f.logo}</span>
-                        <p>{f.body}</p>
+                        <span className="cover-logo">{f.logo}</span>
                       </div>
                     </div>
-                    <h3>{f.title}</h3>
+                    <div className="folder-cap">
+                      <h3>{f.title}</h3>
+                      <p>{f.body}</p>
+                    </div>
                   </article>
                 );
               })}
@@ -306,8 +353,7 @@ export default function App() {
         {view === 'pricing' && (
           <section className="page">
             <header className="page-head center-text">
-              <span className="kicker">Pricing</span>
-              <h2>Free to start. Pay when it earns its place.</h2>
+              <h2>Start free. Upgrade anytime.</h2>
             </header>
             <div className="plans">
               {PLANS.map((p) => (
@@ -325,22 +371,38 @@ export default function App() {
         )}
 
         {view === 'changelog' && (
-          <section className="page narrow">
+          <section className="page narrow wide-log">
             <header className="page-head">
-              <span className="kicker">Changelog</span>
               <h2>What's new in Overlay.</h2>
-              <p>Every change that ships, newest first.</p>
             </header>
             <ol className="changelog">
-              {changelog.map((c, k) => (
-                <li key={k}>
-                  <time>{new Date(`${c.date}T12:00`).toLocaleDateString([], { day: 'numeric', month: 'short', year: 'numeric' })}</time>
-                  <div>
-                    <h3>{c.title}</h3>
-                    {c.points.length > 0 && <ul>{c.points.map((pt, j) => <li key={j}>{pt}</li>)}</ul>}
-                  </div>
-                </li>
-              ))}
+              {changelog.map((c, k) => {
+                const marks = uniqueMarks([c.title, ...c.points]);
+                const when = new Date(`${c.date}T12:00`).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+                const id = `v-${c.date}-${k}`;
+                return (
+                  <li key={k} id={id}>
+                    <a className="date-pill" href="#changelog" onClick={(e) => { e.preventDefault(); document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' }); }}>
+                      <span className="dot" />{when}{k === 0 && <b>Latest</b>}
+                    </a>
+                    <article className="release">
+                      <div className="release-art" aria-hidden="true">
+                        {marks.slice(0, 6).map((m, n) => <span className="art-tile" key={m.key} style={{ '--j': n } as React.CSSProperties}>{m.node}</span>)}
+                      </div>
+                      <div className="release-body">
+                        <h3>{c.title}</h3>
+                        {c.points.length > 0 && (
+                          <ul>
+                            {c.points.map((pt, n) => (
+                              <li key={n}><span className="pt-logo">{logoFor(pt).node}</span><span>{pt}</span></li>
+                            ))}
+                          </ul>
+                        )}
+                      </div>
+                    </article>
+                  </li>
+                );
+              })}
             </ol>
             {changelog.length === 0 && <p className="fine">No entries yet.</p>}
           </section>
@@ -348,7 +410,7 @@ export default function App() {
 
         {view === 'privacy' && (
           <section className="page narrow legal">
-            <header className="page-head"><span className="kicker">Legal</span><h2>Privacy Policy</h2><p>Last updated November 2026</p></header>
+            <header className="page-head"><h2>Privacy Policy</h2><p>Last updated November 2026</p></header>
             <h3>What stays on your PC</h3>
             <p>Your settings, focus history, to-dos, notes and AI usage are stored on your computer. Overlay has no account and does not upload them.</p>
             <h3>What leaves your PC</h3>
@@ -362,7 +424,7 @@ export default function App() {
 
         {view === 'terms' && (
           <section className="page narrow legal">
-            <header className="page-head"><span className="kicker">Legal</span><h2>Terms of Service</h2><p>Last updated November 2026</p></header>
+            <header className="page-head"><h2>Terms of Service</h2><p>Last updated November 2026</p></header>
             <h3>The beta</h3>
             <p>Overlay for Windows is in beta. It is provided as is, and features may change between builds.</p>
             <h3>Using Overlay</h3>

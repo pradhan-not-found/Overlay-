@@ -33,7 +33,8 @@ function changelog(): Plugin {
           else if (cur && line.trim()) cur += ' ' + line.trim()
         }
         if (cur) points.push(cur)
-        return { date, title: title.trim().replace(/\.$/, ''), points: points.filter((p) => !hidden.test(p)).slice(0, 5) }
+        const clean = (t: string) => t.replace(/\s*Co-Authored-By:.*$/is, '').trim()
+        return { date, title: title.trim().replace(/\.$/, '').replace(/^(website|app|overlay)\s*:\s*/i, '').replace(/^./, (ch) => ch.toUpperCase()), points: points.map(clean).filter((p) => p && !hidden.test(p)).slice(0, 5) }
       }).filter((e) => !/^landing|^fix:|^feat:|^chore|^style|^revert|^refactor|^docs|^test|^ci\b|^wip|^merge|typescript|download|filename|waitlist|for build|beta access|beta tag|navbar|header|repos/i.test(e.title) && !hidden.test(e.title))
     } catch {
       return []

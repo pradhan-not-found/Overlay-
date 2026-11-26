@@ -153,7 +153,7 @@ main {
   border-radius: 18px;
 }
 
-.stage:has(.zoomed) { overflow: hidden; }
+.stage.clip, .stage:has(.zoomed) { overflow: hidden; }
 
 .stage:has(.zoomed) { cursor: zoom-out; }
 
