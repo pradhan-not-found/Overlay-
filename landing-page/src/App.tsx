@@ -136,9 +136,9 @@ const FEATURES: { title: string; body: string; logo: React.ReactNode }[] = [
 ];
 
 const PLANS = [
-  { name: 'Basic', price: 'Free', note: 'For everyone', items: ['The notch and Now Playing', 'Focus timer and Today', 'To-Dos, Note and Clipboard', 'Hardware'], cta: 'Download' },
-  { name: 'Pro', price: '$49', per: '/ year', note: 'For people who live in AI tools', items: ['Everything in Basic', 'AI Usage for every tool', 'One-click handoff between tools', 'Synced lyrics', 'Priority updates'], cta: 'Download', featured: true },
-  { name: 'Lifetime', price: '$149', per: 'once', note: 'Pay once, keep it', items: ['Everything in Pro', 'Every future update', 'Early builds'], cta: 'Download' },
+  { name: 'Basic', price: '$0', per: '/forever', note: 'Everything you need to start, free for everyone.', items: ['The notch and Now Playing', 'Focus timer and Today', 'To-Dos, Note and Clipboard', 'Hardware'], cta: 'Download' },
+  { name: 'Pro', price: '$49', per: '/year', note: 'For people who live in AI tools all day.', items: ['Everything in Basic', 'AI Usage for every tool', 'One-click handoff between tools', 'Synced lyrics', 'Priority updates'], cta: 'Download', featured: true },
+  { name: 'Lifetime', price: '$149', per: '/once', note: 'Pay once and keep every update.', items: ['Everything in Pro', 'Every future update', 'Early builds'], cta: 'Download' },
 ];
 
 export default function App() {
@@ -204,7 +204,37 @@ export default function App() {
                     </div>
                   </div>
                   <div className="hinge" />
-                  <div className="deck"><span className="groove" /></div>
+                  <div className="deck" aria-hidden="true">
+                    <svg viewBox="0 0 1000 30" preserveAspectRatio="none">
+                      <defs>
+                        <linearGradient id="alu" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0" stopColor="#fbfbfc" />
+                          <stop offset="0.16" stopColor="#e6e7ea" />
+                          <stop offset="0.55" stopColor="#c8cad0" />
+                          <stop offset="0.82" stopColor="#a6a9b0" />
+                          <stop offset="1" stopColor="#7b7e86" />
+                        </linearGradient>
+                        <linearGradient id="alu-side" x1="0" y1="0" x2="1" y2="0">
+                          <stop offset="0" stopColor="#000" stopOpacity="0.14" />
+                          <stop offset="0.05" stopColor="#000" stopOpacity="0" />
+                          <stop offset="0.95" stopColor="#000" stopOpacity="0" />
+                          <stop offset="1" stopColor="#000" stopOpacity="0.14" />
+                        </linearGradient>
+                        <linearGradient id="scoop" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0" stopColor="#8e9198" />
+                          <stop offset="1" stopColor="#c4c7cd" />
+                        </linearGradient>
+                      </defs>
+                      {/* The slab: a straight top edge, ends that roll under, a slightly narrower foot. */}
+                      <path d="M6 0H994Q1000 0 999.4 5L997 19Q995 27 982 28.6Q900 30 500 30Q100 30 18 28.6Q5 27 3 19L0.6 5Q0 0 6 0Z" fill="url(#alu)" />
+                      <path d="M6 0H994Q1000 0 999.4 5L997 19Q995 27 982 28.6Q900 30 500 30Q100 30 18 28.6Q5 27 3 19L0.6 5Q0 0 6 0Z" fill="url(#alu-side)" />
+                      {/* The thumb scoop, cut into the top edge. */}
+                      <path d="M432 0Q438 0 440 4Q443 11 456 11H544Q557 11 560 4Q562 0 568 0Z" fill="url(#scoop)" />
+                      <path d="M440 4Q443 11 456 11H544Q557 11 560 4" fill="none" stroke="#fff" strokeOpacity="0.7" strokeWidth="1" vectorEffect="non-scaling-stroke" />
+                      {/* A crisp highlight along the front edge. */}
+                      <path d="M6 0.6H432M568 0.6H994" stroke="#fff" strokeWidth="1" vectorEffect="non-scaling-stroke" />
+                    </svg>
+                  </div>
                   <div className="floor" />
                 </div>
               </div>
@@ -255,14 +285,13 @@ export default function App() {
             </header>
             <div className="plans">
               {PLANS.map((p) => (
-                <article className={`plan${p.featured ? ' featured' : ''}`} key={p.name}>
-                  {p.featured && <span className="badge">Most popular</span>}
+                <a className={`plan${p.featured ? ' featured' : ''}`} key={p.name} href={WINDOWS} rel="noopener" aria-label={`${p.name}: download`}>
                   <h3>{p.name}</h3>
-                  <p className="plan-note">{p.note}</p>
                   <p className="price"><b>{p.price}</b>{p.per && <span>{p.per}</span>}</p>
-                  <ul>{p.items.map((it) => <li key={it}><Stroke d="m5 12.5 4.5 4.5L19 7.5" />{it}</li>)}</ul>
-                  <a className={`plan-cta${p.featured ? ' solid' : ''}`} href={WINDOWS} rel="noopener">{p.cta}</a>
-                </article>
+                  <p className="plan-note">{p.note}</p>
+                  <ul>{p.items.map((it) => <li key={it}>{it}</li>)}</ul>
+                  <span className="plan-arrow" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M7 17 17 7M8.5 7H17v8.5" /></svg></span>
+                </a>
               ))}
             </div>
             <p className="fine">Prices in USD. The Windows beta is free while it lasts.</p>

@@ -148,24 +148,27 @@ main {
   width: min(700px, 100%, calc((100cqh - 110px) * 1.72));
   aspect-ratio: 100 / 58;
   flex: 0 0 auto;
-  overflow: hidden;
+  overflow: visible;
   cursor: zoom-in;
   border-radius: 18px;
 }
+
+.stage:has(.zoomed) { overflow: hidden; }
 
 .stage:has(.zoomed) { cursor: zoom-out; }
 
 .device {
   position: absolute;
   inset: 0;
-  transform: translateY(105%);
+  opacity: 0;
+  transform: translateY(6%);
   transform-origin: 50% 0%;
   will-change: transform;
-  transition: transform 1.1s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: transform 1.1s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.8s ease;
 }
 
-.device.risen { transform: translateY(0); }
-.device.risen { transition: transform 0.9s cubic-bezier(0.65, 0, 0.35, 1) 0.42s; }
+.device.risen { transform: translateY(0); opacity: 1; }
+.device.risen { transition: transform 0.9s cubic-bezier(0.65, 0, 0.35, 1) 0.42s, opacity 0.8s ease; }
 .device.risen.zoomed { transform: scale(1.8); transition: transform 0.85s cubic-bezier(0.65, 0, 0.35, 1) 0s; }
 
 .lid {
@@ -250,33 +253,16 @@ main {
 
 .deck {
   position: absolute;
-  left: 6%;
-  width: 88%;
-  top: calc(2.3% + 81% * 10.35 / 16 * 100 / 58);
-  height: 3.1%;
-  border-radius: 2px 2px 26px 26px / 2px 2px 18px 18px;
-  background:
-    linear-gradient(90deg, rgba(0, 0, 0, 0.12) 0%, transparent 6%, transparent 94%, rgba(0, 0, 0, 0.12) 100%),
-    linear-gradient(180deg, #fafbfc 0%, #e3e5e9 18%, #c9ccd2 55%, #a3a7ae 85%, #7f838b 100%);
-  box-shadow:
-    inset 0 1px 0 #fff,
-    inset 0 -1.5px 1px rgba(0, 0, 0, 0.16),
-    0 1px 1.5px rgba(10, 12, 20, 0.18);
+  left: 5.5%;
+  width: 89%;
+  top: calc(2.25% + 81% * 10.35 / 16 * 100 / 58);
+  height: 3.3%;
+  filter: drop-shadow(0 1px 1px rgba(10, 12, 20, 0.22));
 }
 
+.deck svg { display: block; width: 100%; height: 100%; }
 
 
-.groove {
-  position: absolute;
-  left: 50%;
-  top: 0;
-  width: 13%;
-  height: 44%;
-  transform: translateX(-50%);
-  border-radius: 0 0 14px 14px / 0 0 9px 9px;
-  background: linear-gradient(180deg, #a2a6ad 0%, #c7cad0 100%);
-  box-shadow: inset 0 1.5px 2px rgba(0, 0, 0, 0.28), 0 1px 0 rgba(255, 255, 255, 0.7);
-}
 
 .floor {
   position: absolute;
