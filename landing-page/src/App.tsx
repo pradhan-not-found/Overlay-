@@ -209,6 +209,22 @@ function logoFor(text: string) {
   return r ? { key: r[1], node: r[2] } : FALLBACK_LOGO;
 }
 
+// One small icon per plan line.
+const PLAN_ICON: Record<string, string> = {
+  'The notch and Now Playing': 'M3.5 6.5a2 2 0 0 1 2-2h13a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2h-13a2 2 0 0 1-2-2ZM9 4.5h6v1.2a1.5 1.5 0 0 1-1.5 1.5h-3A1.5 1.5 0 0 1 9 5.7Z',
+  'Focus timer and Today': ICON.timer,
+  'To-Dos, Note and Clipboard': ICON.check,
+  'Hardware': ICON.chip,
+  'Everything in Basic': 'M12 3.5 3.5 8 12 12.5 20.5 8ZM3.5 12 12 16.5 20.5 12M3.5 16 12 20.5 20.5 16',
+  'AI Usage for every tool': ICON.spark,
+  'One-click handoff between tools': 'M7 8h10.5M14.5 5l3 3-3 3M17 16H6.5M9.5 13l-3 3 3 3',
+  'Synced lyrics': ICON.music,
+  'Priority updates': 'M13 3.5 5.5 13H12l-1 7.5L18.5 11H12Z',
+  'Everything in Pro': 'M12 3.5 3.5 8 12 12.5 20.5 8ZM3.5 12 12 16.5 20.5 12M3.5 16 12 20.5 20.5 16',
+  'Every future update': 'M12 4v11M7.5 10.5 12 15l4.5-4.5M5 19.5h14',
+  'Early builds': 'M9.5 3.5h5M10.5 3.5v5.2L5.3 17.6A2 2 0 0 0 7 20.5h10a2 2 0 0 0 1.7-2.9L13.5 8.7V3.5M7.5 14h9',
+};
+
 const PLANS = [
   { name: 'Basic', price: '$0', per: '/forever', note: 'Everything you need to start, free for everyone.', items: ['The notch and Now Playing', 'Focus timer and Today', 'To-Dos, Note and Clipboard', 'Hardware'], cta: 'Download' },
   { name: 'Pro', price: '$49', per: '/year', note: 'For people who live in AI tools all day.', items: ['Everything in Basic', 'AI Usage for every tool', 'One-click handoff between tools', 'Synced lyrics', 'Priority updates'], cta: 'Download', featured: true },
@@ -295,14 +311,14 @@ function Shot({ kind, items, version, when, seed }: { kind: ShotKind; items: str
     <figure className="rel-shot shot-list" aria-hidden="true">
       <svg className="shot-bg" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice">
         <defs>
-          <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#2f6fd6" /><stop offset="0.45" stopColor="#7aa6e8" /><stop offset="0.75" stopColor="#cdb7d8" /><stop offset="1" stopColor="#f3b88f" /></linearGradient>
-          <radialGradient id="sun" cx="0.5" cy="0.5" r="0.5"><stop offset="0" stopColor="#fff" /><stop offset="0.35" stopColor="#fff" stopOpacity="0.7" /><stop offset="1" stopColor="#fff" stopOpacity="0" /></radialGradient>
+          <linearGradient id="sky" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stopColor="#0a1238" /><stop offset="0.55" stopColor="#0b1a5c" /><stop offset="1" stopColor="#0027c4" /></linearGradient>
+          <radialGradient id="sun" cx="0.5" cy="0.5" r="0.5"><stop offset="0" stopColor="#6f8dff" stopOpacity="0.55" /><stop offset="1" stopColor="#6f8dff" stopOpacity="0" /></radialGradient>
         </defs>
         <rect width="1600" height="900" fill="url(#sky)" />
-        <circle cx="1200" cy="260" r="200" fill="url(#sun)" />
-        <path d="M0 620Q300 500 620 580T1240 540T1600 560V900H0Z" fill="#fff" fillOpacity="0.16" />
-        <path d="M0 720Q380 600 820 690T1600 650V900H0Z" fill="#fff" fillOpacity="0.26" />
-        <path d="M0 820Q500 740 1000 800T1600 780V900H0Z" fill="#fff" fillOpacity="0.32" />
+        <circle cx="1180" cy="240" r="520" fill="url(#sun)" />
+        <path d="M0 620Q300 500 620 580T1240 540T1600 560V900H0Z" fill="#fff" fillOpacity="0.035" />
+        <path d="M0 720Q380 600 820 690T1600 650V900H0Z" fill="#fff" fillOpacity="0.05" />
+        <path d="M0 820Q500 740 1000 800T1600 780V900H0Z" fill="#fff" fillOpacity="0.07" />
       </svg>
       <div className="display shot-display shot-over"><NotchDemo open={false} onOpen={() => {}} onClose={() => {}} /></div>
       <div className="rel-win">
@@ -498,7 +514,7 @@ export default function App() {
                   <h3>{p.name}</h3>
                   <p className="price"><b>{p.price}</b>{p.per && <span>{p.per}</span>}</p>
                   <p className="plan-note">{p.note}</p>
-                  <ul>{p.items.map((it) => <li key={it}>{it}</li>)}</ul>
+                  <ul className="plan-list">{p.items.map((it) => <li key={it}><span className="plan-ico"><Stroke d={PLAN_ICON[it] || 'M5 12.5l4.5 4.5L19 7.5'} /></span>{it}</li>)}</ul>
                   <span className="plan-arrow" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M7 17 17 7M8.5 7H17v8.5" /></svg></span>
                 </a>
               ))}

@@ -47,7 +47,7 @@ function changelog(): Plugin {
         const clean = (t: string) => t.replace(/\s*Co-Authored-By:.*$/is, '').trim()
         const version = shipped(hash)
         return { version, date, title: title.trim().replace(/\.$/, '').replace(/^(website|app|overlay)\s*:\s*/i, '').replace(/^./, (ch) => ch.toUpperCase()), points: points.map(clean).filter((p) => p && !hidden.test(p)).slice(0, 5) }
-      }).filter((e) => !/^landing|^build:|^ci:|powershell|workflow|runner|\bnpm\b|electron-builder|^fix:|^feat:|^chore|^style|^revert|^refactor|^docs|^test|^ci\b|^wip|^merge|typescript|download|filename|waitlist|for build|beta access|beta tag|navbar|header|repos/i.test(e.title) && !hidden.test(e.title))
+      }).filter((e) => !/^landing|^build\b|vercel|rewrite|^ci:|powershell|workflow|runner|\bnpm\b|electron-builder|^fix:|^feat:|^chore|^style|^revert|^refactor|^docs|^test|^ci\b|^wip|^merge|typescript|download|filename|waitlist|for build|beta access|beta tag|navbar|header|repos/i.test(e.title) && !hidden.test(e.title))
     } catch {
       return []
     }
