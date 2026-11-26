@@ -46,6 +46,16 @@ try {
   console.warn('[Updater] electron-updater not available:', e.message);
 }
 
+// No release published yet (404, or an empty feed) means there is nothing newer.
+function reportUpdateError(e) {
+  const msg = String(e && e.message || e);
+  if (/404|no published versions|cannot find latest|unable to find latest|HttpError: 404/i.test(msg)) {
+    sendUpdateStatus('not-available', { version: app.getVersion() });
+  } else {
+    sendUpdateStatus('error', { message: msg });
+  }
+}
+
 // The last update state, so a window opened later still knows it.
 let lastUpdate = { event: 'idle' };
 let lastChecked = 0;
@@ -115,7 +125,7 @@ function initAutoUpdater() {
 
   autoUpdater.on('error', (err) => {
     console.error('[Updater] Error:', err.message);
-    sendUpdateStatus('error', { message: err.message });
+    reportUpdateError(err);
   });
 }
 
@@ -575,7 +585,16 @@ ipcMain.on('open-shortcut', (_e, target) => {
 
 ipcMain.handle('get-file-icon', async (_e, path) => {
   try {
-    const icon = await app.getFileIcon(path, { size: 'normal' });
+    // A Start menu shortcut has its own generic icon; use the app it points at.
+    let target = path;
+    if (/\.lnk$/i.test(String(path))) {
+      try {
+        const link = shell.readShortcutLink(path);
+        const iconFile = link.icon ? String(link.icon).replace(/,\s*-?\d+$/, '') : '';
+        target = (iconFile && fs.existsSync(iconFile) && iconFile) || (link.target && fs.existsSync(link.target) && link.target) || path;
+      } catch { /* not a readable shortcut */ }
+    }
+    const icon = await app.getFileIcon(target, { size: 'large' });
     return icon.toDataURL();
   } catch (err) {
     console.error('Failed to get file icon for', path, err);
@@ -686,13 +705,15 @@ const APP_ID = 'com.pradhan.overlay';
 app.setName('Overlay');
 
 function registerDevIdentity() {
-  if (process.platform !== 'win32' || app.isPackaged) return;
+  if (process.platform !== 'win32') return;
   try {
     const link = path.join(app.getPath('appData'), 'Microsoft', 'Windows', 'Start Menu', 'Programs', 'Overlay.lnk');
-    const icon = path.join(__dirname, '../build/icon.ico');
+    // The installer makes this shortcut; a copy run straight from a folder makes its own.
+    if (app.isPackaged && fs.existsSync(link)) return;
+    const icon = app.isPackaged ? process.execPath : path.join(__dirname, '../build/icon.ico');
     const options = {
       target: process.execPath,
-      args: `"${path.join(__dirname, '..')}"`,
+      args: app.isPackaged ? '' : `"${path.join(__dirname, '..')}"`,
       cwd: path.join(__dirname, '..'),
       description: 'Overlay',
       icon,
@@ -761,7 +782,7 @@ if (!gotTheLock) {
     // ── Auto-update: wire up events then check after 10 s (let app load first) ──
     initAutoUpdater();
     if (app.isPackaged && autoUpdater) {
-      const check = () => autoUpdater.checkForUpdates().catch(e => { console.warn('[Updater] check failed:', e.message); sendUpdateStatus('error', { message: e.message }); });
+      const check = () => autoUpdater.checkForUpdates().catch(e => { console.warn('[Updater] check failed:', e.message); reportUpdateError(e); });
       setTimeout(check, 10_000);
       // Look again every four hours while Overlay runs.
       setInterval(() => { if (lastUpdate.event !== 'downloading' && lastUpdate.event !== 'downloaded') check(); }, 4 * 60 * 60 * 1000);
@@ -800,9 +821,7 @@ ipcMain.handle('get-app-version', () => app.getVersion());
 ipcMain.on('check-for-updates', () => {
   if (!autoUpdater) return;
   if (app.isPackaged) {
-    autoUpdater.checkForUpdates().catch(e => {
-      sendUpdateStatus('error', { message: e.message });
-    });
+    autoUpdater.checkForUpdates().catch(e => reportUpdateError(e));
   } else {
     // Running from source: updates apply only to the installed app.
     sendUpdateStatus('not-available', { version: app.getVersion(), dev: true });

@@ -63,7 +63,7 @@ const send = (ch: string, ...a: any[]) => ipc?.send(ch, ...a);
 const invoke = (ch: string, ...a: any[]) => ipc?.invoke(ch, ...a) || Promise.resolve();
 
 // ─── State ────────────────────────────────────────────────────────────────────
-type Phase = 'idle' | 'expanded' | 'calendar' | 'count';
+type Phase = 'idle' | 'expanded' | 'calendar' | 'count' | 'mini';
 type TimerPhase = 'off' | 'focus' | 'paused' | 'break';
 
 let appPhase: Phase      = 'idle';
@@ -285,6 +285,7 @@ document.getElementById('app')!.innerHTML = `
           <span id="bat-svg"></span>
         </div>
         <button class="ibtn ibtn-sm" id="btn-collapse" title="Close">${chevronUpSvg}</button>
+        <button class="ibtn ibtn-sm" id="btn-mini" title="Minimise to a bubble"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 12h12"/></svg></button>
         <button class="ibtn ibtn-sm" id="btn-close-app" title="Hide Overlay">${closeSvgRaw}</button>
       </div>
     </header>
@@ -458,6 +459,9 @@ document.getElementById('app')!.innerHTML = `
 
   <!-- ══ COUNT SIDEBAR ══ -->
   <div class="view view-count" id="view-count"></div>
+
+  <!-- ══ MINI: a small bubble you can park in any corner ══ -->
+  <div class="view view-mini" id="view-mini"><img src="${overlayMark}" alt="" /></div>
 
   <div class="view" id="view-cal" style="flex-direction: row; width: 100%; height: 100%; padding: 16px 24px; gap: 24px; background: transparent; box-sizing: border-box; overflow: hidden; align-items: stretch; font-family: inherit;">
     <!-- Left: Events List -->
@@ -699,6 +703,7 @@ function setPhase(next: Phase) {
   viewExp.classList.toggle('active', false);
   viewCalEl.classList.toggle('active', false);
   viewCountEl.classList.toggle('active', false);
+  document.getElementById('view-mini')?.classList.toggle('active', next === 'mini');
   pill.setAttribute('data-phase', next);
 
   if (next === 'idle') {
@@ -1386,7 +1391,7 @@ pill.addEventListener('pointermove', e => {
   const half = pill.offsetWidth / 2;
   pillX = Math.min(Math.max(start.x + dx, half + 8), window.innerWidth - half - 8);
   pillY = Math.min(Math.max(start.y + dy, 0), window.innerHeight - pill.offsetHeight - 8);
-  docked = pillY < 28;
+  docked = appPhase === 'mini' ? false : pillY < 28;
   applyPos();
 });
 
@@ -1399,6 +1404,7 @@ pill.addEventListener('pointerup', e => {
     pill.classList.remove('dragging');
     if (docked) pillY = 0;
     applyPos();
+    if (appPhase === 'mini') { localStorage.setItem('miniPos', JSON.stringify({ x: pillX, y: pillY })); return; }
     send('set-setting', 'pillPos', JSON.stringify({ x: pillX, y: pillY, docked }));
     return; // a drag never toggles the notch
   }
@@ -1409,11 +1415,32 @@ pill.addEventListener('pointerup', e => {
   if (appPhase === 'expanded' && (t.closest('.space-stage') || t.closest('.exp-head'))) return;
   if (!camPopup.classList.contains('hidden')) { closeCamera(); return; }
   clearTimeout(hoverTimer);
+  if (appPhase === 'mini') { restoreFromMini(); return; }
   // A click on a notch that hover just opened keeps it open instead of closing it.
   if (pinClick) { pinClick = false; return; }
   openedByHover = false;
   setPhase(appPhase === 'idle' ? 'expanded' : 'idle');
 });
+
+// Minimise: the notch becomes a small bubble you can drag to any corner;
+// a click on it opens the full notch again.
+let beforeMini = { x: 0, y: 0, docked: true };
+function minimise() {
+  beforeMini = { x: pillX, y: pillY, docked };
+  const saved = (() => { try { return JSON.parse(localStorage.getItem('miniPos') || ''); } catch { return null; } })();
+  if (saved && typeof saved.x === 'number') { pillX = saved.x; pillY = saved.y; }
+  else { pillX = window.innerWidth - 48; pillY = 80; }
+  docked = false;
+  setPhase('mini');
+  applyPos();
+}
+function restoreFromMini() {
+  localStorage.setItem('miniPos', JSON.stringify({ x: pillX, y: pillY }));
+  pillX = beforeMini.x; pillY = beforeMini.y; docked = beforeMini.docked;
+  applyPos();
+  setPhase('expanded');
+}
+document.getElementById('btn-mini')?.addEventListener('click', (e) => { e.stopPropagation(); minimise(); });
 
 // Hover to open: resting on the closed notch opens it; leaving closes it again,
 // unless you are typing in it or it was opened with a click.
@@ -1424,7 +1451,7 @@ let leaveTimer = 0;
 const typing = () => { const a = document.activeElement as HTMLElement | null; return !!a && pill.contains(a) && ['INPUT', 'TEXTAREA', 'SELECT'].includes(a.tagName); };
 pill.addEventListener('mouseenter', () => {
   clearTimeout(leaveTimer);
-  if (!hoverOpen || appPhase !== 'idle' || dragging || (window as any).__overlayLocked) return;
+  if (!hoverOpen || appPhase !== 'idle' || dragging || (window as any).__overlayLocked) return; // never from the bubble
   hoverTimer = window.setTimeout(() => {
     if (appPhase !== 'idle' || dragging || pDown) return;
     openedByHover = true;

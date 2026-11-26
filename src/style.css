@@ -1190,3 +1190,12 @@ kbd { font: 600 10px var(--font); color: var(--muted); padding: 2px 6px; border-
 .update-chip.ready .uc-track { stroke: var(--accent); }
 @keyframes uc-breathe { 50% { transform: rotate(-90deg) scale(1.1); } }
 .update-chip:hover { background: rgba(255, 255, 255, 0.08); }
+
+/* ── Minimised: a round bubble with the mark ─────────────────────────── */
+.pill[data-phase='mini'] { --w: 46px; height: 46px; border-radius: 50% !important; border: 1px solid var(--line) !important; cursor: grab; }
+.pill[data-phase='mini']::before, .pill[data-phase='mini']::after { display: none; }
+.view-mini { justify-content: center; }
+.view-mini img { width: 20px; height: auto; opacity: 0.95; transition: transform 0.25s ease; }
+.pill[data-phase='mini']:hover .view-mini img { transform: scale(1.12); }
+
+/* Dashboard connection logos: white on their brand colour. */
