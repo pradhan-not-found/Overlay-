@@ -176,15 +176,14 @@ const LOGO_RULES: [RegExp, string, React.ReactNode][] = [
   [/privacy|secure|safe|local/i, 'shield', tint(ICON.shield, '#0d0f16')],
 ];
 const FALLBACK_LOGO = { key: 'spark', node: tint(ICON.spark, '#0027c4') };
+// "a, b and c" → ["A", "B", "C"], for the checklist in each release shot.
+function splitTitle(t: string) {
+  return t.split(/,\s*|\s+and\s+/i).map((x) => x.trim()).filter(Boolean).map(sentence).slice(0, 6);
+}
+function sentence(t: string) { return t.charAt(0).toUpperCase() + t.slice(1); }
 function logoFor(text: string) {
   const r = LOGO_RULES.find(([re]) => re.test(text));
   return r ? { key: r[1], node: r[2] } : FALLBACK_LOGO;
-}
-function uniqueMarks(lines: string[]) {
-  const seen = new Set<string>();
-  const out: { key: string; node: React.ReactNode }[] = [];
-  for (const l of lines) for (const [re, key, node] of LOGO_RULES) if (re.test(l) && !seen.has(key)) { seen.add(key); out.push({ key, node }); }
-  return out.length ? out : [FALLBACK_LOGO];
 }
 
 const PLANS = [
@@ -377,28 +376,41 @@ export default function App() {
             </header>
             <ol className="changelog">
               {changelog.map((c, k) => {
-                const marks = uniqueMarks([c.title, ...c.points]);
                 const when = new Date(`${c.date}T12:00`).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+                const items = splitTitle(c.title);
                 const id = `v-${c.date}-${k}`;
                 return (
                   <li key={k} id={id}>
-                    <a className="date-pill" href="#changelog" onClick={(e) => { e.preventDefault(); document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' }); }}>
-                      <span className="dot" />{when}{k === 0 && <b>Latest</b>}
-                    </a>
-                    <article className="release">
-                      <div className="release-art" aria-hidden="true">
-                        {marks.slice(0, 6).map((m, n) => <span className="art-tile" key={m.key} style={{ '--j': n } as React.CSSProperties}>{m.node}</span>)}
-                      </div>
-                      <div className="release-body">
-                        <h3>{c.title}</h3>
-                        {c.points.length > 0 && (
+                    <div className="rel-meta">
+                      <a className="ver-pill" href="#changelog" onClick={(e) => { e.preventDefault(); document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' }); }}>
+                        <WindowsMark />{c.version}
+                      </a>
+                      <time>{when}</time>
+                    </div>
+                    <article className="rel">
+                      <h3>{sentence(c.title)}</h3>
+                      {c.points.length > 0 && <p className="rel-text">{c.points.map((pt) => pt.replace(/\.?$/, '.')).join(' ')}</p>}
+                      <figure className="rel-shot" aria-hidden="true">
+                        <div className="rel-sky" />
+                        <svg className="rel-hills" viewBox="0 0 1000 260" preserveAspectRatio="none">
+                          <path d="M0 150Q180 70 360 130T720 110T1000 120V260H0Z" fill="rgba(255,255,255,0.18)" />
+                          <path d="M0 200Q220 120 470 180T1000 160V260H0Z" fill="rgba(255,255,255,0.28)" />
+                        </svg>
+                        <span className="rel-notch"><img src="/mark.png" alt="" /><i /></span>
+                        <div className="rel-win">
+                          <div className="rel-bar">
+                            <img src="/mark.png" alt="" />
+                            <b>Overlay</b>
+                            <span>{c.version === 'Beta' ? 'Beta build' : `Version ${c.version}`}</span>
+                          </div>
+                          <time>{when}</time>
+                          <h4>Overlay {c.version === 'Beta' ? 'beta' : c.version}</h4>
+                          <p>What's new:</p>
                           <ul>
-                            {c.points.map((pt, n) => (
-                              <li key={n}><span className="pt-logo">{logoFor(pt).node}</span><span>{pt}</span></li>
-                            ))}
+                            {items.map((it, n) => <li key={n}><span className="tick" /><span className="it-logo">{logoFor(it).node}</span>{it}</li>)}
                           </ul>
-                        )}
-                      </div>
+                        </div>
+                      </figure>
                     </article>
                   </li>
                 );

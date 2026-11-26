@@ -6,7 +6,7 @@ import { fileURLToPath } from 'node:url'
 
 const here = dirname(fileURLToPath(import.meta.url))
 
-type Entry = { date: string; title: string; points: string[] }
+type Entry = { date: string; title: string; points: string[]; version: string }
 
 /**
  * The changelog page is built from the app's commit history at build time,
@@ -15,9 +15,18 @@ type Entry = { date: string; title: string; points: string[] }
  */
 function changelog(): Plugin {
   const id = 'virtual:changelog'
+  // The release a change first shipped in, or Beta if it has not shipped yet.
+  const shipped = (hash: string) => {
+    try {
+      const t = execFileSync('git', ['describe', '--tags', '--contains', hash], { cwd: resolve(here, '..'), encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim()
+      return t.replace(/[~^].*$/, '').replace(/^v/, '') || 'Beta'
+    } catch {
+      return 'Beta'
+    }
+  }
   const read = (): Entry[] => {
     try {
-      const raw = execFileSync('git', ['log', '--no-merges', '-n', '80', '--date=short', '--pretty=format:%ad%x1f%s%x1f%b%x1e'], {
+      const raw = execFileSync('git', ['log', '--no-merges', '-n', '80', '--date=short', '--pretty=format:%ad%x1f%s%x1f%b%x1f%h%x1e'], {
         cwd: resolve(here, '..'),
         encoding: 'utf8',
         maxBuffer: 4_000_000,
@@ -25,7 +34,7 @@ function changelog(): Plugin {
       // Leave out anything internal: hosting, tooling, file names and code.
       const hidden = /github|youtube|cursor|co-authored|claude\.com|repo|\.cjs|\.ts\b|\.md\b|landing|electron|webutils|openpath|file\.path|\beval\b|[a-z]\.[a-z]+\(|\b[a-z]+[A-Z][a-zA-Z]+\b/
       return raw.split('\x1e').map((r) => r.trim()).filter(Boolean).map((r) => {
-        const [date, title, body] = r.split('\x1f')
+        const [date, title, body, hash] = r.split('\x1f')
         const points: string[] = []
         let cur = ''
         for (const line of (body || '').split('\n')) {
@@ -34,7 +43,8 @@ function changelog(): Plugin {
         }
         if (cur) points.push(cur)
         const clean = (t: string) => t.replace(/\s*Co-Authored-By:.*$/is, '').trim()
-        return { date, title: title.trim().replace(/\.$/, '').replace(/^(website|app|overlay)\s*:\s*/i, '').replace(/^./, (ch) => ch.toUpperCase()), points: points.map(clean).filter((p) => p && !hidden.test(p)).slice(0, 5) }
+        const version = shipped(hash)
+        return { version, date, title: title.trim().replace(/\.$/, '').replace(/^(website|app|overlay)\s*:\s*/i, '').replace(/^./, (ch) => ch.toUpperCase()), points: points.map(clean).filter((p) => p && !hidden.test(p)).slice(0, 5) }
       }).filter((e) => !/^landing|^fix:|^feat:|^chore|^style|^revert|^refactor|^docs|^test|^ci\b|^wip|^merge|typescript|download|filename|waitlist|for build|beta access|beta tag|navbar|header|repos/i.test(e.title) && !hidden.test(e.title))
     } catch {
       return []
