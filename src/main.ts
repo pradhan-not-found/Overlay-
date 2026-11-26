@@ -1413,6 +1413,8 @@ pill.addEventListener('pointerup', e => {
   if (appPhase === 'expanded' && (t.closest('.space-stage') || t.closest('.exp-head'))) return;
   if (!camPopup.classList.contains('hidden')) { closeCamera(); return; }
   clearTimeout(hoverTimer);
+  // A click on a notch that hover just opened keeps it open instead of closing it.
+  if (pinClick) { pinClick = false; return; }
   openedByHover = false;
   setPhase(appPhase === 'idle' ? 'expanded' : 'idle');
 });
@@ -1442,7 +1444,8 @@ pill.addEventListener('mouseleave', () => {
   }, 450);
 });
 // A click inside makes it stay open until you close it.
-pill.addEventListener('pointerdown', () => { if (appPhase === 'expanded') openedByHover = false; });
+let pinClick = false;
+pill.addEventListener('pointerdown', () => { pinClick = appPhase === 'expanded' && openedByHover; if (pinClick) openedByHover = false; });
 ipc?.on('widget-config', (_e: unknown, cfg: any) => { if (cfg && 'openOnHover' in cfg) hoverOpen = cfg.openOnHover !== false; });
 void invoke('get-config').then((cfg: any) => { hoverOpen = cfg?.openOnHover !== false; });
 
