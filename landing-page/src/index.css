@@ -169,7 +169,7 @@ main {
 
 .device.risen { transform: translateY(0); opacity: 1; }
 .device.risen { transition: transform 0.9s cubic-bezier(0.65, 0, 0.35, 1) 0.42s, opacity 0.8s ease; }
-.device.risen.zoomed { transform: scale(1.8); transition: transform 0.85s cubic-bezier(0.65, 0, 0.35, 1) 0s; }
+.device.risen.zoomed { transform: scale(1.5); transition: transform 0.85s cubic-bezier(0.65, 0, 0.35, 1) 0s; }
 
 .lid {
   position: absolute;

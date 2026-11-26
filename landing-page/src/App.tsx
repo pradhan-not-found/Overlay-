@@ -135,6 +135,22 @@ const FEATURES: { title: string; body: string; logo: React.ReactNode }[] = [
   { title: 'Hardware', body: 'CPU, memory, GPU, disk and network, live while the notch is open.', logo: tint(ICON.chip, '#3b82f6') },
 ];
 
+// Folder covers: [cover, text, back sheet, middle sheet].
+const COVERS: [string, string, string, string][] = [
+  ['#1ed760', '#06240f', '#0d0f16', '#f1f2f4'],
+  ['#d97757', '#fff', '#2b2f3a', '#f3d9cc'],
+  ['#0027c4', '#fff', '#ffcf3f', '#e7ebff'],
+  ['#ffd23f', '#2a2100', '#ff6b3d', '#fff6d6'],
+  ['#5865f2', '#fff', '#0d0f16', '#dfe2ff'],
+  ['#14171f', '#fff', '#1ed760', '#d7dae1'],
+  ['#ffb3d9', '#4a0f2c', '#e8175d', '#fff'],
+  ['#e9ecef', '#14171f', '#14b8a6', '#fff'],
+  ['#38bdf8', '#04263a', '#0d0f16', '#e3f6ff'],
+  ['#c6f432', '#1d2600', '#14171f', '#f6ffd6'],
+  ['#ff5a4e', '#fff', '#ffd23f', '#ffe1de'],
+  ['#2e3440', '#fff', '#3b82f6', '#dfe3ea'],
+];
+
 const PLANS = [
   { name: 'Basic', price: '$0', per: '/forever', note: 'Everything you need to start, free for everyone.', items: ['The notch and Now Playing', 'Focus timer and Today', 'To-Dos, Note and Clipboard', 'Hardware'], cta: 'Download' },
   { name: 'Pro', price: '$49', per: '/year', note: 'For people who live in AI tools all day.', items: ['Everything in Basic', 'AI Usage for every tool', 'One-click handoff between tools', 'Synced lyrics', 'Priority updates'], cta: 'Download', featured: true },
@@ -167,11 +183,12 @@ export default function App() {
   const go = (v: View) => {
     setView(v);
     setZoomed(false);
+    window.scrollTo({ top: 0 });
     window.history.replaceState(null, '', v === 'home' ? window.location.pathname : `#${v}`);
   };
 
   return (
-    <div className="sheet">
+    <div className={`sheet${view === 'home' ? '' : ' scroll'}`}>
       <header className="top">
         <a className="mark" href="#top" onClick={() => go('home')}>
           <img src="/mark.png" alt="" width="30" height="27" />
@@ -266,13 +283,22 @@ export default function App() {
               <p>Overlay turns the space above your windows into a notch that opens on a click. These are the tools inside it today.</p>
             </header>
             <div className="feature-grid">
-              {FEATURES.map((f) => (
-                <article className="feature" key={f.title}>
-                  <span className="feature-logo">{f.logo}</span>
-                  <h3>{f.title}</h3>
-                  <p>{f.body}</p>
-                </article>
-              ))}
+              {FEATURES.map((f, i) => {
+                const [bg, ink, back, mid] = COVERS[i % COVERS.length];
+                return (
+                  <article className="folder" key={f.title} style={{ '--bg': bg, '--ink': ink, '--back': back, '--mid': mid } as React.CSSProperties}>
+                    <div className="folder-art">
+                      <span className="sheet-back" />
+                      <span className="sheet-mid" />
+                      <div className="cover">
+                        <span className="feature-logo">{f.logo}</span>
+                        <p>{f.body}</p>
+                      </div>
+                    </div>
+                    <h3>{f.title}</h3>
+                  </article>
+                );
+              })}
             </div>
           </section>
         )}

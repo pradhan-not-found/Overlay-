@@ -67,7 +67,28 @@ nav .cta:hover, nav .cta.on { background: #1c2030; color: #fff; }
 .page-head h2 { font-family: var(--sans); font-size: clamp(26px, 3vw, 36px); font-weight: 600; line-height: 1.12; letter-spacing: -0.03em; color: #0d0f16; max-width: 22ch; }
 .page-head p { font-size: 15px; line-height: 1.55; color: #555a68; max-width: 52ch; }
 
-.feature-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
+.feature-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 40px 22px; padding-top: 10px; }
+.folder { display: flex; flex-direction: column; gap: 12px; cursor: default; }
+.folder-art { position: relative; aspect-ratio: 1 / 1; margin-top: 18px; }
+.folder-art .sheet-back, .folder-art .sheet-mid { position: absolute; left: 50%; border-radius: 2px; transition: transform 0.45s cubic-bezier(0.2, 0.8, 0.2, 1); }
+.folder-art .sheet-back { top: -18px; width: 74%; height: 40%; margin-left: -37%; background: var(--back); }
+.folder-art .sheet-mid { top: -9px; width: 86%; height: 40%; margin-left: -43%; background: var(--mid); box-shadow: 0 -1px 0 rgba(15, 18, 30, 0.06); }
+.folder:hover .sheet-back { transform: translateY(-8px); }
+.folder:hover .sheet-mid { transform: translateY(-4px); }
+.cover {
+  position: absolute; inset: 0;
+  display: flex; flex-direction: column; justify-content: space-between; gap: 14px;
+  padding: 18px;
+  background: var(--bg); color: var(--ink);
+  border-radius: 2px;
+  box-shadow: 0 1px 0 rgba(15, 18, 30, 0.04), 0 18px 30px -24px rgba(15, 18, 30, 0.55);
+  transition: transform 0.45s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.45s ease;
+}
+.folder:hover .cover { transform: translateY(2px); box-shadow: 0 1px 0 rgba(15, 18, 30, 0.04), 0 12px 22px -20px rgba(15, 18, 30, 0.5); }
+.cover .feature-logo { margin: 0; }
+.cover p { font-size: 15px; line-height: 1.38; font-weight: 500; letter-spacing: -0.01em; color: var(--ink); }
+.folder h3 { font-size: 13.5px; font-weight: 500; letter-spacing: -0.005em; color: #0d0f16; }
+.feature-grid-old { display: none; }
 .feature {
   display: flex;
   flex-direction: column;
@@ -178,3 +199,17 @@ footer a:hover { color: #0027c4; }
 .changelog ul li { font-size: 14px; line-height: 1.55; color: #4a4f5c; }
 .changelog ul li::marker { color: #0027c4; }
 @media (max-width: 560px) { .changelog > li { grid-template-columns: 1fr; gap: 6px; } }
+
+/* ── Pages scroll like normal web pages, with the browser's scrollbar ── */
+html:has(.sheet.scroll), html:has(.sheet.scroll) body, html:has(.sheet.scroll) #root { height: auto; min-height: 100%; overflow-x: hidden; overflow-y: auto; }
+.sheet.scroll { height: auto; max-height: none; min-height: 100dvh; overflow: visible; }
+.sheet.scroll main { display: block; overflow: visible; flex: 1 0 auto; }
+.sheet.scroll .page { max-height: none; overflow: visible; padding: 56px 4px 56px; scrollbar-gutter: auto; }
+.sheet.scroll { overflow: visible; }
+.sheet.scroll .top { position: sticky; top: 0; z-index: 5; margin-top: -28px; padding: 28px 0 14px; height: auto; flex: 0 0 auto; isolation: isolate; }
+.sheet.scroll .top::before { content: ''; position: absolute; z-index: -1; top: 0; bottom: 0; left: calc(50% - 50vw); right: calc(50% - 50vw); background: rgba(246, 247, 250, 0.84); backdrop-filter: blur(12px) saturate(1.2); -webkit-backdrop-filter: blur(12px) saturate(1.2); }
+.sheet.scroll footer { margin-top: 24px; padding: 18px 0 6px; border-top: 1px solid rgba(15, 18, 30, 0.07); height: auto; }
+html:has(.sheet.scroll) { overflow-y: scroll !important; scrollbar-width: auto; scrollbar-color: rgba(15, 18, 30, 0.42) rgba(15, 18, 30, 0.05); }
+html::-webkit-scrollbar { width: 12px; background: rgba(15, 18, 30, 0.05); }
+html::-webkit-scrollbar-thumb { background: rgba(15, 18, 30, 0.4); border-radius: 10px; border: 3px solid transparent; background-clip: padding-box; }
+html::-webkit-scrollbar-thumb:hover { background-color: rgba(15, 18, 30, 0.36); }
