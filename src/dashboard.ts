@@ -1,6 +1,8 @@
 import '@fontsource-variable/instrument-sans';
 import './dashboard.css';
 import { DASH_ICONS, mountDashExtras } from './dashboard-extra';
+import { SET_ICONS, SETTINGS_PAGES, mountSettings, paintSettings, profileHtml } from './dashboard-settings';
+import overlayMark from './assets/overlay-mark.png';
 
 // ─── IPC ────────────────────────────────────────────────────────────────────
 let ipc: any = null;
@@ -54,7 +56,9 @@ function streakGlow(n: number) {
 }
 
 // ─── State ──────────────────────────────────────────────────────────────────
-let activeNav = 'lockin';
+let activeNav = 'stats';
+// Lock In, countdown and the stopwatch live in the notch only.
+const NAVS = ['stats', 'calendar', 'ai', 'todos', 'notes', ...SETTINGS_PAGES];
 let stats: any = {};
 let pomoLeft = (window as any).pomoLeft ?? 25 * 60;
 let pomoActive = (window as any).pomoActive ?? false;
@@ -81,7 +85,8 @@ async function boot() {
     try {
       stats = await ipc.invoke('get-stats') || {};
       pomoDuration = parseInt(await ipc.invoke('get-setting', 'pomodoro-duration', '25')) || 25;
-      activeNav = await ipc.invoke('get-setting', 'dashboard-nav', 'lockin') || 'lockin';
+      activeNav = await ipc.invoke('get-setting', 'dashboard-nav', 'stats') || 'stats';
+      if (!NAVS.includes(activeNav)) activeNav = 'stats';
       const savedCd = parseInt(await ipc.invoke('get-setting', 'countdown-last', '3600')) || 3600;
       if (!cdActive) { cdLeft = savedCd; cdCustomLeft = savedCd; }
       calEvents = await ipc.invoke('get-events') || [];
@@ -95,10 +100,13 @@ async function boot() {
     } catch {}
   }
 
+  const hashNav = new URLSearchParams(location.hash.slice(1)).get('nav');
+  if (hashNav && NAVS.includes(hashNav)) activeNav = hashNav;
   if (!(window as any).pomoActive) pomoLeft = pomoDuration * 60;
   (window as any).pomoDuration = pomoDuration;
 
   computeStats();
+  await mountSettings();
   render();
   startTick();
   bindIPC();
@@ -135,27 +143,28 @@ function render() {
   root.innerHTML = `
     <div class="dash-layout">
       <nav class="nav-rail">
-        <div class="nav-brand">${icons.flame}</div>
+        <div class="nav-brand"><img src="${overlayMark}" alt=""/><span>Overlay</span></div>
         <div class="nav-items">
-          ${navItem('lockin',    icons.flame,     'Lock In')}
-          ${navItem('countdown', icons.timer,     'Countdown')}
-          ${navItem('stopwatch', icons.stopwatch, 'Stopwatch')}
-          ${navItem('stats',     icons.chart,     'Stats')}
-          ${navItem('calendar',  icons.calendar,  'Calendar')}
-          <div class="nav-sep"></div>
-          ${navItem('ai',        DASH_ICONS.ai,    'AI Usage')}
-          ${navItem('todos',     DASH_ICONS.todos, 'To-Dos')}
-          ${navItem('notes',     DASH_ICONS.notes, 'Note')}
+          <div class="nav-group">Track</div>
+          ${navItem('stats',     SET_ICONS.overview,  'Overview')}
+          ${navItem('calendar',  icons.calendar,      'Calendar')}
+          ${navItem('ai',        DASH_ICONS.ai,       'AI Usage')}
+          ${navItem('todos',     DASH_ICONS.todos,    'To-Dos')}
+          ${navItem('notes',     DASH_ICONS.notes,    'Note')}
+          <div class="nav-group">Settings</div>
+          ${navItem('connections', SET_ICONS.connections, 'Connections')}
+          ${navItem('general',   SET_ICONS.general,   'General')}
+          ${navItem('notch',     SET_ICONS.notch,     'Notch')}
+          ${navItem('media',     SET_ICONS.media,     'Media')}
+          ${navItem('shortcuts', SET_ICONS.shortcuts, 'Shortcuts')}
+          ${navItem('about',     SET_ICONS.about,     'About')}
         </div>
         <div class="nav-footer">
-          <div class="nav-stat-chip" title="Focus Level">
-            <span class="nav-chip-label">LVL</span>
-            <span class="nav-chip-val">${level}</span>
+          <div class="nav-chips">
+            <div class="nav-stat-chip" title="Focus level"><span class="nav-chip-label">Level</span><span class="nav-chip-val">${level}</span></div>
+            <div class="nav-stat-chip" title="${streak} day streak" style="color:${streakColor(streak)};">${icons.flame}<span class="nav-chip-val">${streak}d</span></div>
           </div>
-          <div class="nav-stat-chip" title="${streak} day streak" style="color:${streakColor(streak)};text-shadow:${streakGlow(streak)};">
-            ${icons.flame}
-            <span class="nav-chip-val">${streak}d</span>
-          </div>
+          ${profileHtml()}
         </div>
       </nav>
 
@@ -168,11 +177,13 @@ function render() {
         <div class="panel ${activeNav==='ai'        ? 'active':''}" id="panel-ai"></div>
         <div class="panel ${activeNav==='todos'     ? 'active':''}" id="panel-todos"></div>
         <div class="panel ${activeNav==='notes'     ? 'active':''}" id="panel-notes"></div>
+        ${SETTINGS_PAGES.map((pg) => `<div class="panel ${activeNav===pg ? 'active':''}" id="panel-${pg}"></div>`).join('')}
       </main>
     </div>
   `;
   bindEvents();
   mountDashExtras();
+  if (SETTINGS_PAGES.includes(activeNav)) void paintSettings(activeNav);
 }
 
 function navItem(id: string, icon: string, label: string) {
@@ -257,7 +268,7 @@ function renderStats() {
 
   return `<div class="panel-inner">
     <div class="panel-hdr" style="flex-direction:row;align-items:center;justify-content:space-between;">
-      <div><div class="panel-label">STATS</div><div class="panel-sub">Activity Overview</div></div>
+      <div><div class="panel-label">OVERVIEW</div><div class="panel-sub">Your focus, from Lock In in the notch</div></div>
       <button class="ctrl-btn secondary" id="btn-share" style="width:auto;padding:8px 14px;">${icons.share}<span>Share</span></button>
     </div>
     <div class="stats-grid">
@@ -342,10 +353,11 @@ function bindEvents() {
   // Nav switching
   document.querySelectorAll('.nav-item').forEach(btn => {
     btn.addEventListener('click', () => {
-      activeNav = btn.getAttribute('data-nav') || 'lockin';
+      activeNav = btn.getAttribute('data-nav') || 'stats';
       if (ipc) ipc.send('set-setting', 'dashboard-nav', activeNav);
       document.querySelectorAll('.nav-item').forEach(b => b.classList.toggle('active', b.getAttribute('data-nav')===activeNav));
       document.querySelectorAll('.panel').forEach(p => p.classList.toggle('active', p.id===`panel-${activeNav}`));
+      if (SETTINGS_PAGES.includes(activeNav)) void paintSettings(activeNav);
     });
   });
 

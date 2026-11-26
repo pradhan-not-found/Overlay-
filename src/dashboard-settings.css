@@ -1,0 +1,113 @@
+/* ── One Dashboard: a labelled sidebar with sections and the profile ──── */
+:root { --rail-w: 232px; --blue: #0027c4; --ok: #32d27a; --warn: #fbbf24; --bad: #ff5a4e; }
+.nav-rail { align-items: stretch; padding: 18px 12px 12px; gap: 0; background: #0d0d0e; }
+.nav-brand { width: auto; height: 36px; background: none; justify-content: flex-start; gap: 10px; padding: 0 8px; margin-bottom: 18px; font-size: 15px; font-weight: 600; letter-spacing: -0.01em; }
+.nav-brand img { width: 26px; height: 26px; border-radius: 7px; }
+.nav-items { align-items: stretch; gap: 1px; overflow-y: auto; scrollbar-width: none; }
+.nav-items::-webkit-scrollbar { display: none; }
+.nav-group { font-size: 10.5px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: rgba(255, 255, 255, 0.32); padding: 14px 10px 6px; }
+.nav-group:first-child { padding-top: 0; }
+.nav-item { flex-direction: row; justify-content: flex-start; gap: 11px; width: 100%; height: 36px; flex-shrink: 0; padding: 0 10px; border-radius: 9px; font-size: 13.5px; font-weight: 500; letter-spacing: -0.005em; }
+.nav-item svg { width: 17px; height: 17px; flex-shrink: 0; }
+.nav-item.active { background: #fff; color: #000; }
+.nav-item.active::before { display: none; }
+.nav-label { font-size: 13.5px; font-weight: 500; text-transform: none; letter-spacing: -0.005em; }
+.nav-footer { align-items: stretch; gap: 10px; padding-top: 12px; border-top: 1px solid var(--border); margin-top: 8px; }
+.nav-chips { display: flex; gap: 6px; }
+.nav-stat-chip { flex: 1; width: auto; flex-direction: row; justify-content: center; gap: 6px; padding: 7px 8px; }
+.nav-stat-chip svg { width: 14px; height: 14px; }
+
+.ds-profile { position: relative; }
+.ds-profile-btn { display: flex; align-items: center; gap: 10px; width: 100%; padding: 7px 8px; border-radius: 10px; border: none; background: transparent; color: var(--text); cursor: pointer; text-align: left; font: inherit; }
+.ds-profile-btn:hover { background: var(--bg-hover); }
+.ds-profile-btn > svg { color: var(--muted); flex-shrink: 0; }
+.ds-avatar { width: 32px; height: 32px; border-radius: 50%; display: grid; place-items: center; background: var(--blue); color: #fff; font-weight: 600; font-size: 14px; flex-shrink: 0; }
+.ds-profile-text { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.ds-profile-text b { font-size: 13px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ds-profile-text small { font-size: 11px; color: var(--muted); }
+.ds-menu { position: absolute; left: 0; right: 0; bottom: calc(100% + 6px); padding: 5px; border-radius: 12px; background: #18181a; border: 1px solid var(--border); box-shadow: 0 18px 40px -12px rgba(0, 0, 0, 0.7); display: flex; flex-direction: column; gap: 2px; z-index: 10; }
+.ds-menu[hidden] { display: none; }
+.ds-menu button { display: flex; align-items: center; gap: 10px; height: 34px; padding: 0 10px; border-radius: 8px; border: none; background: none; color: var(--text); font: inherit; font-size: 13px; cursor: pointer; text-align: left; }
+.ds-menu button:hover { background: rgba(255, 255, 255, 0.07); }
+.ds-menu button[data-signout] { color: var(--bad); }
+
+/* ── Settings pages ───────────────────────────────────────────────────── */
+.ds-page { width: 100%; max-width: 720px; margin: 0 auto; padding: 40px 36px 56px; display: flex; flex-direction: column; gap: 18px; }
+.ds-head { margin-bottom: 8px; }
+.ds-head h2 { font-size: 26px; font-weight: 600; letter-spacing: -0.03em; }
+.ds-head p { margin-top: 6px; font-size: 13.5px; color: var(--muted); }
+.ds-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 14px; padding: 6px 18px; }
+.ds-card > h3 { font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); padding: 14px 0 4px; }
+.ds-card-body { display: flex; flex-direction: column; padding-bottom: 6px; }
+.ds-row { display: flex; align-items: center; justify-content: space-between; gap: 18px; padding: 12px 0; min-height: 56px; }
+.ds-row + .ds-row { border-top: 1px solid var(--border); }
+.ds-row-text { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.ds-row-text b { font-size: 14px; font-weight: 500; }
+.ds-row-text span { font-size: 12.5px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; }
+.ds-note { font-size: 12.5px; color: var(--muted); line-height: 1.55; padding: 8px 0; }
+.ds-note:empty { display: none; }
+.ds-note code { font: 12px ui-monospace, Consolas, monospace; color: var(--text); background: rgba(255, 255, 255, 0.07); padding: 1px 6px; border-radius: 5px; }
+.ds-empty { font-size: 13px; color: var(--muted); padding: 14px 0; }
+.ds-switch { position: relative; width: 40px; height: 24px; border-radius: 999px; border: none; padding: 3px; background: rgba(255, 255, 255, 0.16); cursor: pointer; flex-shrink: 0; transition: background 0.2s ease; }
+.ds-switch i { display: block; width: 18px; height: 18px; border-radius: 50%; background: #fff; transition: transform 0.2s ease; }
+.ds-switch.on { background: var(--blue); }
+.ds-switch.on i { transform: translateX(16px); }
+.ds-select, .ds-page input { height: 36px; padding: 0 12px; border-radius: 9px; border: 1px solid var(--border); background: #0a0a0a; color: var(--text); font: inherit; font-size: 13px; outline: none; }
+.ds-select { cursor: pointer; padding-right: 8px; }
+.ds-page input:focus, .ds-select:focus { border-color: rgba(64, 104, 255, 0.7); }
+.ds-btn { height: 36px; padding: 0 14px; border-radius: 9px; border: 1px solid var(--border); background: rgba(255, 255, 255, 0.06); color: var(--text); font: inherit; font-size: 13px; font-weight: 600; cursor: pointer; white-space: nowrap; }
+.ds-btn:hover { background: rgba(255, 255, 255, 0.1); }
+.ds-btn.primary { background: #fff; color: #000; border-color: #fff; }
+.ds-btn.primary:hover { background: #e8e8ea; }
+.ds-btn.ghost { background: transparent; }
+.ds-btn.danger { color: var(--bad); border-color: rgba(255, 90, 78, 0.35); background: rgba(255, 90, 78, 0.08); }
+.ds-inline { display: flex; gap: 8px; padding: 12px 0; }
+.ds-inline input { flex: 1; min-width: 0; }
+.ds-stack { display: flex; flex-direction: column; gap: 8px; padding: 12px 0; }
+.ds-grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding: 4px 0 10px; }
+.ds-inline-end { grid-column: 1 / -1; display: flex; align-items: center; justify-content: flex-end; gap: 8px; }
+.ds-inline-end .ds-err { margin-right: auto; }
+.ds-actions { display: flex; gap: 6px; }
+.ds-err { font-size: 12.5px; color: var(--bad); min-height: 1em; }
+.ds-err.ok { color: var(--ok); }
+kbd { display: inline-flex; align-items: center; height: 26px; padding: 0 9px; margin-left: 4px; border-radius: 7px; border: 1px solid var(--border); border-bottom-width: 2px; background: #0a0a0a; font: inherit; font-size: 12px; font-weight: 600; color: var(--text); }
+.ds-about { display: flex; align-items: center; gap: 14px; padding: 16px 0 8px; }
+.ds-about img { width: 48px; height: 48px; border-radius: 12px; }
+.ds-about div { flex: 1; display: flex; flex-direction: column; gap: 2px; }
+.ds-about b { font-size: 16px; font-weight: 600; }
+.ds-about span { font-size: 12.5px; color: var(--muted); }
+
+.ds-conn { padding-top: 16px; }
+.ds-conn-head { display: flex; align-items: center; gap: 14px; padding-bottom: 6px; }
+.ds-conn-head > div { flex: 1; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.ds-conn-head b { font-size: 15px; font-weight: 600; }
+.ds-conn-head span { font-size: 12.5px; color: var(--muted); }
+.ds-conn-logo { width: 40px; height: 40px; border-radius: 11px; display: grid; place-items: center; flex-shrink: 0; color: #fff; }
+.ds-conn-logo.dc { background: #5865f2; }
+.ds-conn-logo.gh { background: #24292f; border: 1px solid rgba(255, 255, 255, 0.12); }
+.ds-conn-logo.lc { background: #2b2316; color: #ffa116; }
+.ds-status { font-style: normal; font-size: 11.5px; font-weight: 600; padding: 4px 10px; border-radius: 999px; background: rgba(255, 255, 255, 0.07); color: var(--muted); white-space: nowrap; }
+.ds-status::before { content: ''; display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: currentColor; margin-right: 6px; vertical-align: 1px; }
+.ds-status.ok { color: var(--ok); background: rgba(50, 210, 122, 0.12); }
+.ds-status.wait { color: var(--warn); background: rgba(251, 191, 36, 0.12); }
+.ds-status.bad { color: var(--bad); background: rgba(255, 90, 78, 0.12); }
+
+/* ── Sign-in gate ─────────────────────────────────────────────────────── */
+body.ds-locked .dash-layout { filter: blur(18px) brightness(0.5); pointer-events: none; }
+#ds-gate { position: fixed; inset: 0; z-index: 100; display: grid; place-items: center; background: rgba(0, 0, 0, 0.45); -webkit-app-region: drag; }
+.ds-auth { width: 360px; padding: 32px 28px 26px; border-radius: 20px; background: #111; border: 1px solid var(--border); box-shadow: 0 40px 80px -30px rgba(0, 0, 0, 0.8); display: flex; flex-direction: column; gap: 10px; text-align: center; -webkit-app-region: no-drag; }
+.ds-auth-mark { width: 52px; height: 52px; border-radius: 14px; margin: 0 auto 6px; }
+.ds-auth h1 { font-size: 20px; font-weight: 600; letter-spacing: -0.02em; }
+.ds-auth p { font-size: 13px; color: var(--muted); line-height: 1.5; margin-bottom: 8px; }
+.ds-auth input { height: 42px; padding: 0 14px; border-radius: 11px; border: 1px solid var(--border); background: #0a0a0a; color: var(--text); font: inherit; font-size: 14px; outline: none; }
+.ds-auth input:focus { border-color: rgba(64, 104, 255, 0.75); }
+.ds-auth .ds-btn { height: 42px; margin-top: 4px; font-size: 14px; }
+.ds-auth.shake { animation: ds-shake 0.36s ease; }
+@keyframes ds-shake { 20%, 60% { transform: translateX(-6px); } 40%, 80% { transform: translateX(6px); } }
+
+.ds-swatches { display: flex; flex-wrap: wrap; gap: 10px; padding: 14px 0 6px; }
+.ds-swatch { position: relative; width: 30px; height: 30px; border-radius: 50%; border: none; background: var(--c); cursor: pointer; box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.14); transition: transform 0.15s ease; }
+.ds-swatch:hover { transform: scale(1.08); }
+.ds-swatch.on { box-shadow: 0 0 0 2px var(--bg-card), 0 0 0 4px var(--c); }
+.ds-swatch.custom { background: conic-gradient(#ff5a4e, #facc15, #32d27a, #14b8a6, #3d6bff, #8b5cf6, #ec4899, #ff5a4e); overflow: hidden; }
+.ds-swatch.custom input { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; border: none; padding: 0; }

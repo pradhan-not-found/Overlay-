@@ -15,6 +15,8 @@ const term   = require('./term.cjs');
 const desk   = require('./desk.cjs');
 const discord = require('./discord.cjs');
 const kit    = require('./kit.cjs');
+const auth   = require('./auth.cjs');
+const context = require('./context.cjs');
 
 // ─── Auto Updater ─────────────────────────────────────────────────────────────
 let autoUpdater = null;
@@ -72,12 +74,7 @@ function initAutoUpdater() {
         icon: path.join(__dirname, '../build/icon.png')
       });
       notif.on('click', () => {
-        if (settingsWindow && !settingsWindow.isDestroyed()) {
-          settingsWindow.show();
-          settingsWindow.focus();
-        } else {
-          openSettings();
-        }
+        openSettings('About');
       });
       notif.show();
     }
@@ -334,31 +331,18 @@ ipcMain.on('toggle-mute', async () => {
 const PAD = 32;
 let settingsWindow = null;
 
+// Settings live in the one Dashboard now; old callers land on the right page.
+const SETTINGS_NAV = { Shortcuts: 'shortcuts', General: 'general', Appearance: 'notch', Media: 'media', Calendar: 'notch', Battery: 'notch', Shelf: 'notch', About: 'about', Dashboard: 'stats' };
 function openSettings(tab) {
-  const hash = tab ? `#tab=${tab}` : '';
-  if (settingsWindow && !settingsWindow.isDestroyed()) {
-    presentWindow(settingsWindow);
-    if (tab) settingsWindow.webContents.executeJavaScript(`window.__navigateToTab && window.__navigateToTab('${String(tab).replace(/'/g, '')}')`);
-    return;
-  }
-  settingsWindow = new BrowserWindow({
-    width: 700,
-    height: 550,
-    icon: nativeImage.createFromPath(path.join(__dirname, '../applogo.png')),
-    titleBarStyle: 'hidden',
-    titleBarOverlay: { color: '#000000', symbolColor: '#ffffff' },
-    show: false,
-    webPreferences: { nodeIntegration: true, contextIsolation: false }
-  });
-  settingsWindow.once('ready-to-show', () => presentWindow(settingsWindow));
-  const devUrl = process.env.VITE_DEV_SERVER_URL;
-  if (app.isPackaged) {
-    settingsWindow.loadFile(path.join(__dirname, '../dist/settings.html'), { hash: hash.slice(1) });
-  } else {
-    settingsWindow.loadURL((devUrl || 'http://localhost:5173') + '/settings.html' + hash);
-  }
-  settingsWindow.on('closed', () => { settingsWindow = null; });
+  createDashWindow({ nav: SETTINGS_NAV[tab] || 'general' });
 }
+
+// Launch at startup, for real.
+ipcMain.handle('login-item:get', () => app.getLoginItemSettings().openAtLogin);
+ipcMain.handle('login-item:set', (_e, on) => {
+  app.setLoginItemSettings({ openAtLogin: !!on });
+  return app.getLoginItemSettings().openAtLogin;
+});
 
 ipcMain.on('open-settings', (_e, tab) => openSettings(tab));
 
@@ -604,7 +588,7 @@ function createDashWindow(options) {
     return; 
   }
   dashWindow = new BrowserWindow({
-    width: 720, height: 560,
+    width: 1040, height: 700,
     frame: true,
     transparent: false,
     backgroundColor: '#111111',
@@ -612,9 +596,9 @@ function createDashWindow(options) {
     maximizable: true,
     fullscreenable: true,
     center: true,
-    minWidth: 640,
-    minHeight: 480,
-    title: 'Overlay — Focus',
+    minWidth: 860,
+    minHeight: 560,
+    title: 'Overlay',
     autoHideMenuBar: true,
     show: false,
     icon: nativeImage.createFromPath(path.join(__dirname, '../applogo.png')),
@@ -738,6 +722,9 @@ if (!gotTheLock) {
     desk.init();
     discord.init();
     kit.init();
+    auth.init();
+    context.init();
+    app.once('before-quit', () => context.stop());
     app.once('before-quit', () => discord.stop());
     const cfg = readConfig();
     

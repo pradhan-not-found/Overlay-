@@ -9,6 +9,7 @@ import { mountLinks, marks } from './tools/links';
 import { mountStudio } from './tools/studio';
 import { mountDesk } from './tools/desk';
 import { mountKit } from './tools/kit';
+import { mountContext } from './tools/context';
 import plusSvgRaw from './assets/icons/plus.svg?raw';
 import expandSvgRaw from './assets/icons/expand.svg?raw';
 import playSvgRaw from './assets/icons/play.svg?raw';
@@ -244,14 +245,15 @@ document.getElementById('app')!.innerHTML = `
     <div class="idle-state" id="idle-state-default">
       <button class="overlay-mark" id="btn-count-idle" title="Overlay"><img src="${overlayMark}" alt="" /></button>
       <span class="idle-clock" id="idle-clock">00:00</span>
+      <button type="button" class="idle-msg" id="idle-msg"></button>
       <span class="idle-spacer"></span>
+      <div class="ctx-slot" id="ctx-slot"></div>
       <div class="idle-links">
         <button class="link-chip" id="btn-idle-github" title="GitHub">${marks.github}<span id="gh-idle-count"></span></button>
         <button class="link-chip" id="btn-idle-discord" title="Discord">${marks.discord}<i id="dc-idle-dot"></i></button>
         <button class="update-chip" id="update-chip" type="button">Update available</button>
       </div>
       <div class="idle-shortcuts" id="idle-shortcuts"></div>
-      <button class="ibtn ibtn-sm" id="btn-close-app" title="Hide Overlay">${closeSvgRaw}</button>
     </div>
 
     <div class="idle-state" id="idle-state-media" style="display:none">
@@ -283,6 +285,7 @@ document.getElementById('app')!.innerHTML = `
           <span id="bat-svg"></span>
         </div>
         <button class="ibtn ibtn-sm" id="btn-collapse" title="Close">${chevronUpSvg}</button>
+        <button class="ibtn ibtn-sm" id="btn-close-app" title="Hide Overlay">${closeSvgRaw}</button>
       </div>
     </header>
 
@@ -687,6 +690,7 @@ function setPhase(next: Phase) {
   if (prev === 'count' && next !== 'count') send('count-sidebar', false);
   if (next === 'expanded') extra.onSpace(currentSpace); else extra.stop();
   if (prev === 'expanded' && next !== 'expanded') desk.onSpace('');
+  (window as any).__ctxBar?.phase(next === 'idle');
   if (next === 'expanded' && prev !== 'expanded' && currentSpace === 'camera') desk.onSpace('camera');
 
   viewIdle.classList.toggle('active', false);
@@ -758,6 +762,7 @@ const links = mountLinks({ invoke, send, on: (ch, fn) => ipc?.on(ch, fn) });
 const studio = mountStudio({ invoke, send });
 const desk = mountDesk({ invoke, send });
 const kit = mountKit({ invoke, send });
+(window as any).__ctxBar = mountContext({ invoke, send, on: (ch, fn) => ipc?.on(ch, fn), openSpace: (name) => { setPhase('expanded'); showSpace(name); }, isIdle: () => appPhase === 'idle' });
 // The dock fades only on a side that still has more to scroll to.
 {
   const dock = document.getElementById('space-dots');
@@ -1356,7 +1361,7 @@ function setInteractive(on: boolean) {
 }
 document.addEventListener('mousemove', (e) => {
   if (dragging) return;
-  const over = Boolean((e.target as HTMLElement).closest?.('.pill, .cam-popup'));
+  const over = Boolean((e.target as HTMLElement).closest?.('.pill, .cam-popup, .ctx-pop'));
   setInteractive(over);
 });
 document.documentElement.addEventListener('mouseleave', () => { if (!dragging) setInteractive(false); });
