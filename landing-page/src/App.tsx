@@ -126,7 +126,9 @@ function useRelease() {
 function Download({ wide = false }: { wide?: boolean }) {
   const rel = useRelease();
   // Straight to the newest installer; no notes under the button.
-  const href = rel.state === 'ready' ? rel.url : WINDOWS;
+  // Our own link: it finds the newest installer, public or private, on the server.
+  void rel;
+  const href = import.meta.env.VITE_DOWNLOAD_URL || '/api/download';
   return (
     <div className={`dl-wrap${wide ? ' wide' : ''}`}>
       <a className={`download${wide ? ' wide' : ''}`} href={href} rel="noopener">
