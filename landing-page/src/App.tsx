@@ -200,18 +200,16 @@ const PLANS = [
 ];
 
 // ── Release pictures ────────────────────────────────────────────────────
-// Each release gets one of five scenes, picked from what it is about, and
+// Each release gets one of three scenes, picked from what it is about, and
 // never the same scene twice in a row.
-type ShotKind = 'list' | 'notch' | 'chart' | 'browser' | 'stack';
-const SHOT_ORDER: ShotKind[] = ['list', 'notch', 'chart', 'browser', 'stack'];
+type ShotKind = 'list' | 'notch' | 'chart';
+const SHOT_ORDER: ShotKind[] = ['notch', 'list', 'chart'];
 function shotKinds(titles: string[]): ShotKind[] {
   const out: ShotKind[] = [];
   titles.forEach((t, k) => {
     let kind: ShotKind =
       /\bai\b|usage|limit|dashboard|history|stat|chart/i.test(t) ? 'chart'
       : /notch|player|music|song|lyric|zoom|island/i.test(t) ? 'notch'
-      : /website|page|pricing|changelog|heading|footer|nav/i.test(t) ? 'browser'
-      : /feature|folder|tool|logo|icon|svg/i.test(t) ? 'stack'
       : SHOT_ORDER[k % SHOT_ORDER.length];
     if (k > 0 && out[k - 1] === kind) kind = SHOT_ORDER[(SHOT_ORDER.indexOf(kind) + 1 + (k % 3)) % SHOT_ORDER.length];
     if (k > 0 && out[k - 1] === kind) kind = SHOT_ORDER[(SHOT_ORDER.indexOf(kind) + 1) % SHOT_ORDER.length];
@@ -235,7 +233,7 @@ function Shot({ kind, items, version, when, seed }: { kind: ShotKind; items: str
       : /focus|timer/i.test(seed) ? 'focus'
       : /to-?do/i.test(seed) ? 'todos'
       : /hardware|battery|cpu/i.test(seed) ? 'hardware'
-      : 'media';
+      : (['media', 'ai', 'today', 'hardware', 'focus', 'todos'] as Space[])[Math.floor(rnd() * 6)];
     return (
       <figure className="rel-shot shot-notch">
         <div className="display shot-display">
@@ -272,42 +270,6 @@ function Shot({ kind, items, version, when, seed }: { kind: ShotKind; items: str
           <ul className="sc-legend">
             {list.slice(0, 4).map((it, n) => <li key={n}><span className="it-logo">{logoFor(it).node}</span>{it}</li>)}
           </ul>
-        </div>
-      </figure>
-    );
-  }
-
-  if (kind === 'browser') {
-    return (
-      <figure className="rel-shot shot-browser" aria-hidden="true">
-        <div className="sb-win">
-          <div className="sb-bar"><i /><i /><i /><span className="sb-url"><img src="/mark.png" alt="" />overlay.app</span></div>
-          <div className="sb-page">
-            <div className="sb-nav"><img src="/mark.png" alt="" /><span /><span /><span /><em /></div>
-            <h5>{list[0]}</h5>
-            <div className="sb-lines"><span /><span /></div>
-            <div className="sb-cards">
-              {list.slice(0, 3).map((it, n) => (
-                <div className="sb-card" key={n}><span className="it-logo">{logoFor(it).node}</span><b>{it}</b><span /><span /></div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </figure>
-    );
-  }
-
-  if (kind === 'stack') {
-    const tones = ['#0027c4', '#1ed760', '#ffd23f', '#ff5a4e', '#5865f2', '#14171f'];
-    return (
-      <figure className="rel-shot shot-stack" aria-hidden="true">
-        <div className="ss-fan">
-          {list.slice(0, 4).map((it, n, arr) => (
-            <div className="ss-card" key={n} style={{ '--n': n, '--c': arr.length, '--tone': tones[(n + Math.floor(rnd() * 6)) % tones.length] } as React.CSSProperties}>
-              <span className="ss-logo">{logoFor(it).node}</span>
-              <b>{it}</b>
-            </div>
-          ))}
         </div>
       </figure>
     );
