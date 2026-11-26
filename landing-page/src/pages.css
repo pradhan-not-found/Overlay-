@@ -489,17 +489,10 @@ footer p { margin: 0; }
 .shot-chart { background: radial-gradient(70% 80% at 85% 0%, rgba(0, 39, 196, 0.10), transparent 70%), #f4f5f8; }
 .rel-shot { border-color: rgba(15, 18, 30, 0.1); }
 
-/* Pricing lines: a small icon each instead of a bullet. */
-.plan ul.plan-list { list-style: none; padding-left: 0; gap: 9px; }
-.plan-list li { display: flex; align-items: center; gap: 10px; }
-.plan-ico { width: 24px; height: 24px; border-radius: 7px; flex-shrink: 0; display: grid; place-items: center; background: rgba(15, 18, 30, 0.05); color: #0d0f16; }
-.plan-ico svg { width: 14px; height: 14px; }
-.plan.featured .plan-ico { background: rgba(0, 39, 196, 0.08); color: #0027c4; }
 
-/* Pricing cards: a soft tint each, not plain white. */
-.plan { background: var(--plan-bg, #fff); }
-.plans .plan:nth-child(1) { --plan-bg: #eef8f1; }
-.plans .plan:nth-child(2) { --plan-bg: #eef2ff; }
-.plans .plan:nth-child(3) { --plan-bg: #f4effc; }
-.plans .plan:nth-child(1) .plan-ico { background: rgba(31, 122, 69, 0.1); color: #1f7a45; }
-.plans .plan:nth-child(3) .plan-ico { background: rgba(107, 63, 163, 0.1); color: #6b3fa3; }
+/* ── Feature cards: the pricing box, with a soft colour each ─────────── */
+.fcard { aspect-ratio: auto; min-height: 240px; border-radius: 4px; background: var(--bg); border: 1.5px solid #0d0f16; box-shadow: none; align-items: flex-start; justify-content: flex-start; text-align: left; padding: 22px 22px 24px; gap: 10px; transition: transform 0.25s ease, box-shadow 0.25s ease; }
+.fcard:hover { transform: translateY(-3px); box-shadow: 6px 6px 0 #0d0f16; }
+.fcard-ico { height: 30px; margin-bottom: 14px; justify-content: flex-start; }
+.fcard-label { font-size: 14px; font-weight: 600; letter-spacing: 0.06em; color: #0d0f16; opacity: 1; }
+.fcard p { font-size: 14.5px; line-height: 1.5; color: #2d3140; max-width: none; }
