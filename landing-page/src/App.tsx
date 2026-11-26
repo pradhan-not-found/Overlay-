@@ -162,21 +162,13 @@ const FEATURES: { title: string; body: string; logo: React.ReactNode }[] = [
   { title: 'Hardware', body: 'CPU, memory, GPU, disk and network, live while the notch is open.', logo: tint(ICON.chip, '#3b82f6') },
 ];
 
-// Folder covers: [cover, text, back sheet, middle sheet].
-const COVERS: [string, string, string, string][] = [
-  ['#1ed760', '#06240f', '#0d0f16', '#f1f2f4'],
-  ['#d97757', '#fff', '#2b2f3a', '#f3d9cc'],
-  ['#0027c4', '#fff', '#ffcf3f', '#e7ebff'],
-  ['#ffd23f', '#2a2100', '#ff6b3d', '#fff6d6'],
-  ['#5865f2', '#fff', '#0d0f16', '#dfe2ff'],
-  ['#14171f', '#fff', '#1ed760', '#d7dae1'],
-  ['#ffb3d9', '#4a0f2c', '#e8175d', '#fff'],
-  ['#e9ecef', '#14171f', '#14b8a6', '#fff'],
-  ['#38bdf8', '#04263a', '#0d0f16', '#e3f6ff'],
-  ['#c6f432', '#1d2600', '#14171f', '#f6ffd6'],
-  ['#ff5a4e', '#fff', '#ffd23f', '#ffe1de'],
-  ['#2e3440', '#fff', '#3b82f6', '#dfe3ea'],
+// Soft, distinct colours for the feature cards: [background, label].
+const PASTELS: [string, string][] = [
+  ['#e8f7ee', '#1f7a45'], ['#fdeee6', '#a4502c'], ['#e7eeff', '#2346b8'], ['#fff4d6', '#8a6200'],
+  ['#eceaff', '#4b3fc2'], ['#eef0f3', '#2d3140'], ['#e4f6f4', '#13756b'], ['#fde9f2', '#a33769'],
+  ['#e5f4fd', '#16679a'], ['#f2f8dc', '#55700f'], ['#ffeceb', '#b2372d'], ['#f1ecfb', '#6b3fa3'],
 ];
+
 
 // Changelog lines get the logo of the thing they are about.
 const LOGO_RULES: [RegExp, string, React.ReactNode][] = [
@@ -336,12 +328,19 @@ function Shot({ kind, items, version, when, seed }: { kind: ShotKind; items: str
   );
 }
 
+const PAGES: View[] = ['features', 'pricing', 'changelog', 'privacy', 'terms'];
+const pathOf = (v: View) => (v === 'home' ? '/' : `/${v}`);
+function viewFromLocation(): View {
+  const fromPath = window.location.pathname.replace(/^\/+|\/+$/g, '').toLowerCase() as View;
+  if (PAGES.includes(fromPath)) return fromPath;
+  const fromHash = window.location.hash.slice(1) as View;
+  return PAGES.includes(fromHash) ? fromHash : 'home';
+}
+
 export default function App() {
-  // Each page has a link: #features, #pricing, #changelog, #privacy, #terms.
-  const [view, setView] = useState<View>(() => {
-    const h = window.location.hash.slice(1) as View;
-    return (['features', 'pricing', 'changelog', 'privacy', 'terms'] as View[]).includes(h) ? h : 'home';
-  });
+  // Each page has its own address: /features, /pricing, /changelog, /privacy, /terms.
+  // Old #features links still land on the right page.
+  const [view, setView] = useState<View>(() => viewFromLocation());
   const [risen, setRisen] = useState(false);
   // #zoom opens straight into the notch, so the close-up can be linked.
   const [zoomed, setZoomed] = useState(() => window.location.hash === '#zoom');
@@ -382,22 +381,31 @@ export default function App() {
     setView(v);
     setZoomed(false);
     window.scrollTo({ top: 0 });
-    window.history.replaceState(null, '', v === 'home' ? window.location.pathname : `#${v}`);
+    const path = pathOf(v);
+    if (window.location.pathname !== path || window.location.hash) window.history.pushState(null, '', path);
   };
+  // Back and forward move between pages.
+  useEffect(() => {
+    const onPop = () => { setView(viewFromLocation()); setZoomed(false); };
+    window.addEventListener('popstate', onPop);
+    if (window.location.hash && viewFromLocation() !== 'home') window.history.replaceState(null, '', pathOf(viewFromLocation()));
+    return () => window.removeEventListener('popstate', onPop);
+  }, []);
+  const link = (v: View) => ({ href: pathOf(v), onClick: (e: React.MouseEvent) => { if (e.metaKey || e.ctrlKey || e.shiftKey || e.button === 1) return; e.preventDefault(); go(v); } });
 
   return (
     <div className={`sheet${view === 'home' ? '' : ' scroll'}`}>
       <header className="top">
-        <a className="mark" href="#top" onClick={() => go('home')}>
+        <a className="mark" {...link('home')}>
           <img src="/mark.png" alt="" width="30" height="27" />
           <span>Overlay</span>
           <em className="beta">Beta</em>
         </a>
         <nav>
           {NAV.map((item) => (
-            <button key={item.id} type="button" className={view === item.id ? 'on' : ''} onClick={() => go(item.id)}>{item.label}</button>
+            <a key={item.id} className={`nav-link${view === item.id ? ' on' : ''}`} {...link(item.id as View)}>{item.label}</a>
           ))}
-          <button type="button" className={`cta${view === 'home' ? ' on' : ''}`} onClick={() => go('home')}>Get Access</button>
+          <a className={`cta${view === 'home' ? ' on' : ''}`} {...link('home')}>Get Access</a>
         </nav>
       </header>
 
@@ -479,25 +487,14 @@ export default function App() {
             <header className="page-head">
               <h2>Everything you reach for, at the top of the screen.</h2>
             </header>
-            <div className="feature-grid">
-              {FEATURES.map((f, i) => {
-                const [bg, ink, back, mid] = COVERS[i % COVERS.length];
-                return (
-                  <article className="folder" key={f.title} style={{ '--bg': bg, '--ink': ink, '--back': back, '--mid': mid } as React.CSSProperties}>
-                    <div className="folder-art">
-                      <span className="sheet-back" />
-                      <span className="sheet-mid" />
-                      <div className="cover">
-                        <span className="cover-logo">{f.logo}</span>
-                      </div>
-                    </div>
-                    <div className="folder-cap">
-                      <h3>{f.title}</h3>
-                      <p>{f.body}</p>
-                    </div>
-                  </article>
-                );
-              })}
+            <div className="fcards">
+              {FEATURES.map((f, i) => (
+                <article className="fcard" key={f.title} style={{ '--bg': PASTELS[i % PASTELS.length][0], '--ink': PASTELS[i % PASTELS.length][1] } as React.CSSProperties}>
+                  <span className="fcard-ico">{f.logo}</span>
+                  <span className="fcard-label">{f.title}</span>
+                  <p>{f.body}</p>
+                </article>
+              ))}
             </div>
           </section>
         )}
@@ -509,7 +506,7 @@ export default function App() {
             </header>
             <div className="plans">
               {PLANS.map((p) => (
-                <a className={`plan${p.featured ? ' featured' : ''}`} key={p.name} href="#download" onClick={(e) => { e.preventDefault(); go('home'); }} aria-label={`${p.name}: get Overlay`}>
+                <a className={`plan${p.featured ? ' featured' : ''}`} key={p.name} {...link('home')} aria-label={`${p.name}: get Overlay`}>
                   <h3>{p.name}</h3>
                   <p className="price"><b>{p.price}</b>{p.per && <span>{p.per}</span>}</p>
                   <p className="plan-note">{p.note}</p>
@@ -536,7 +533,7 @@ export default function App() {
                 return (
                   <li key={k} id={id}>
                     <div className="rel-meta">
-                      <a className="ver-pill" href="#changelog" onClick={(e) => { e.preventDefault(); document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' }); }}>
+                      <a className="ver-pill" href="/changelog" onClick={(e) => { e.preventDefault(); document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' }); }}>
                         <WindowsMark />{c.version}
                       </a>
                       <time>{when}</time>
@@ -584,8 +581,8 @@ export default function App() {
       <footer>
         <p>© {new Date().getFullYear()} Overlay · Built by <a href="https://souradeep.me" target="_blank" rel="noreferrer">Souradeep</a></p>
         <div className="legal-links">
-          <button type="button" className={view === 'privacy' ? 'on' : ''} onClick={() => go('privacy')}>Privacy Policy</button>
-          <button type="button" className={view === 'terms' ? 'on' : ''} onClick={() => go('terms')}>Terms of Service</button>
+          <a className={view === 'privacy' ? 'on' : ''} {...link('privacy')}>Privacy Policy</a>
+          <a className={view === 'terms' ? 'on' : ''} {...link('terms')}>Terms of Service</a>
         </div>
       </footer>
     </div>

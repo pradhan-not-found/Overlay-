@@ -153,8 +153,8 @@ nav .cta:hover, nav .cta.on { background: #1c2030; color: #fff; }
 footer a { color: #2a2e3a; font-weight: 500; text-decoration: none; transition: color 0.2s ease; }
 footer a:hover { color: #0027c4; }
 .legal-links { display: flex; align-items: center; gap: 18px; flex: 0 0 auto; }
-.legal-links button { border: none; background: none; padding: 0; color: #3d4150; font-size: 13px; font-weight: 500; cursor: pointer; }
-.legal-links button:hover, .legal-links button.on { color: #0d0f16; text-decoration: underline; text-underline-offset: 3px; }
+.legal-links a, .legal-links button { text-decoration: none; border: none; background: none; padding: 0; color: #3d4150; font-size: 13px; font-weight: 500; cursor: pointer; }
+.legal-links a:hover, .legal-links a.on, .legal-links button:hover, .legal-links button.on { color: #0d0f16; text-decoration: underline; text-underline-offset: 3px; }
 
 @media (max-width: 960px) {
   .feature-grid { grid-template-columns: repeat(2, 1fr); }
@@ -391,3 +391,18 @@ html.paged body, html.paged #root { overflow-y: visible; }
 /* Pages scroll freely with no visible scrollbar. */
 html, html.paged, html:has(.sheet.scroll) { scrollbar-width: none !important; }
 html::-webkit-scrollbar, body::-webkit-scrollbar { display: none; width: 0; height: 0; }
+
+/* ── Feature cards: soft colour, one mark, a label and a sentence ─────── */
+.fcards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+.fcard { aspect-ratio: 1 / 0.82; border-radius: 6px; background: var(--bg); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; padding: 28px 30px; text-align: center; box-shadow: 0 1px 2px rgba(15, 18, 30, 0.04), 0 12px 28px -22px rgba(15, 18, 30, 0.35); transition: transform 0.35s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.35s ease; }
+.fcard:hover { transform: translateY(-4px); box-shadow: 0 1px 2px rgba(15, 18, 30, 0.04), 0 22px 40px -26px rgba(15, 18, 30, 0.45); }
+.fcard-ico { display: grid; place-items: center; height: 34px; margin-bottom: 2px; }
+.fcard-ico svg, .fcard-ico .tint, .fcard-ico .tint svg { width: 30px; height: 30px; display: grid; place-items: center; }
+.fcard-ico .duo { display: inline-flex; gap: 8px; }
+.fcard-ico .duo svg { width: 26px; height: 26px; }
+.fcard-label { font-size: 12px; font-weight: 500; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink); opacity: 0.85; }
+.fcard p { font-size: 16px; line-height: 1.5; color: #14161f; max-width: 30ch; }
+@media (max-width: 960px) { .fcards { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 560px) { .fcards { grid-template-columns: 1fr; } .fcard { aspect-ratio: auto; } }
+/* Nav items are links now; keep them looking the same. */
+.top nav a { text-decoration: none; }
