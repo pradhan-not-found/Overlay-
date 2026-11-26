@@ -199,6 +199,7 @@ export function mountContext(opts: { invoke: Invoke; send: Send; on: On; openSpa
   }
   function paintMsg() {
     if (message && Date.now() > message.until) message = null;
+    (window as any).__overlayLocked = !auth.signedIn;
     if (!auth.signedIn) message = { text: 'Locked · sign in from the Dashboard', ico: I.lock, tone: 'lock', until: Infinity, act: 'unlock' };
     const show = !!message && isIdle();
     pill.classList.toggle('has-msg', show);

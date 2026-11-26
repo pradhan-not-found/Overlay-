@@ -376,3 +376,12 @@ html.paged body, html.paged #root { overflow-y: visible; }
 .shot-display { position: absolute; inset: 0; border-radius: 0; }
 .shot-display .ov { cursor: default; }
 .shot-over { background: transparent; pointer-events: none; z-index: 1; } .shot-list .rel-win { z-index: 2; }
+
+/* ── Download: one honest button and a quiet line under it ────────────── */
+.dl-wrap { display: inline-flex; flex-direction: column; align-items: center; gap: 10px; }
+.dl-wrap.wide { width: 100%; }
+.download.soon { cursor: default; opacity: 0.9; }
+.download.soon:hover { transform: none; }
+.dl-note { min-height: 18px; font-size: 12.5px; color: #6b7080; opacity: 0; transform: translateY(-3px); transition: opacity 0.3s ease, transform 0.3s ease; }
+.dl-note.show { opacity: 1; transform: none; }
+.download.starting, .download.started { background: #0d0f16; }

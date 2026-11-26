@@ -1412,8 +1412,39 @@ pill.addEventListener('pointerup', e => {
   if (appPhase === 'count') return;
   if (appPhase === 'expanded' && (t.closest('.space-stage') || t.closest('.exp-head'))) return;
   if (!camPopup.classList.contains('hidden')) { closeCamera(); return; }
+  clearTimeout(hoverTimer);
+  openedByHover = false;
   setPhase(appPhase === 'idle' ? 'expanded' : 'idle');
 });
+
+// Hover to open: resting on the closed notch opens it; leaving closes it again,
+// unless you are typing in it or it was opened with a click.
+let hoverOpen = true;
+let openedByHover = false;
+let hoverTimer = 0;
+let leaveTimer = 0;
+const typing = () => { const a = document.activeElement as HTMLElement | null; return !!a && pill.contains(a) && ['INPUT', 'TEXTAREA', 'SELECT'].includes(a.tagName); };
+pill.addEventListener('mouseenter', () => {
+  clearTimeout(leaveTimer);
+  if (!hoverOpen || appPhase !== 'idle' || dragging || (window as any).__overlayLocked) return;
+  hoverTimer = window.setTimeout(() => {
+    if (appPhase !== 'idle' || dragging || pDown) return;
+    openedByHover = true;
+    setPhase('expanded');
+  }, 320);
+});
+pill.addEventListener('mouseleave', () => {
+  clearTimeout(hoverTimer);
+  if (!openedByHover || appPhase !== 'expanded') return;
+  leaveTimer = window.setTimeout(() => {
+    const overPop = document.querySelector('.ctx-pop:not([hidden]):hover');
+    if (openedByHover && appPhase === 'expanded' && !typing() && !overPop && !pill.matches(':hover')) { openedByHover = false; setPhase('idle'); }
+  }, 450);
+});
+// A click inside makes it stay open until you close it.
+pill.addEventListener('pointerdown', () => { if (appPhase === 'expanded') openedByHover = false; });
+ipc?.on('widget-config', (_e: unknown, cfg: any) => { if (cfg && 'openOnHover' in cfg) hoverOpen = cfg.openOnHover !== false; });
+void invoke('get-config').then((cfg: any) => { hoverOpen = cfg?.openOnHover !== false; });
 
 // Clicking anywhere else on the screen tucks an open notch away.
 ipc?.on('window-blur', () => {

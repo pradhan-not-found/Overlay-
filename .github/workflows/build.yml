@@ -1,0 +1,84 @@
+# Builds the Windows installer on every push to main and attaches it to the
+# run as Overlay-Setup.exe. Pushing a tag like v1.2.0 also publishes it to
+# the public overlay-releases repository, where people download it.
+name: Build Windows app
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: build-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    timeout-minutes: 30
+    env:
+      DISCORD_ID: ${{ secrets.OVERLAY_DISCORD_ID }}
+      DISCORD_SECRET: ${{ secrets.OVERLAY_DISCORD_SECRET }}
+      RELEASES_TOKEN: ${{ secrets.RELEASES_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      # better-sqlite3 is native: fetch the build made for this Electron, or
+      # compile it if no prebuilt one exists.
+      - name: Build native modules for Electron
+        shell: bash
+        run: |
+          ELECTRON=$(node -p "require('electron/package.json').version")
+          cd node_modules/better-sqlite3
+          npx --yes prebuild-install --runtime electron --target "$ELECTRON" --arch x64 \
+            || (cd ../.. && npx --yes @electron/rebuild -f -w better-sqlite3 -v "$ELECTRON")
+
+      - name: Type-check and build the renderer
+        run: npx tsc && npx vite build
+
+      # Overlay's own Discord app, if the repository has it as secrets.
+      - name: Discord app details
+        if: env.DISCORD_ID != ''
+        shell: bash
+        run: |
+          printf '{"clientId":"%s","clientSecret":"%s"}' "$DISCORD_ID" "$DISCORD_SECRET" > electron/discord-app.json
+
+      - name: Package the installer
+        run: npx electron-builder --win nsis --publish never -c.directories.output=release
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+
+      - name: Upload the installer
+        uses: actions/upload-artifact@v4
+        with:
+          name: Overlay-Setup
+          path: release/Overlay-Setup.exe
+          if-no-files-found: error
+
+      # The source stays private; installers go to the public overlay-releases
+      # repository, which the website and the in-app updater download from.
+      # Needs a RELEASES_TOKEN secret: a fine-grained token with Contents
+      # read and write on pradhan-not-found/overlay-releases.
+      - name: Publish a tagged version
+        if: startsWith(github.ref, 'refs/tags/v') && env.RELEASES_TOKEN != ''
+        uses: softprops/action-gh-release@v2
+        with:
+          repository: pradhan-not-found/overlay-releases
+          token: ${{ secrets.RELEASES_TOKEN }}
+          name: Overlay ${{ github.ref_name }}
+          files: |
+            release/Overlay-Setup.exe
+            release/latest.yml
+            release/*.blockmap

@@ -183,6 +183,7 @@ function paintNotch(el: HTMLElement) {
   const water = Number(config.waterEvery ?? 30);
   el.innerHTML = `<div class="ds-page">${head('Notch', 'Choose what the notch shows, what it reminds you of and its colour.')}
     ${card('Closed notch', [
+      row('Open on hover', 'Rest the pointer on the notch to open it; move away to close.', sw(on('openOnHover'), 'data-cfg="openOnHover"')),
       row('Greeting and messages', 'Good morning with your name, reminders and updates, in the middle.', sw(on('idleGreeting'), 'data-cfg="idleGreeting"')),
       row('What you are working in', 'Your AI tool while you code, with its limits. Browser tools in a browser.', sw(on('idleContext'), 'data-cfg="idleContext"')),
       row('Clock', '', sw(on('idleClock'), 'data-cfg="idleClock"')),

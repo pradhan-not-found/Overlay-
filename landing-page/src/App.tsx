@@ -101,22 +101,49 @@ function WindowsMark() {
   );
 }
 
+// The installer lives in the public overlay-releases repository. Ask GitHub
+// whether a release exists, so the button never promises a file that is not there.
+type Release = { state: 'checking' } | { state: 'ready'; url: string; version: string; size: number } | { state: 'none' };
+let releaseCache: Promise<Release> | null = null;
+function latestRelease(): Promise<Release> {
+  if (import.meta.env.VITE_DOWNLOAD_URL) return Promise.resolve({ state: 'ready', url: WINDOWS, version: '', size: 0 });
+  releaseCache ||= fetch('https://api.github.com/repos/pradhan-not-found/overlay-releases/releases/latest', { headers: { Accept: 'application/vnd.github+json' } })
+    .then((r) => (r.ok ? r.json() : null))
+    .then((rel): Release => {
+      const asset = rel?.assets?.find((a: { name: string }) => /\.exe$/i.test(a.name));
+      return asset ? { state: 'ready', url: asset.browser_download_url, version: String(rel.tag_name || '').replace(/^v/, ''), size: asset.size } : { state: 'none' };
+    })
+    .catch((): Release => ({ state: 'none' }));
+  return releaseCache;
+}
+function useRelease() {
+  const [rel, setRel] = useState<Release>({ state: 'checking' });
+  useEffect(() => { let live = true; void latestRelease().then((r) => live && setRel(r)); return () => { live = false; }; }, []);
+  return rel;
+}
+
 function Download({ wide = false }: { wide?: boolean }) {
-  const [dl, setDl] = useState<'idle' | 'starting' | 'started'>('idle');
-  // The link itself starts the download; the button just says what is happening.
-  const start = () => {
-    if (dl !== 'idle') return;
-    setDl('starting');
-    window.setTimeout(() => setDl('started'), 1400);
-    window.setTimeout(() => setDl('idle'), 9000);
-  };
+  const rel = useRelease();
+  const [clicked, setClicked] = useState(false);
+  const ready = rel.state === 'ready';
+  const mb = ready && rel.size ? `${Math.round(rel.size / 1048576)} MB` : '';
   return (
-    <a className={`download ${dl}${wide ? ' wide' : ''}`} href={WINDOWS} download="Overlay-Setup.exe" rel="noopener" onClick={start} aria-live="polite">
-      {dl === 'starting' ? <span className="spinner" aria-hidden="true" /> : dl === 'started' ? (
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" /></svg>
-      ) : <WindowsMark />}
-      {dl === 'starting' ? 'Starting download…' : dl === 'started' ? 'Download started' : 'Download for Windows'}
-    </a>
+    <div className={`dl-wrap${wide ? ' wide' : ''}`}>
+      {ready ? (
+        <a className={`download${wide ? ' wide' : ''}`} href={rel.url} rel="noopener" onClick={() => setClicked(true)}>
+          <WindowsMark />Download for Windows
+        </a>
+      ) : (
+        <span className={`download soon${wide ? ' wide' : ''}`} aria-disabled="true">
+          <WindowsMark />{rel.state === 'checking' ? 'Download for Windows' : 'Coming soon for Windows'}
+        </span>
+      )}
+      <p className={`dl-note${clicked || rel.state === 'none' || (ready && (rel.version || mb)) ? ' show' : ''}`} aria-live="polite">
+        {clicked ? 'Downloading Overlay-Setup.exe. Open it when it finishes.'
+          : rel.state === 'none' ? 'The first Windows build is on its way.'
+          : ready ? [rel.version && `Version ${rel.version}`, mb, 'Windows 10 and 11'].filter(Boolean).join(' · ') : ''}
+      </p>
+    </div>
   );
 }
 
@@ -464,7 +491,7 @@ export default function App() {
             </header>
             <div className="plans">
               {PLANS.map((p) => (
-                <a className={`plan${p.featured ? ' featured' : ''}`} key={p.name} href={WINDOWS} rel="noopener" aria-label={`${p.name}: download`}>
+                <a className={`plan${p.featured ? ' featured' : ''}`} key={p.name} href="#download" onClick={(e) => { e.preventDefault(); go('home'); }} aria-label={`${p.name}: get Overlay`}>
                   <h3>{p.name}</h3>
                   <p className="price"><b>{p.price}</b>{p.per && <span>{p.per}</span>}</p>
                   <p className="plan-note">{p.note}</p>
