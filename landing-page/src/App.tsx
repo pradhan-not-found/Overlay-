@@ -5,6 +5,7 @@ import './pages.css';
 import NotchDemo, { type Space } from './NotchDemo';
 import changelog from 'virtual:changelog';
 import seoData from './seo.json';
+import { SponsorPage, SponsorStrip } from './Sponsor';
 import { CLAUDE, DISCORD, GCAL, GITHUB, OPENAI, SPOTIFY } from './brand/marks';
 
 // The source repo is private, so installers live in the public overlay-releases
@@ -13,7 +14,7 @@ import { CLAUDE, DISCORD, GCAL, GITHUB, OPENAI, SPOTIFY } from './brand/marks';
 const WINDOWS = import.meta.env.VITE_DOWNLOAD_URL
   || 'https://github.com/pradhan-not-found/overlay-releases/releases/latest/download/Overlay-Setup.exe';
 
-type View = 'home' | 'features' | 'pricing' | 'changelog' | 'privacy' | 'terms';
+type View = 'home' | 'features' | 'pricing' | 'changelog' | 'privacy' | 'terms' | 'sponsor';
 
 const NAV: { id: View; label: string }[] = [
   { id: 'features', label: 'Features' },
@@ -319,7 +320,7 @@ function Shot({ kind, items, version, when, seed }: { kind: ShotKind; items: str
   );
 }
 
-const PAGES: View[] = ['features', 'pricing', 'changelog', 'privacy', 'terms'];
+const PAGES: View[] = ['features', 'pricing', 'changelog', 'privacy', 'terms', 'sponsor'];
 const pathOf = (v: View) => (v === 'home' ? '/' : `/${v}`);
 function viewFromLocation(): View {
   const fromPath = window.location.pathname.replace(/^\/+|\/+$/g, '').toLowerCase() as View;
@@ -389,6 +390,12 @@ export default function App() {
     set('meta[property="og:description"]', 'content', p.description);
     set('meta[name="twitter:title"]', 'content', p.title);
     set('meta[name="twitter:description"]', 'content', p.description);
+  }, [view]);
+
+  // One visit per page shown: a daily total on the server, nothing personal.
+  useEffect(() => {
+    if (import.meta.env.DEV) return;
+    void fetch('/api/visit', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ path: pathOf(view), referrer: document.referrer }), keepalive: true }).catch(() => {});
   }, [view]);
 
   // Back and forward move between pages.
@@ -470,13 +477,7 @@ export default function App() {
                 </div>
               </div>
               <div className="actions">
-                <button type="button" className={zoomed ? 'zoom on' : 'zoom'} onClick={() => setZoomed((v) => !v)} aria-pressed={zoomed}>
-                  <svg viewBox="0 0 24 24" aria-hidden="true">
-                    <circle cx="11" cy="11" r="6.5" />
-                    <path d={zoomed ? 'm20 20-4.4-4.4M8.5 11h5' : 'm20 20-4.4-4.4M8.5 11h5M11 8.5v5'} />
-                  </svg>
-                  {zoomed ? 'Zoom out' : 'Open the notch'}
-                </button>
+                <SponsorStrip onOpen={(e) => { if (e.metaKey || e.ctrlKey) return; e.preventDefault(); go('sponsor'); }} />
                 <Download />
               </div>
             </div>
@@ -571,6 +572,8 @@ export default function App() {
             <p>Questions about privacy can be sent through the project's GitHub page.</p>
           </section>
         )}
+
+        {view === 'sponsor' && <SponsorPage onHome={() => go('home')} />}
 
         {view === 'terms' && (
           <section className="page narrow legal">

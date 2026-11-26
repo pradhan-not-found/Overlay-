@@ -6,6 +6,8 @@
 //    Vercel project's environment variables). GitHub answers with a short-lived
 //    file link that anyone can download from, so the repository stays private
 //    and the visitor never needs a GitHub account.
+import { country, sbRpc } from './_lib.js';
+
 const OWNER = 'pradhan-not-found';
 const PUBLIC_REPO = 'overlay-releases';
 const PRIVATE_REPO = 'Overlay-';
@@ -26,7 +28,8 @@ export default async function handler(req, res) {
     // Public first: a plain, cacheable link.
     const pub = await latestExe(PUBLIC_REPO, token);
     if (pub) {
-      res.setHeader('Cache-Control', 'public, s-maxage=300, stale-while-revalidate=600');
+      await sbRpc('overlay_track_download', { p_country: country(req), p_version: pub.version });
+      res.setHeader('Cache-Control', 'no-store');
       res.setHeader('Location', pub.asset.browser_download_url);
       return res.status(302).end();
     }
@@ -40,6 +43,7 @@ export default async function handler(req, res) {
         });
         const link = file.headers.get('location');
         if (link) {
+          await sbRpc('overlay_track_download', { p_country: country(req), p_version: priv.version });
           // The link expires after a few minutes, so it is never cached.
           res.setHeader('Cache-Control', 'no-store');
           res.setHeader('Location', link);
