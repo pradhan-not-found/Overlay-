@@ -407,6 +407,9 @@ export default function App() {
   }, []);
   const link = (v: View) => ({ href: pathOf(v), onClick: (e: React.MouseEvent) => { if (e.metaKey || e.ctrlKey || e.shiftKey || e.button === 1) return; e.preventDefault(); go(v); } });
 
+  // The checkout stands alone: no navigation to pull people away from paying.
+  if (view === 'sponsor') return <SponsorPage onHome={() => go('home')} />;
+
   return (
     <div className={`sheet${view === 'home' ? '' : ' scroll'}`}>
       <header className="top">
@@ -572,8 +575,6 @@ export default function App() {
             <p>Questions about privacy can be sent through the project's GitHub page.</p>
           </section>
         )}
-
-        {view === 'sponsor' && <SponsorPage onHome={() => go('home')} />}
 
         {view === 'terms' && (
           <section className="page narrow legal">

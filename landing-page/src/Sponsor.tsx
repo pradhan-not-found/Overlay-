@@ -134,27 +134,38 @@ export function SponsorPage({ onHome }: { onHome: () => void }) {
   };
 
   return (
-    <section className="page sp-page">
-      <div className="sp-grid">
-        <div className="sp-pitch">
-          <span className="sp-kicker">Sponsor Overlay</span>
-          <h2>Put your product at the top of every screen.</h2>
-          <p>Overlay lives above people's work all day. Sponsors are shown on our website with their logo and a link, for as long as Overlay is around.</p>
-          <ul className="sp-gets">
-            <li><b>Your logo and link</b> on the Overlay website, in the sponsor row under the download.</li>
-            <li><b>A thank-you</b> in the changelog and on our socials.</li>
-            <li><b>Lifetime</b> placement, from a single payment.</li>
+    <main className="co">
+      <aside className="co-order">
+        <div className="co-top">
+          <button type="button" className="co-back" onClick={onHome} aria-label="Back to Overlay">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 6l-6 6 6 6" /></svg>
+          </button>
+          <img src="/mark.png" alt="" className="co-mark" />
+          <span className="co-brand">Overlay</span>
+        </div>
+        <div className="co-sum">
+          <span className="co-label">Sponsor Overlay</span>
+          <div className="co-amount">{money(step === 'pay' ? amount : AMOUNTS.card[0], step === 'pay' ? method : 'card')}<small>{step === 'pay' && method === 'upi' ? 'one payment, UPI' : 'one payment'}</small></div>
+          <div className="co-line"><span>Lifetime sponsor spot</span><b>{money(step === 'pay' ? amount : AMOUNTS.card[0], step === 'pay' ? method : 'card')}</b></div>
+          {d.product && <div className="co-line dim"><span>For</span><b>{d.product}</b></div>}
+          <div className="co-line total"><span>Total due today</span><b>{money(step === 'pay' ? amount : AMOUNTS.card[0], step === 'pay' ? method : 'card')}</b></div>
+          <ul className="co-gets">
+            <li>Your logo and link on the Overlay website, for life</li>
+            <li>A thank-you in the changelog and on our socials</li>
+            <li>One payment. No subscription.</li>
           </ul>
-          <div className="sp-price"><b>{money(AMOUNTS.card[0], 'card')}</b><span>once · or {money(AMOUNTS.upi[0], 'upi')} by UPI</span></div>
           {sponsors.length > 0 && (
-            <div className="sp-current">
-              <span>Our sponsors</span>
-              <div>{sponsors.map((s) => <a key={s.name} href={s.link || undefined} target="_blank" rel="noopener sponsored">{s.host && <img src={icon(s.host)} alt="" />}{s.name}</a>)}</div>
+            <div className="co-peers">
+              <span className="co-stack">{sponsors.slice(0, 5).map((x) => <i key={x.name}>{x.host ? <img src={icon(x.host)} alt="" /> : x.name.charAt(0)}</i>)}</span>
+              <span>Join {sponsors.length} sponsor{sponsors.length === 1 ? '' : 's'}</span>
             </div>
           )}
         </div>
+        <p className="co-foot">Secure payment by Razorpay · Cards from any country · UPI in India</p>
+      </aside>
 
-        <div className="sp-box">
+      <section className="co-pay">
+        <div className="co-panel">
           {step === 'details' && (
             <form onSubmit={toPay} className="sp-form">
               <div className="sp-steps"><b className="on">1 · Your product</b><b>2 · Payment</b></div>
@@ -206,7 +217,7 @@ export function SponsorPage({ onHome }: { onHome: () => void }) {
             </div>
           )}
         </div>
-      </div>
-    </section>
+      </section>
+    </main>
   );
 }
