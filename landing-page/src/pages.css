@@ -385,3 +385,9 @@ html.paged body, html.paged #root { overflow-y: visible; }
 .dl-note { min-height: 18px; font-size: 12.5px; color: #6b7080; opacity: 0; transform: translateY(-3px); transition: opacity 0.3s ease, transform 0.3s ease; }
 .dl-note.show { opacity: 1; transform: none; }
 .download.starting, .download.started { background: #0d0f16; }
+
+/* The mark is white; on the light dashboard card it is drawn dark. */
+.sc-top img { filter: invert(1) brightness(0.1); opacity: 0.9; }
+/* Pages scroll freely with no visible scrollbar. */
+html, html.paged, html:has(.sheet.scroll) { scrollbar-width: none !important; }
+html::-webkit-scrollbar, body::-webkit-scrollbar { display: none; width: 0; height: 0; }

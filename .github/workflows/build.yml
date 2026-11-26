@@ -35,18 +35,16 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      # better-sqlite3 is native: fetch the build made for this Electron, or
-      # compile it if no prebuilt one exists.
+      # Native modules (better-sqlite3) rebuilt for this Electron with
+      # electron-builder's own tool, which uses a prebuilt binary when one exists.
       - name: Build native modules for Electron
-        shell: bash
-        run: |
-          ELECTRON=$(node -p "require('electron/package.json').version")
-          cd node_modules/better-sqlite3
-          npx --yes prebuild-install --runtime electron --target "$ELECTRON" --arch x64 \
-            || (cd ../.. && npx --yes @electron/rebuild -f -w better-sqlite3 -v "$ELECTRON")
+        run: npx electron-builder install-app-deps
 
-      - name: Type-check and build the renderer
-        run: npx tsc && npx vite build
+      - name: Type-check
+        run: npx tsc
+
+      - name: Build the renderer
+        run: npx vite build
 
       # Overlay's own Discord app, if the repository has it as secrets.
       - name: Discord app details

@@ -200,9 +200,18 @@ const LOGO_RULES: [RegExp, string, React.ReactNode][] = [
   [/terminal|shell/i, 'term', tint(EXTRA.terminal, '#0d0f16')],
   [/cpu|gpu|memory|hardware|battery|charg|disk|network/i, 'chip', tint(ICON.chip, '#3b82f6')],
   [/dashboard|sync|stor|history/i, 'dash', tint(ICON.calendar, '#0027c4')],
-  [/privacy|secure|safe|local/i, 'shield', tint(ICON.shield, '#0d0f16')],
+  [/privacy|secure|safe|local|account|sign|password|login/i, 'shield', tint(ICON.shield, '#0d0f16')],
+  [/find|search|drive/i, 'search', tint(EXTRA.search, '#ef4444')],
+  [/notch|island|dock/i, 'notch', tint('M3.5 6.5a2 2 0 0 1 2-2h13a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2h-13a2 2 0 0 1-2-2ZM9 4.5h6v1.2a1.5 1.5 0 0 1-1.5 1.5h-3A1.5 1.5 0 0 1 9 5.7Z', '#0d0f16')],
+  [/smooth|animation|motion|open|close|zoom|fade|slide/i, 'motion', tint('M4 12h9M4 7.5h5M4 16.5h5M14 7l5 5-5 5', '#8b5cf6')],
+  [/update|release|version|download|install/i, 'update', tint('M12 4v11M7.5 10.5 12 15l4.5-4.5M5 19.5h14', '#0ea5e9')],
+  [/fix|bug|error|crash/i, 'fix', tint('M14.7 6.3a4 4 0 0 0-5.4 5.4L4 17l3 3 5.3-5.3a4 4 0 0 0 5.4-5.4l-2.6 2.6-2.4-.6-.6-2.4Z', '#f97316')],
+  [/logo|icon|svg|font|design|theme|colou?r/i, 'design', tint('M12 3.5a8.5 8.5 0 1 0 0 17c1.1 0 1.6-.9 1.2-1.8-.5-1-.1-2.2 1.2-2.2H17a3.5 3.5 0 0 0 3.5-3.5A8.5 8.5 0 0 0 12 3.5ZM7.5 11h.01M10 7.5h.01M14.5 7.5h.01', '#ec4899')],
+  [/website|page|pricing|changelog|landing|heading|footer/i, 'web', tint(EXTRA.globe, '#0027c4')],
+  [/camera|capture|screenshot|record/i, 'cam', tint('M4 8.5h3l1.5-2h7L17 8.5h3v9H4ZM12 15a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5Z', '#0d0f16')],
+  [/water|habit|break|reminder|greet/i, 'care', tint('M12 3.2c.3.5 5.4 6.4 5.4 9.9a5.4 5.4 0 1 1-10.8 0C6.6 9.6 11.7 3.7 12 3.2Z', '#0ea5e9')],
 ];
-const FALLBACK_LOGO = { key: 'spark', node: tint(ICON.spark, '#0027c4') };
+const FALLBACK_LOGO = { key: 'tick', node: tint('M5 12.5l4.5 4.5L19 7.5', '#0027c4') };
 // "a, b and c" → ["A", "B", "C"], for the checklist in each release shot.
 function splitTitle(t: string, points: string[] = []) {
   const out = t.split(/,\s*|\s+and\s+/i).map((x) => x.trim()).filter(Boolean).map(sentence);
@@ -336,12 +345,21 @@ export default function App() {
   const [risen, setRisen] = useState(false);
   // #zoom opens straight into the notch, so the close-up can be linked.
   const [zoomed, setZoomed] = useState(() => window.location.hash === '#zoom');
-  // Keep the stage clipped until the close-up has fully eased back out.
-  const [clip, setClip] = useState(zoomed);
+  // One movement at a time: zooming in scales the laptop, then opens the
+  // notch; zooming out closes the notch, then scales back.
+  const [scaled, setScaled] = useState(zoomed);
+  const [notchOpen, setNotchOpen] = useState(zoomed);
+  // The frame clips tightly from the first frame of the zoom until the laptop is back.
+  const [tight, setTight] = useState(zoomed);
   useEffect(() => {
-    if (zoomed) { setClip(true); return; }
-    const t = window.setTimeout(() => setClip(false), 1400);
-    return () => window.clearTimeout(t);
+    const t: number[] = [];
+    if (zoomed) { setTight(true); setScaled(true); t.push(window.setTimeout(() => setNotchOpen(true), 520)); }
+    else {
+      setNotchOpen(false);
+      t.push(window.setTimeout(() => setScaled(false), 300));
+      t.push(window.setTimeout(() => setTight(false), 300 + 1000));
+    }
+    return () => t.forEach((x) => window.clearTimeout(x));
   }, [zoomed]);
   useEffect(() => {
     document.documentElement.classList.toggle('paged', view !== 'home');
@@ -391,14 +409,14 @@ export default function App() {
             </aside>
 
             <div className="center">
-              <div className={`stage${clip ? ' clip' : ''}`} onClick={() => setZoomed(false)} title={zoomed ? 'Click outside the notch to zoom out' : ''}>
-                <div className={`device${risen ? ' risen' : ''}${zoomed ? ' zoomed' : ''}`}>
+              <div className={`stage${tight ? ' zooming' : ''}`} onClick={() => setZoomed(false)} title={zoomed ? 'Click outside the notch to zoom out' : ''}>
+                <div className={`device${risen ? ' risen' : ''}${scaled ? ' zoomed' : ''}`}>
                   <div className="lid">
                     <span className="cam" aria-hidden="true" />
                     <div className="display">
                       <div className="wall" aria-hidden="true" />
                       <div className="glare" aria-hidden="true" />
-                      <NotchDemo open={zoomed} onOpen={() => setZoomed(true)} onClose={() => setZoomed(false)} />
+                      <NotchDemo open={notchOpen} onOpen={() => setZoomed(true)} onClose={() => setZoomed(false)} />
                     </div>
                   </div>
                   <div className="hinge" />

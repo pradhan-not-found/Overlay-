@@ -153,7 +153,8 @@ main {
   border-radius: 18px;
 }
 
-.stage.clip, .stage:has(.zoomed) { overflow: hidden; }
+.stage { overflow: clip; overflow-clip-margin: 34px; }
+.stage.zooming { overflow-clip-margin: 0px; border-radius: 18px; }
 
 .stage:has(.zoomed) { cursor: zoom-out; }
 
@@ -168,8 +169,8 @@ main {
 }
 
 .device.risen { transform: translateY(0); opacity: 1; }
-.device.risen { transition: transform 0.9s cubic-bezier(0.65, 0, 0.35, 1) 0.42s, opacity 0.8s ease; }
-.device.risen.zoomed { transform: scale(1.5); transition: transform 0.85s cubic-bezier(0.65, 0, 0.35, 1) 0s; }
+.device.risen { transition: transform 0.95s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.8s ease; }
+.device.risen.zoomed { transform: scale(1.5); transition: transform 0.95s cubic-bezier(0.22, 1, 0.36, 1); }
 
 .lid {
   position: absolute;
