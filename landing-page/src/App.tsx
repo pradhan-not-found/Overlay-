@@ -124,26 +124,13 @@ function useRelease() {
 
 function Download({ wide = false }: { wide?: boolean }) {
   const rel = useRelease();
-  const [clicked, setClicked] = useState(false);
-  const ready = rel.state === 'ready';
-  const mb = ready && rel.size ? `${Math.round(rel.size / 1048576)} MB` : '';
+  // Straight to the newest installer; no notes under the button.
+  const href = rel.state === 'ready' ? rel.url : WINDOWS;
   return (
     <div className={`dl-wrap${wide ? ' wide' : ''}`}>
-      {ready ? (
-        <a className={`download${wide ? ' wide' : ''}`} href={rel.url} rel="noopener" onClick={() => setClicked(true)}>
-          <WindowsMark />Download for Windows
-        </a>
-      ) : (
-        <a className={`download${wide ? ' wide' : ''}`} href={WINDOWS} rel="noopener" onClick={(e) => { if (rel.state === 'none') { e.preventDefault(); setClicked(true); } }}>
-          <WindowsMark />Download for Windows
-        </a>
-      )}
-      <p className={`dl-note${clicked || (ready && (rel.version || mb)) ? ' show' : ''}`} aria-live="polite">
-        {clicked && rel.state === 'none' ? 'The Windows build is being published. Try again in a few minutes.'
-          : clicked ? 'Downloading Overlay-Setup.exe. Open it when it finishes.'
-          : rel.state === 'none' ? ''
-          : ready ? [rel.version && `Version ${rel.version}`, mb, 'Windows 10 and 11'].filter(Boolean).join(' · ') : ''}
-      </p>
+      <a className={`download${wide ? ' wide' : ''}`} href={href} rel="noopener">
+        <WindowsMark />Download for Windows
+      </a>
     </div>
   );
 }
