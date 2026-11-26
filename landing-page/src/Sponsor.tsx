@@ -142,6 +142,7 @@ export function SponsorPage({ onHome }: { onHome: () => void }) {
           </button>
           <img src="/mark.png" alt="" className="co-mark" />
           <span className="co-brand">Overlay</span>
+          <span className="co-beta">Beta</span>
         </div>
         <div className="co-sum">
           <span className="co-label">Sponsor Overlay</span>
