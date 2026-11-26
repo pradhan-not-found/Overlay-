@@ -134,13 +134,14 @@ function Download({ wide = false }: { wide?: boolean }) {
           <WindowsMark />Download for Windows
         </a>
       ) : (
-        <span className={`download soon${wide ? ' wide' : ''}`} aria-disabled="true">
-          <WindowsMark />{rel.state === 'checking' ? 'Download for Windows' : 'Coming soon for Windows'}
-        </span>
+        <a className={`download${wide ? ' wide' : ''}`} href={WINDOWS} rel="noopener" onClick={(e) => { if (rel.state === 'none') { e.preventDefault(); setClicked(true); } }}>
+          <WindowsMark />Download for Windows
+        </a>
       )}
-      <p className={`dl-note${clicked || rel.state === 'none' || (ready && (rel.version || mb)) ? ' show' : ''}`} aria-live="polite">
-        {clicked ? 'Downloading Overlay-Setup.exe. Open it when it finishes.'
-          : rel.state === 'none' ? 'The first Windows build is on its way.'
+      <p className={`dl-note${clicked || (ready && (rel.version || mb)) ? ' show' : ''}`} aria-live="polite">
+        {clicked && rel.state === 'none' ? 'The Windows build is being published. Try again in a few minutes.'
+          : clicked ? 'Downloading Overlay-Setup.exe. Open it when it finishes.'
+          : rel.state === 'none' ? ''
           : ready ? [rel.version && `Version ${rel.version}`, mb, 'Windows 10 and 11'].filter(Boolean).join(' · ') : ''}
       </p>
     </div>

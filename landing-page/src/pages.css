@@ -406,3 +406,8 @@ html::-webkit-scrollbar, body::-webkit-scrollbar { display: none; width: 0; heig
 @media (max-width: 560px) { .fcards { grid-template-columns: 1fr; } .fcard { aspect-ratio: auto; } }
 /* Nav items are links now; keep them looking the same. */
 .top nav a { text-decoration: none; }
+
+/* The note floats under the button, so the buttons stay on one line. */
+.dl-wrap { position: relative; display: inline-flex; }
+.dl-note { position: absolute; top: calc(100% + 10px); left: 50%; transform: translate(-50%, -3px); width: max-content; max-width: 340px; text-align: center; }
+.dl-note.show { transform: translate(-50%, 0); }
