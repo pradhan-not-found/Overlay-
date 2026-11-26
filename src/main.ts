@@ -8,6 +8,7 @@ import { mountMoreTools } from './tools/more';
 import { mountLinks, marks } from './tools/links';
 import { mountStudio } from './tools/studio';
 import { mountDesk } from './tools/desk';
+import { mountKit } from './tools/kit';
 import plusSvgRaw from './assets/icons/plus.svg?raw';
 import expandSvgRaw from './assets/icons/expand.svg?raw';
 import playSvgRaw from './assets/icons/play.svg?raw';
@@ -402,6 +403,10 @@ document.getElementById('app')!.innerHTML = `
       <section class="space p-agents" data-space="agents"></section>
       <section class="space p-screentime" data-space="screentime"></section>
       <section class="space p-wallpapers" data-space="wallpapers"></section>
+      <section class="space p-kit" data-space="downloads"></section>
+      <section class="space p-kit" data-space="ports"></section>
+      <section class="space p-kit" data-space="breaks"></section>
+      <section class="space p-kit" data-space="find"></section>
     </div>
 
     <nav class="dock" id="space-dots">
@@ -439,6 +444,10 @@ document.getElementById('app')!.innerHTML = `
       <button class="space-dot" data-space="agents" data-title="Agents" title="Agents" style="--tint:#a5b4fc">${ico('<rect x="6" y="8" width="12" height="9" rx="2"/><path d="M12 8V5.5M9 13h.01M15 13h.01M4 12H2.5M21.5 12H20"/>')}</button>
       <button class="space-dot" data-space="screentime" data-title="Screen Time" title="Screen Time" style="--tint:#38bdf8">${ico('<circle cx="12" cy="12" r="8"/><path d="M12 8v4.5l3 1.5"/>')}</button>
       <button class="space-dot" data-space="wallpapers" data-title="Wallpapers" title="Wallpapers" style="--tint:#e879f9">${ico('<rect x="4" y="5" width="16" height="14" rx="2"/><path d="m4 15 4.5-4 3 3 2.5-2.5L20 16"/>')}</button>
+      <button class="space-dot" data-space="downloads" data-title="Downloads" title="Downloads" style="--tint:#60a5fa">${ico('<path d="M12 4v11M7.5 10.5 12 15l4.5-4.5"/><path d="M5 19.5h14"/>')}</button>
+      <button class="space-dot" data-space="ports" data-title="Ports" title="Local servers" style="--tint:#34d399">${ico('<rect x="3.5" y="5" width="17" height="6" rx="2"/><rect x="3.5" y="13" width="17" height="6" rx="2"/><path d="M7 8h.01M7 16h.01M11 8h6M11 16h6"/>')}</button>
+      <button class="space-dot" data-space="breaks" data-title="Breaks" title="Breaks" style="--tint:#7dd3fc">${ico('<path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12Z"/><circle cx="12" cy="12" r="2.8"/>')}</button>
+      <button class="space-dot" data-space="find" data-title="Find" title="Find files" style="--tint:#fda4af">${ico('<path d="M14 3.5H7.5a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2h4"/><path d="M14 3.5V8h4.5v2"/><circle cx="16" cy="16" r="3"/><path d="m20.5 20.5-2.4-2.4"/>')}</button>
       <span class="dock-sep"></span>
       <button class="dock-btn" id="qbtn-settings" title="Settings">${settingsSvgRaw}</button>
     </nav>
@@ -714,7 +723,7 @@ function setPhase(next: Phase) {
 // ─── Spaces (dot tabs across the top of the expanded notch) ──────────────────
 let currentSpace = 'overview';
 function showSpace(name: string) {
-  const order = ['overview', 'media', 'focus', 'today', 'count', 'todos', 'note', 'clipboard', 'hardware', 'weather', 'clocks', 'calc', 'shelf', 'colour', 'launcher', 'github', 'discord', 'leetcode', 'terminal', 'convert', 'water', 'habits', 'scratch', 'prompter', 'ask', 'trading', 'vault', 'notices', 'capture', 'recorder', 'camera', 'agents', 'screentime', 'wallpapers'];
+  const order = ['overview', 'media', 'focus', 'today', 'count', 'todos', 'note', 'clipboard', 'hardware', 'weather', 'clocks', 'calc', 'shelf', 'colour', 'launcher', 'github', 'discord', 'leetcode', 'terminal', 'convert', 'water', 'habits', 'scratch', 'prompter', 'ask', 'trading', 'vault', 'notices', 'capture', 'recorder', 'camera', 'agents', 'screentime', 'wallpapers', 'downloads', 'ports', 'breaks', 'find'];
   const from = order.indexOf(currentSpace);
   const to = order.indexOf(name);
   currentSpace = name;
@@ -737,6 +746,7 @@ function showSpace(name: string) {
   links.onSpace(name);
   studio.onSpace(name);
   desk.onSpace(name);
+  kit.onSpace(name);
   send('set-setting', 'lastSpace', name);
 }
 document.querySelectorAll<HTMLElement>('.space-dot').forEach((dot) => {
@@ -747,6 +757,7 @@ const more = mountMoreTools({ invoke, send });
 const links = mountLinks({ invoke, send, on: (ch, fn) => ipc?.on(ch, fn) });
 const studio = mountStudio({ invoke, send });
 const desk = mountDesk({ invoke, send });
+const kit = mountKit({ invoke, send });
 setInterval(() => more.tick(), 15_000);
 
 document.querySelectorAll<HTMLElement>('[data-go]').forEach((card) => {
@@ -756,7 +767,7 @@ document.getElementById('btn-collapse')?.addEventListener('click', (e) => { e.st
 invoke('get-setting', 'lastSpace', 'overview').then((v: any) => showSpace(typeof v === 'string' && v ? v : 'overview')).catch(() => showSpace('overview'));
 
 ipc?.on('preview', () => {
-  const order = ['overview', 'media', 'focus', 'today', 'count', 'todos', 'note', 'clipboard', 'hardware', 'weather', 'clocks', 'calc', 'shelf', 'colour', 'launcher', 'github', 'discord', 'leetcode', 'terminal', 'convert', 'water', 'habits', 'scratch', 'prompter', 'ask', 'trading', 'vault', 'notices', 'capture', 'recorder', 'camera', 'agents', 'screentime', 'wallpapers'];
+  const order = ['overview', 'media', 'focus', 'today', 'count', 'todos', 'note', 'clipboard', 'hardware', 'weather', 'clocks', 'calc', 'shelf', 'colour', 'launcher', 'github', 'discord', 'leetcode', 'terminal', 'convert', 'water', 'habits', 'scratch', 'prompter', 'ask', 'trading', 'vault', 'notices', 'capture', 'recorder', 'camera', 'agents', 'screentime', 'wallpapers', 'downloads', 'ports', 'breaks', 'find'];
   let k = 0;
   setPhase('expanded');
   setTimeout(() => showSpace(order[0]), 400);

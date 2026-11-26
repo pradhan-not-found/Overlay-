@@ -14,6 +14,7 @@ const links  = require('./links.cjs');
 const term   = require('./term.cjs');
 const desk   = require('./desk.cjs');
 const discord = require('./discord.cjs');
+const kit    = require('./kit.cjs');
 
 // ─── Auto Updater ─────────────────────────────────────────────────────────────
 let autoUpdater = null;
@@ -736,6 +737,7 @@ if (!gotTheLock) {
     term.init();
     desk.init();
     discord.init();
+    kit.init();
     app.once('before-quit', () => discord.stop());
     const cfg = readConfig();
     
