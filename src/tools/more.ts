@@ -363,17 +363,26 @@ export function mountMoreTools(opts: { invoke: Invoke; send: Send }) {
     }
     return `hsl(${Math.round(h)}, ${Math.round(s * 100)}%, ${Math.round(l * 100)}%)`;
   };
+  // Readable text on any colour.
+  const lightText = (hex: string) => { const [r, g, b] = rgbOf(hex); return (r * 299 + g * 587 + b * 114) / 1000 < 150; };
+  const DROP = stroke('<path d="m14.5 4.5 5 5M17 7l-9.5 9.5L5 19.5 4.5 19 7.5 16.5 17 7Z"/><path d="M16 3.5a2.1 2.1 0 0 1 3 0l1.5 1.5a2.1 2.1 0 0 1 0 3L19 9.5 14.5 5Z"/>', 16, 1.8);
+  const COPY = stroke('<rect x="8.5" y="8.5" width="11" height="11" rx="2.5"/><path d="M15.5 8.5V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v7.5a2 2 0 0 0 2 2h2.5"/>', 14, 1.8);
+  const TICK = stroke('<path d="m5 12.5 4.5 4.5L19 7.5"/>', 14, 2.2);
   function renderColour() {
-    const formats = current ? [['HEX', current.toUpperCase()], ['RGB', `rgb(${rgbOf(current).join(', ')})`], ['HSL', hslOf(current)]] : [];
-    oEl.innerHTML = `
-      <div class="col-main">
-        <button class="col-pick" data-pick style="${current ? `--c:${current}` : ''}">
-          ${current ? '' : stroke('<path d="m14.5 4.5 5 5M17 7l-9.5 9.5L5 19.5 4.5 19 7.5 16.5 17 7Z"/><path d="M16 3.5a2.1 2.1 0 0 1 3 0l1.5 1.5a2.1 2.1 0 0 1 0 3L19 9.5 14.5 5Z"/>', 26, 1.5)}
-          <span>${current ? 'Pick again' : 'Pick from screen'}</span>
+    const formats: [string, string][] = current ? [['HEX', current.toUpperCase()], ['RGB', rgbOf(current).join(', ')], ['HSL', hslOf(current).replace(/^hsl\(|\)$/g, '')]] : [];
+    const full = (k: string, v: string) => (k === 'RGB' ? `rgb(${v})` : k === 'HSL' ? `hsl(${v})` : v);
+    oEl.innerHTML = `<div class="kit cl">
+      <div class="cl-main">
+        <button type="button" class="cl-swatch${current ? '' : ' empty'}" data-pick style="${current ? `--c:${current};color:${lightText(current) ? '#fff' : '#0d0f16'}` : ''}" title="Pick a colour from the screen">
+          ${current ? `<b>${current.toUpperCase()}</b>` : `${DROP}<b>Pick from screen</b><small>Any pixel, any app</small>`}
         </button>
-        <div class="col-formats">${formats.length ? formats.map(([k, v]) => `<button class="list-row" data-copy-col="${v}"><span>${k}</span><b>${copiedFmt === v ? 'Copied' : v}</b></button>`).join('') : '<p class="tool-empty">Pick any pixel on your screen to get its colour in HEX, RGB and HSL.</p>'}</div>
+        <div class="cl-values">
+          ${formats.length ? formats.map(([k, v]) => `<button type="button" class="cl-val${copiedFmt === full(k, v) ? ' done' : ''}" data-copy-col="${full(k, v)}"><span>${k}</span><code>${v}</code><i>${copiedFmt === full(k, v) ? TICK : COPY}</i></button>`).join('') : '<p class="kit-empty">Pick any pixel on your screen to get its colour as HEX, RGB and HSL.</p>'}
+          <button type="button" class="cl-pick" data-pick>${DROP}<span>${current ? 'Pick another' : 'Pick a colour'}</span></button>
+        </div>
       </div>
-      <div class="col-swatches">${swatches.map((c) => `<button class="swatch${c === current ? ' on' : ''}" data-swatch="${c}" style="background:${c}" title="${c}"></button>`).join('')}</div>`;
+      ${swatches.length ? `<div class="cl-recent"><span>Recent</span><div>${swatches.map((c) => `<button type="button" class="cl-dot${c === current ? ' on' : ''}" data-swatch="${c}" style="--c:${c}" title="${c.toUpperCase()}"></button>`).join('')}</div></div>` : ''}
+    </div>`;
   }
   oEl.addEventListener('click', async (e) => {
     const t = e.target as HTMLElement;

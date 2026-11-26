@@ -1141,3 +1141,40 @@ kbd { font: 600 10px var(--font); color: var(--muted); padding: 2px 6px; border-
 .space { will-change: transform, opacity; contain: layout paint; backface-visibility: hidden; }
 .view { will-change: opacity, transform; }
 .space-stage { contain: layout; }
+
+/* ── Colour ───────────────────────────────────────────────────────────── */
+.cl-main { display: grid; grid-template-columns: 180px 1fr; gap: 16px; align-items: stretch; }
+.cl-swatch { height: 168px; border-radius: 18px; border: 1px solid rgba(255, 255, 255, 0.1); background: var(--c, rgba(255, 255, 255, 0.04)); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; cursor: pointer; font: inherit; box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06); transition: transform 0.2s ease; }
+.cl-swatch:hover { transform: scale(1.015); }
+.cl-swatch b { font: 600 15px ui-monospace, 'Cascadia Mono', Consolas, monospace; letter-spacing: 0.02em; }
+.cl-swatch.empty { color: var(--muted); border-style: dashed; }
+.cl-swatch.empty b { font-family: inherit; font-size: 13px; color: var(--ink); }
+.cl-swatch.empty small { font-size: 11px; }
+.cl-swatch.empty svg { width: 22px; height: 22px; color: #e879f9; }
+.cl-values { display: flex; flex-direction: column; gap: 6px; justify-content: center; min-width: 0; }
+.cl-val { display: grid; grid-template-columns: 40px 1fr 20px; align-items: center; gap: 10px; height: 38px; padding: 0 12px; border-radius: 10px; border: 1px solid var(--line); background: rgba(255, 255, 255, 0.03); color: var(--ink); font: inherit; cursor: pointer; text-align: left; transition: background var(--ease), border-color var(--ease); }
+.cl-val:hover { background: rgba(255, 255, 255, 0.07); }
+.cl-val span { font-size: 10.5px; font-weight: 600; letter-spacing: 0.08em; color: var(--muted); }
+.cl-val code { font: 500 13px ui-monospace, 'Cascadia Mono', Consolas, monospace; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cl-val i { display: grid; place-items: center; color: var(--muted); }
+.cl-val.done { border-color: rgba(50, 210, 122, 0.45); }
+.cl-val.done i { color: var(--green); }
+.cl-pick { display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 36px; border: none; border-radius: 10px; background: #fff; color: #000; font: inherit; font-size: 12.5px; font-weight: 600; cursor: pointer; margin-top: 2px; }
+.cl-pick:hover { background: #e9e9ec; }
+.cl-recent { display: flex; align-items: center; gap: 12px; }
+.cl-recent > span { font-size: 11px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--dim); }
+.cl-recent > div { display: flex; flex-wrap: wrap; gap: 7px; }
+.cl-dot { width: 24px; height: 24px; border-radius: 50%; border: none; background: var(--c); cursor: pointer; box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.15); transition: transform 0.15s ease; }
+.cl-dot:hover { transform: scale(1.12); }
+.cl-dot.on { box-shadow: 0 0 0 2px #000, 0 0 0 3.5px #fff; }
+
+/* Opening and closing: the notch grows, the content simply fades. */
+.view { transform: none !important; transition: opacity 0.12s ease, visibility 0s 0.12s; }
+.view.active { transition: opacity 0.22s ease 0.12s, visibility 0s; }
+/* Switching sections: a short, quiet slide. */
+.space { transition: opacity 0.16s ease, transform 0.16s ease, visibility 0s 0.16s; }
+.space.active { transition: opacity 0.24s ease, transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1), visibility 0s; }
+.space.active.enter-right { animation: in-right 0.32s cubic-bezier(0.2, 0.8, 0.2, 1); }
+.space.active.enter-left { animation: in-left 0.32s cubic-bezier(0.2, 0.8, 0.2, 1); }
+@keyframes in-right { from { opacity: 0; transform: translateX(10px); } to { opacity: 1; transform: none; } }
+@keyframes in-left { from { opacity: 0; transform: translateX(-10px); } to { opacity: 1; transform: none; } }

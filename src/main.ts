@@ -691,6 +691,8 @@ function setPhase(next: Phase) {
   if (next === 'expanded') extra.onSpace(currentSpace); else extra.stop();
   if (prev === 'expanded' && next !== 'expanded') desk.onSpace('');
   (window as any).__ctxBar?.phase(next === 'idle');
+  // Opening shows the current section as it is; the slide is only for switching sections.
+  if (next === 'expanded' && prev !== 'expanded') document.querySelectorAll('.space').forEach((el) => el.classList.remove('enter-left', 'enter-right'));
   if (next === 'expanded' && prev !== 'expanded' && currentSpace === 'camera') desk.onSpace('camera');
 
   viewIdle.classList.toggle('active', false);
