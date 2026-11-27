@@ -512,7 +512,7 @@ const pollBattery = async () => {
   } catch {}
 };
 pollBattery();
-setInterval(pollBattery, 15000);
+setInterval(pollBattery, 5000);
 
 // ── Media polling (Streaming) ───────────────────────────────────────────────
 startMediaPolling();

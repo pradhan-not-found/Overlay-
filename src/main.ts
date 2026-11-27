@@ -32,23 +32,30 @@ const timerSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16"
 
 const lyricsSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h11M4 11h8M4 16h5"/><circle cx="17" cy="16.5" r="2.5"/><path d="M19.5 16.5V7.5l2-1"/></svg>`;
 
-/** Menu-bar battery: even stroke, inset charge, a centered cap, and a bolt only while charging. */
+/**
+ * The battery: a rounded body with a soft cap, the charge as an inset bar, and a mark in the middle:
+ * a bolt while charging, a plug when it is full on the charger. Green while charging, red at 20% and below.
+ */
 let batteryMaskId = 0;
-function batterySvg(pct: number, charging: boolean): string {
+type Power = 'battery' | 'charging' | 'full';
+function batterySvg(pct: number, power: Power): string {
   const id = `bat-cut-${++batteryMaskId}`;
-  const fill = charging ? '#32d27a' : pct <= 20 ? '#ff5a4e' : '#f4f4f6';
-  const inner = 16.2;
-  const w = pct <= 0 ? 0 : Math.max(1.6, (Math.min(100, pct) / 100) * inner);
-  const bolt = 'M11.55 2.55 8.55 6.55h2.05l-.7 2.9 3.05-4.05H10.9l.65-2.85Z';
-  return `<svg width="26" height="12" viewBox="0 0 26 12" aria-hidden="true">
-    ${charging ? `<defs><mask id="${id}" maskUnits="userSpaceOnUse" x="0" y="0" width="26" height="12">
-      <rect width="26" height="12" fill="#fff"/>
-      <path d="${bolt}" fill="#000" stroke="#000" stroke-width="0.7" stroke-linejoin="round"/>
+  const fill = power === 'charging' ? '#30d158' : pct <= 20 && power === 'battery' ? '#ff453a' : '#f5f5f7';
+  const inner = 18.6;
+  const w = pct <= 0 ? 0 : Math.max(2, (Math.min(100, pct) / 100) * inner);
+  const bolt = 'M13.1 2.2 9.3 7.05h2.55l-.95 3.25 3.85-4.95h-2.6l.95-3.15Z';
+  const plug = 'M10.6 3.6v1.6M13.4 3.6v1.6M9.7 5.2h4.6v1.3a2.3 2.3 0 0 1-4.6 0Zm2.3 3.6v1.4';
+  const mark = power === 'charging' ? bolt : power === 'full' ? plug : '';
+  return `<svg width="28" height="13" viewBox="0 0 28 13" aria-hidden="true">
+    ${mark ? `<defs><mask id="${id}" maskUnits="userSpaceOnUse" x="0" y="0" width="28" height="13">
+      <rect width="28" height="13" fill="#fff"/>
+      <path d="${mark}" fill="${power === 'charging' ? '#000' : 'none'}" stroke="#000" stroke-width="${power === 'charging' ? 1.6 : 2.6}" stroke-linejoin="round" stroke-linecap="round"/>
     </mask></defs>` : ''}
-    <rect x="0.7" y="0.7" width="21.2" height="10.6" rx="3.1" fill="none" stroke="rgba(255,255,255,0.72)" stroke-width="1.15"/>
-    <rect x="22.55" y="3.85" width="2.15" height="4.3" rx="0.9" fill="rgba(255,255,255,0.72)"/>
-    ${w ? `<rect x="2.25" y="2.25" width="${w.toFixed(2)}" height="7.5" rx="1.5" fill="${fill}" ${charging ? `mask="url(#${id})"` : ''}/>` : ''}
-    ${charging ? `<path d="${bolt}" fill="#fff"/>` : ''}
+    <rect x="0.6" y="0.6" width="22.8" height="11.8" rx="3.6" fill="rgba(255,255,255,0.04)" stroke="rgba(255,255,255,0.42)" stroke-width="1.2"/>
+    <path d="M24.6 4.4h.4a1.3 1.3 0 0 1 1.3 1.3v1.6a1.3 1.3 0 0 1-1.3 1.3h-.4Z" fill="rgba(255,255,255,0.42)"/>
+    ${w ? `<rect x="2.2" y="2.2" width="${w.toFixed(2)}" height="8.6" rx="2" fill="${fill}" ${mark ? `mask="url(#${id})"` : ''}/>` : ''}
+    ${power === 'charging' ? `<path d="${bolt}" fill="#fff"/>` : ''}
+    ${power === 'full' ? `<path d="${plug}" fill="none" stroke="#fff" stroke-width="1.15" stroke-linecap="round" stroke-linejoin="round"/>` : ''}
   </svg>`;
 }
 
@@ -1211,21 +1218,44 @@ document.getElementById('qbtn-file')?.addEventListener('click', e => {
 if (ipc) {
   ipc.on('docked-state', () => { /* the page tracks docking itself */ });
 
-  ipc.on('battery-status', (_: any, b: any) => {
+  // Battery: Windows' own live battery events when available (they fire the moment the level or the
+  // charger changes); the main process's reading every few seconds otherwise.
+  let liveBattery = false;
+  let noBattery = false; // a desktop: the main process says there is no battery, whatever the page reports
+  const paintBattery = (pct: number, power: Power, minutesLeft = 0) => {
     const badge = document.getElementById('battery-badge') as HTMLElement;
     const pctEl = document.getElementById('bat-pct');
     const icon = document.getElementById('bat-svg');
-    if (!badge || !pctEl || !icon || !b || b.hasBattery === false) return;
-    const pct = Math.max(0, Math.min(100, Math.round(b.percent ?? 0)));
-    const charging = Boolean(b.isCharging || b.acConnected);
-    pctEl.textContent = `${pct}%`;
-    icon.innerHTML = batterySvg(pct, charging);
+    if (!badge || !pctEl || !icon || noBattery) return;
+    const p = Math.max(0, Math.min(100, Math.round(pct)));
+    const key = `${p}|${power}`;
+    if (badge.dataset.key !== key) { badge.dataset.key = key; pctEl.textContent = `${p}%`; icon.innerHTML = batterySvg(p, power); }
     badge.dataset.ready = '1';
     if (badge.dataset.hidden !== '1') badge.style.display = 'flex';
-    badge.classList.toggle('charging', charging);
-    badge.classList.toggle('low', pct <= 20 && !charging);
-    badge.title = charging ? `${pct}% · charging` : `${pct}%${b.timeRemaining > 0 ? ` · about ${Math.floor(b.timeRemaining / 60)} h ${b.timeRemaining % 60} min left` : ''}`;
+    badge.classList.toggle('charging', power === 'charging');
+    badge.classList.toggle('low', p <= 20 && power === 'battery');
+    badge.title = power === 'charging' ? `${p}% · charging` : power === 'full' ? `${p}% · on the charger` : `${p}%${minutesLeft > 0 ? ` · about ${Math.floor(minutesLeft / 60)} h ${minutesLeft % 60} min left` : ''}`;
+  };
+  ipc.on('battery-status', (_: any, b: any) => {
+    if (b && b.hasBattery === false) { noBattery = true; const el = document.getElementById('battery-badge'); if (el) el.style.display = 'none'; return; }
+    if (liveBattery || !b) return;
+    const pct = Number(b.percent ?? 0);
+    const plugged = Boolean(b.acConnected || b.isCharging);
+    paintBattery(pct, plugged ? (b.isCharging && pct < 100 ? 'charging' : 'full') : 'battery', b.timeRemaining > 0 ? b.timeRemaining : 0);
   });
+  (navigator as any).getBattery?.().then((bat: any) => {
+    if (!bat) return;
+    const update = () => {
+      const pct = bat.level * 100;
+      // plugged in and still filling = charging; plugged in and full = on the charger
+      const power: Power = bat.charging ? (pct >= 99.5 || bat.chargingTime === 0 ? 'full' : 'charging') : 'battery';
+      const left = !bat.charging && Number.isFinite(bat.dischargingTime) ? Math.round(bat.dischargingTime / 60) : 0;
+      paintBattery(pct, power, left);
+    };
+    liveBattery = true;
+    update();
+    for (const ev of ['levelchange', 'chargingchange', 'chargingtimechange', 'dischargingtimechange']) bat.addEventListener(ev, update);
+  }).catch(() => {});
 
   ipc.on('widget-config', (_: any, cfg: any) => {
     if (cfg && cfg.shortcuts) {
