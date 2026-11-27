@@ -82,6 +82,7 @@ function sendUpdateStatus(event, data) {
   });
 }
 
+let idleInstall = 0;
 function initAutoUpdater() {
   if (!autoUpdater) return;
   
@@ -93,8 +94,13 @@ function initAutoUpdater() {
   autoUpdater.on('update-available', (info) => {
     console.log('[Updater] Update available:', info.version);
     sendUpdateStatus('available', { version: info.version, releaseNotes: info.releaseNotes || '' });
-    
-    // No pop-up while it downloads: the notch's update badge shows the progress.
+    // One quiet note per new version; the download runs in the background and the notch shows its progress.
+    try {
+      if (db.getSetting('updateToldFor', '') !== info.version) {
+        db.setSetting('updateToldFor', info.version);
+        notify(`Overlay ${info.version} is available`, 'Downloading in the background. Nothing to do: it installs by itself.', () => createDashWindow({ nav: 'about' }));
+      }
+    } catch {}
   });
 
   autoUpdater.on('update-not-available', (info) => {
@@ -111,7 +117,12 @@ function initAutoUpdater() {
     console.log('[Updater] Update downloaded:', info.version);
     sendUpdateStatus('downloaded', { version: info.version });
     
-    notify(`Overlay ${info.version} is ready`, 'Restart to finish the update. It also installs the next time Overlay quits.', () => installUpdate());
+    notify(`Overlay ${info.version} is ready`, 'It installs quietly the next time you step away, or click to update now.', () => installUpdate());
+    // Install on its own once the PC has been idle for five minutes: silent, and Overlay opens again by itself.
+    clearInterval(idleInstall);
+    idleInstall = setInterval(() => {
+      try { if (require('electron').powerMonitor.getSystemIdleTime() >= 300) { clearInterval(idleInstall); installUpdate(); } } catch {}
+    }, 60_000);
   });
 
   autoUpdater.on('error', (err) => {
@@ -787,8 +798,25 @@ if (!gotTheLock) {
     if (app.isPackaged && autoUpdater) {
       const check = () => autoUpdater.checkForUpdates().catch(e => { console.warn('[Updater] check failed:', e.message); reportUpdateError(e); });
       setTimeout(check, 10_000);
-      // Look again every four hours while Overlay runs.
-      setInterval(() => { if (lastUpdate.event !== 'downloading' && lastUpdate.event !== 'downloaded') check(); }, 4 * 60 * 60 * 1000);
+      // Look again every 15 minutes, so a new build shows up soon after it is released,
+      // and again when the PC wakes up.
+      const again = () => { if (lastUpdate.event !== 'downloading' && lastUpdate.event !== 'downloaded') check(); };
+      setInterval(again, 15 * 60 * 1000);
+      try { require('electron').powerMonitor.on('resume', () => setTimeout(again, 20_000)); } catch {}
+    }
+
+    // First launch after installing: open the Dashboard to set up an account, and say where the notch is.
+    if (app.isPackaged) {
+      try {
+        // people already using Overlay (startupChosen is set on every earlier launch) skip it
+        if (!db.getSetting('welcomed', '') && !db.getSetting('startupChosen', '') && !process.argv.includes('--updated')) {
+          db.setSetting('welcomed', String(Date.now()));
+          setTimeout(() => {
+            createDashWindow({ nav: 'general' });
+            notify('Overlay is ready', 'Your notch is at the top of the screen. Hover it to open.');
+          }, 1500);
+        }
+      } catch {}
     }
 
     // Start with Windows by default after installing; the Dashboard switch turns it off for good.

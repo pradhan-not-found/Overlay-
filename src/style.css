@@ -263,6 +263,7 @@ button { -webkit-app-region: no-drag; }
 .ov-date { font-size: 12.5px; color: var(--muted); margin-top: 6px; }
 .ov-ai { display: flex; align-items: center; gap: 10px; border: none; background: transparent; cursor: pointer; color: var(--ink); border-radius: 12px; padding: 4px 6px; }
 .ov-ai:hover { background: rgba(255, 255, 255, 0.05); }
+.ov-ai-bars { color: var(--muted, rgba(255, 255, 255, 0.6)); flex-shrink: 0; }
 .ov-ai > span { display: flex; flex-direction: column; align-items: flex-end; }
 .ov-ai b { font-size: 14px; font-weight: 600; }
 .ov-ai small { font-size: 11px; color: var(--muted); }
@@ -1197,5 +1198,11 @@ kbd { font: 600 10px var(--font); color: var(--muted); padding: 2px 6px; border-
 .view-mini { justify-content: center; }
 .view-mini img { width: 20px; height: auto; opacity: 0.95; transition: transform 0.25s ease; }
 .pill[data-phase='mini']:hover .view-mini img { transform: scale(1.12); }
+/* the bubble: soft depth, lifts while dragged, settles with a spring */
+.pill[data-phase='mini'] { box-shadow: 0 10px 28px -8px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(255, 255, 255, 0.06) inset; transition: width var(--spring), height var(--spring), border-radius var(--spring), left 0.5s cubic-bezier(0.22, 1.3, 0.36, 1), top 0.5s cubic-bezier(0.22, 1.3, 0.36, 1), transform 0.25s ease, box-shadow 0.25s ease; }
+.pill[data-phase='mini']:hover { transform: translateX(-50%) scale(1.06); }
+.pill[data-phase='mini'].dragging { transform: translateX(-50%) scale(1.12); box-shadow: 0 22px 44px -10px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.08) inset; transition: width var(--spring), height var(--spring), transform 0.2s ease, box-shadow 0.2s ease; cursor: grabbing; }
+.pill[data-phase='mini'] .view-mini img { animation: mini-in 0.45s cubic-bezier(0.22, 1.3, 0.36, 1) both; }
+@keyframes mini-in { from { opacity: 0; transform: scale(0.4) rotate(-20deg); } to { opacity: 0.95; transform: none; } }
 
 /* Dashboard connection logos: white on their brand colour. */

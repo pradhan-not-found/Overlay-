@@ -1404,7 +1404,15 @@ pill.addEventListener('pointerup', e => {
     pill.classList.remove('dragging');
     if (docked) pillY = 0;
     applyPos();
-    if (appPhase === 'mini') { localStorage.setItem('miniPos', JSON.stringify({ x: pillX, y: pillY })); return; }
+    if (appPhase === 'mini') {
+      // the bubble settles against the nearest side of the screen, like a parked chat head
+      const m = 32;
+      pillX = pillX < window.innerWidth / 2 ? m : window.innerWidth - m;
+      pillY = Math.min(Math.max(pillY, 12), window.innerHeight - 58);
+      applyPos();
+      localStorage.setItem('miniPos', JSON.stringify({ x: pillX, y: pillY }));
+      return;
+    }
     send('set-setting', 'pillPos', JSON.stringify({ x: pillX, y: pillY, docked }));
     return; // a drag never toggles the notch
   }
@@ -1429,7 +1437,10 @@ function minimise() {
   beforeMini = { x: pillX, y: pillY, docked };
   const saved = (() => { try { return JSON.parse(localStorage.getItem('miniPos') || ''); } catch { return null; } })();
   if (saved && typeof saved.x === 'number') { pillX = saved.x; pillY = saved.y; }
-  else { pillX = window.innerWidth - 48; pillY = 80; }
+  else { pillX = window.innerWidth - 32; pillY = 96; }
+  // keep a saved spot on screen after a resolution change
+  pillX = Math.min(Math.max(pillX, 32), window.innerWidth - 32);
+  pillY = Math.min(Math.max(pillY, 12), window.innerHeight - 58);
   docked = false;
   setPhase('mini');
   applyPos();

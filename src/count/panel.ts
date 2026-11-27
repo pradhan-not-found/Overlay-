@@ -116,7 +116,14 @@ function renderOverviewChip(s: Snapshot) {
   const el = document.getElementById('ov-ai');
   if (!el) return;
   const g = grouped(s.limits).sort((a, b) => b.peak - a.peak)[0];
-  if (!g) { el.innerHTML = `${countMark(16, '#fff')}<span><b>${tokens(s.today)}</b><small>tokens today</small></span>`; return; }
+  if (!g) {
+    // no limits to show: today's AI use, or a quiet line before any
+    const bars = '<svg class="ov-ai-bars" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M5 20v-6M12 20V8M19 20V4"/></svg>';
+    el.innerHTML = s.today > 0
+      ? `${bars}<span><b>${tokens(s.today)}</b><small>AI tokens today</small></span>`
+      : `${bars}<span><b>No AI use yet</b><small>today</small></span>`;
+    return;
+  }
   const session = g.items.find((i) => i.label === 'Session')?.usedPercent ?? 0;
   const week = g.items.find((i) => i.label === 'Weekly')?.usedPercent ?? 0;
   el.innerHTML = `<div class="ov-ai-ring">${nestedRing(session, week, 38)}<span>${logo(g.kind, 14)}</span></div><span><b>${Math.round(session)}% · ${Math.round(week)}%</b><small>${NAMES[g.kind]} session · week</small></span>`;
