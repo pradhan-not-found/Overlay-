@@ -1,6 +1,23 @@
 [
  {
   "date": "2026-11-27",
+  "title": "Screenshots that save, a colour that works everywhere, a cleaner share card",
+  "points": [
+   "Silent updates, a cleaner Lock In, toasts named Overlay, app icons in Screen time",
+   "A realistic hourglass for Lock In, and faster background refresh",
+   "Overlay's own name and icon everywhere, What's new and Restart as buttons in the notch",
+   "The real LeetCode mark, and agent tracking that shows the right tool",
+   "Lock In shows the AI you're working with",
+   "Capture saves to Windows' real Pictures folder (OneDrive aware) in Pictures › Overlay, named by date and time, and copies it too",
+   "Full screen captures at the display's real resolution with the notch hidden for the moment of capture",
+   "Area and Window: Windows' snipping tool only puts the picture on the clipboard; Overlay now saves it the moment it lands and shows it under Recent"
+  ],
+  "version": "1.2.0",
+  "size": "small",
+  "count": 6
+ },
+ {
+  "date": "2026-11-27",
   "title": "Quiet updates, a sharp installer, What's new, and Overlay's icon on every notification",
   "points": [
    "White sponsor button with glossy dots, quieter checkout, a gradient per release",
@@ -8,13 +25,13 @@
    "A Sponsors page, a roomier hero, and the full story in the changelog",
    "A sponsor board of small tiles, one price in USD or INR",
    "Silent install, update alerts that show up, a bubble that parks itself",
+   "The sponsor board sits on a plain white page, no card around it",
    "Updates install silently and Overlay reopens by itself: no installer window after a restart. No pop-up while an update downloads; the notch badge shows it, and one notification says when it is ready",
-   "The installer is DPI aware, so text and artwork are sharp on scaled screens instead of blurry",
-   "First launch on a new version: the notch says 'Updated to Overlay x · See what's new', which opens that version's release notes"
+   "The installer is DPI aware, so text and artwork are sharp on scaled screens instead of blurry"
   ],
-  "version": "1.1.3",
+  "version": "1.2.0",
   "size": "big",
-  "count": 7
+  "count": 8
  },
  {
   "date": "2026-11-26",
@@ -29,7 +46,7 @@
    "In its place, a sponsor row: overlapping circles of current sponsors and a '+' that leads to /sponsor, with a tooltip on hover",
    "/sponsor: what sponsors get, then a two-step checkout: product, link, contact and billing, then card in USD through Razorpay or UPI by a single-use QR in INR. Paid sponsors go on the site by themselves"
   ],
-  "version": "1.1.3",
+  "version": "1.2.0",
   "size": "big",
   "count": 8
  },
@@ -46,7 +63,7 @@
    "Every page is its own HTML file with its own title, description, canonical link, Open Graph and Twitter tags, so crawlers that do not run JavaScript see the right page; the tags also update as you move between pages in the browser",
    "Sitemap.xml and robots.txt generated at build time"
   ],
-  "version": "1.1.3",
+  "version": "1.2.0",
   "size": "big",
   "count": 8
  },
@@ -63,7 +80,7 @@
    "Choose the folder, desktop and Start menu shortcuts, launches when done; uninstalling keeps your account and history so a reinstall restores them",
    "Laptop zoom moves one thing at a time: it scales, then the notch opens; closing reverses it, and the frame clips the same way throughout"
   ],
-  "version": "1.1.3",
+  "version": "1.2.0",
   "size": "big",
   "count": 8
  },

@@ -554,3 +554,17 @@ footer p { margin: 0; }
   .rel.small { grid-template-columns: 1fr; gap: 16px; }
   .mini-shot { max-width: 300px; }
 }
+
+/* Day one: a clean light card, a soft blue glow behind the app icon, a faint dot grid */
+.launch-shot {
+  background:
+    radial-gradient(38% 52% at 50% 44%, rgba(61, 107, 255, 0.22), rgba(61, 107, 255, 0) 70%),
+    radial-gradient(rgba(13, 15, 22, 0.07) 1px, transparent 1.2px) 0 0 / 18px 18px,
+    linear-gradient(180deg, #ffffff 0%, #f1f4ff 100%) !important;
+  border: 1px solid #e6e8f0;
+}
+.launch-card { color: #0d0f16; gap: 12px; }
+.launch-card img { box-shadow: 0 18px 40px -16px rgba(0, 39, 196, 0.55), 0 0 0 6px rgba(255, 255, 255, 0.9); }
+.launch-card b { color: #0d0f16; }
+.launch-card span { color: #6b7080; padding: 5px 12px; border-radius: 999px; background: #fff; border: 1px solid #e6e8f0; font-weight: 500; }
+@media (max-width: 760px) { .launch-shot { aspect-ratio: 4 / 3.4 !important; height: auto !important; min-height: 260px; padding: 24px 0; } .launch-card img { width: 76px; height: 76px; border-radius: 18px; } .launch-card b { font-size: 24px; } }

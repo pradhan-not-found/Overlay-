@@ -376,7 +376,7 @@ function MiniShot({ item, tone, seed }: { item: string; tone: number; seed: stri
 /** Day one: the Overlay app icon on its first gradient. */
 function LaunchShot({ when, tone }: { when: string; tone: number }) {
   return (
-    <figure className="rel-shot launch-shot" aria-hidden="true" style={{ background: SCENES[tone % SCENES.length] }}>
+    <figure className="rel-shot launch-shot" aria-hidden="true" data-tone={tone}>
       <div className="launch-card">
         <img src="/logo.png" alt="" />
         <b>Overlay</b>
