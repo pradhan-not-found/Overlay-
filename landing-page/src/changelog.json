@@ -6,14 +6,15 @@
    "White sponsor button with glossy dots, quieter checkout, a gradient per release",
    "Glassy sponsor button with a dark edge, no shadow under either button",
    "A Sponsors page, a roomier hero, and the full story in the changelog",
+   "A sponsor board of small tiles, one price in USD or INR",
+   "Silent install, update alerts that show up, a bubble that parks itself",
    "Updates install silently and Overlay reopens by itself: no installer window after a restart. No pop-up while an update downloads; the notch badge shows it, and one notification says when it is ready",
    "The installer is DPI aware, so text and artwork are sharp on scaled screens instead of blurry",
-   "First launch on a new version: the notch says 'Updated to Overlay x · See what's new', which opens that version's release notes",
-   "Every notification, from the notch or the main process, goes through one helper with Overlay's icon, so Windows never shows Electron's"
+   "First launch on a new version: the notch says 'Updated to Overlay x · See what's new', which opens that version's release notes"
   ],
   "version": "1.1.3",
-  "size": "small",
-  "count": 5
+  "size": "big",
+  "count": 7
  },
  {
   "date": "2026-11-26",

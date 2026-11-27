@@ -278,3 +278,9 @@ main.co { display: grid; align-items: stretch; justify-content: stretch; overflo
   .sps-grid > .sps-cell:nth-child(n+13) { display: none; }
   .sps-cell { border-radius: 22%; }
 }
+
+/* /sponsors sits straight on a white page: no card around it */
+html:has(.sps), html:has(.sps) body, html:has(.sps) #root { --bg: #fff; background: #fff; }
+.sps-card { background: none; border: 0; box-shadow: none; border-radius: 0; padding: 56px 0; }
+@media (max-width: 860px) { .sps-card { padding: 28px 0; } }
+html:has(.sps) .top { background: #fff; }
