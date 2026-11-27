@@ -814,11 +814,11 @@ if (!gotTheLock) {
     initAutoUpdater();
     if (app.isPackaged && autoUpdater) {
       const check = () => autoUpdater.checkForUpdates().catch(e => { console.warn('[Updater] check failed:', e.message); reportUpdateError(e); });
-      setTimeout(check, 10_000);
-      // Look again every 15 minutes, so a new build shows up soon after it is released,
+      setTimeout(check, 5_000);
+      // Look again every 5 minutes, so a new build arrives soon after it is released,
       // and again when the PC wakes up.
       const again = () => { if (lastUpdate.event !== 'downloading' && lastUpdate.event !== 'downloaded') check(); };
-      setInterval(again, 15 * 60 * 1000);
+      setInterval(again, 5 * 60 * 1000);
       try { require('electron').powerMonitor.on('resume', () => setTimeout(again, 20_000)); } catch {}
     }
 

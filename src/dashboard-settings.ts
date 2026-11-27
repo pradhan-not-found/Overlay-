@@ -236,7 +236,7 @@ function updateBody() {
     : e === 'downloaded' ? [`Overlay ${esc(upd.version)} is ready`, 'Restart to finish. It also installs the next time Overlay quits.', 'ok']
     : e === 'error' ? ['Could not check for updates', 'Check your connection and try again.', 'bad']
     : upd.dev ? ['Running from source', 'Updates install in the downloaded app, not in a development copy.', '']
-    : ['You are up to date', upd.lastChecked ? `Checked ${ago(upd.lastChecked)}` : 'Overlay checks by itself every 15 minutes.', 'ok'];
+    : ['You are up to date', upd.lastChecked ? `Checked ${ago(upd.lastChecked)}` : 'Overlay checks by itself every 5 minutes.', 'ok'];
   const bar = e === 'downloading' ? `<div class="ds-upd-bar"><i style="width:${upd.percent ?? 0}%"></i></div>` : '';
   const action = e === 'downloaded'
     ? `<button type="button" class="ds-btn primary" data-install>Restart and update</button>`

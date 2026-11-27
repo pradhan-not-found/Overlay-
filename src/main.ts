@@ -250,7 +250,24 @@ document.getElementById('app')!.innerHTML = `
     </div>
 
     <div class="idle-state" id="idle-state-timer" style="display:none">
-      <span class="lk-ring" aria-hidden="true"><svg viewBox="0 0 20 20"><circle class="lk-track" cx="10" cy="10" r="8"/><circle class="lk-prog" id="lk-prog" cx="10" cy="10" r="8" pathLength="100"/></svg></span>
+      <span class="lk-glass" id="lk-glass" aria-hidden="true"><svg viewBox="0 0 18 24">
+        <defs>
+          <linearGradient id="lk-cap" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f3f4f6"/><stop offset=".55" stop-color="#a1a1aa"/><stop offset="1" stop-color="#71717a"/></linearGradient>
+          <linearGradient id="lk-post" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#d4d4d8"/><stop offset="1" stop-color="#71717a"/></linearGradient>
+          <linearGradient id="lk-sandfill" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fcd68a"/><stop offset="1" stop-color="#d9962f"/></linearGradient>
+          <clipPath id="lk-clip-top"><path d="M5 3.4h8c0 4.2-2.8 5.9-3.6 8.1h-.8C7.8 9.3 5 7.6 5 3.4z"/></clipPath>
+          <clipPath id="lk-clip-bot"><path d="M8.6 12.5h.8c.8 2.2 3.6 3.9 3.6 8.1H5c0-4.2 2.8-5.9 3.6-8.1z"/></clipPath>
+        </defs>
+        <rect x="2.6" y="2.6" width="1" height="18.8" rx=".5" fill="url(#lk-post)"/>
+        <rect x="14.4" y="2.6" width="1" height="18.8" rx=".5" fill="url(#lk-post)"/>
+        <path class="lk-bulb" d="M4.3 3.1c0 4.9 3.6 6.6 3.9 8.9-.3 2.3-3.9 4-3.9 8.9h9.4c0-4.9-3.6-6.6-3.9-8.9.3-2.3 3.9-4 3.9-8.9z"/>
+        <g clip-path="url(#lk-clip-top)"><path class="lk-sand" id="lk-top" d=""/></g>
+        <g clip-path="url(#lk-clip-bot)"><path class="lk-sand" id="lk-bot" d=""/></g>
+        <line class="lk-stream" id="lk-stream" x1="9" y1="11.6" x2="9" y2="20.4"/>
+        <path class="lk-shine" d="M5.6 4.2c.2 2.6 1.4 4 2.4 5.2"/>
+        <rect x="1.6" y="1" width="14.8" height="2.2" rx="1" fill="url(#lk-cap)"/>
+        <rect x="1.6" y="20.8" width="14.8" height="2.2" rx="1" fill="url(#lk-cap)"/>
+      </svg></span>
       <span class="idle-timer-hint" id="idle-timer-hint"></span>
       <span class="lk-label" id="lk-label">Focus</span>
       <span class="idle-spacer"></span>
@@ -633,8 +650,26 @@ function updateStats() {
 function paintIdleTimer() {
   const total = timerPhase === 'break' ? BREAK_SECS : FOCUS_SECS;
   const done = total > 0 ? Math.min(1, Math.max(0, 1 - timeLeft / total)) : 0;
-  const prog = document.getElementById('lk-prog');
-  if (prog) prog.style.strokeDashoffset = String(100 - done * 100);
+  // the hourglass: the top bulb empties through the neck into a growing heap below
+  const top = document.getElementById('lk-top');
+  const bot = document.getElementById('lk-bot');
+  if (top) {
+    // the surface sinks from 3.4 to the neck (11.5), with a small funnel dip in the middle
+    const y = 3.4 + done * 8.1;
+    const dip = done < 0.98 ? Math.min(1.4, 0.4 + done * 1.6) : 0;
+    top.setAttribute('d', done >= 0.995 ? '' : `M3 ${y.toFixed(2)} L7.4 ${y.toFixed(2)} Q9 ${(y + dip).toFixed(2)} 10.6 ${y.toFixed(2)} L15 ${y.toFixed(2)} L15 13 L3 13 Z`);
+  }
+  if (bot) {
+    // a heap: a low mound that rises into a cone as the sand piles up
+    const h = done * 6.2;
+    const base = 20.6;
+    bot.setAttribute('d', h < 0.05 ? '' : `M3 ${base} L3 ${(base - h * 0.45).toFixed(2)} Q9 ${(base - h * 1.25).toFixed(2)} 15 ${(base - h * 0.45).toFixed(2)} L15 ${base} Z`);
+  }
+  const glass = document.getElementById('lk-glass');
+  if (glass) {
+    const flipped = timerPhase === 'break';
+    if (glass.dataset.flipped !== String(flipped)) { glass.dataset.flipped = String(flipped); glass.classList.remove('flip'); void glass.offsetWidth; glass.classList.add('flip'); }
+  }
   const label = document.getElementById('lk-label');
   if (label) label.textContent = timerPhase === 'break' ? 'Break' : timerPhase === 'paused' ? 'Paused' : 'Focus';
   const box = document.getElementById('idle-state-timer');

@@ -330,7 +330,7 @@ function init() {
   setTimeout(() => tick(false), 1500);
   // Local logs are cheap to fingerprint, so a limit hit in one tool can
   // trigger a handoff to another within a minute.
-  setInterval(() => tick(true), 45_000);
+  setInterval(() => tick(true), 20_000);
 }
 
 /** Rescan every AI tool and refresh plan limits now. */

@@ -1264,3 +1264,21 @@ kbd { font: 600 10px var(--font); color: var(--muted); padding: 2px 6px; border-
 .st-ico { width: 18px; height: 18px; flex-shrink: 0; border-radius: 5px; object-fit: contain; }
 .st-ico-letter { display: grid; place-items: center; font-size: 10.5px; font-weight: 700; color: #0b0b0f; background: var(--t); font-style: normal; }
 .st-name { font-style: normal; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+
+/* ══ Lock In hourglass: metal caps, glass, real sand ══ */
+.lk-ring { display: none; }
+.lk-glass { width: 18px; height: 24px; flex-shrink: 0; display: grid; place-items: center; margin: -2px 0; }
+.lk-glass svg { width: 18px; height: 24px; overflow: visible; filter: drop-shadow(0 1px 1.5px rgba(0, 0, 0, 0.6)); }
+.lk-bulb { fill: rgba(255, 255, 255, 0.07); stroke: rgba(255, 255, 255, 0.42); stroke-width: 0.7; stroke-linejoin: round; }
+.lk-shine { fill: none; stroke: rgba(255, 255, 255, 0.5); stroke-width: 0.6; stroke-linecap: round; }
+.lk-sand { fill: url(#lk-sandfill); transition: d 1s linear, filter 0.3s ease; }
+.lk-stream { stroke: #f2b95a; stroke-width: 0.75; stroke-linecap: round; stroke-dasharray: 0.6 0.9; animation: lk-fall 0.45s linear infinite; transition: opacity 0.3s ease; }
+@keyframes lk-fall { to { stroke-dashoffset: -1.5; } }
+#idle-state-timer[data-phase='paused'] .lk-stream, #idle-state-timer[data-phase='off'] .lk-stream { opacity: 0; animation-play-state: paused; }
+#idle-state-timer[data-phase='paused'] .lk-sand { filter: grayscale(0.85) brightness(0.8); }
+#idle-state-timer[data-phase='break'] .lk-sand { filter: hue-rotate(95deg) saturate(0.9); }
+#idle-state-timer[data-phase='break'] .lk-stream { stroke: #86efac; }
+/* turns over when focus becomes a break, like flipping a real one */
+.lk-glass.flip svg { animation: lk-flip 0.8s cubic-bezier(0.65, 0, 0.35, 1); }
+@keyframes lk-flip { from { transform: rotate(-180deg); } to { transform: rotate(0deg); } }

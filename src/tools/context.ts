@@ -298,7 +298,7 @@ export function mountContext(opts: { invoke: Invoke; send: Send; on: On; openSpa
     if (working() !== before) paintChip();
   }).catch(() => {});
   void loadActivity();
-  setInterval(loadActivity, 15000);
+  setInterval(loadActivity, 4000);
   setInterval(() => {
     const every = Number(cfg.waterEvery ?? 30);
     if (auth.signedIn && every > 0 && Date.now() - lastWater >= every * 60000) {
