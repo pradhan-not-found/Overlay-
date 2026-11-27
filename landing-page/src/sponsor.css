@@ -228,3 +228,9 @@ main.co { display: grid; align-items: stretch; justify-content: stretch; overflo
 .sp-steps i { width: 8px; height: 8px; border-radius: 50%; background: #e3e5ec; border: none; padding: 0; transition: background 0.2s ease, width 0.3s ease; }
 .sp-steps i.on { width: 22px; border-radius: 999px; background: #0d0f16; }
 .sp-steps i.done { background: #0d0f16; }
+
+/* ══ Hero buttons: no drop shadow; the sponsor button is glass with a dark edge ══ */
+.sp-strip { background: linear-gradient(180deg, rgba(255, 255, 255, 0.92) 0%, rgba(255, 255, 255, 0.72) 100%); -webkit-backdrop-filter: blur(14px) saturate(1.4); backdrop-filter: blur(14px) saturate(1.4); border: 1.5px solid #0d0f16; box-shadow: inset 0 1px 0 rgba(255, 255, 255, 1), inset 0 -1px 0 rgba(13, 15, 22, 0.06); }
+.sp-strip:hover { background: linear-gradient(180deg, #fff 0%, rgba(255, 255, 255, 0.86) 100%); border-color: #0d0f16; transform: translateY(-1px); box-shadow: inset 0 1px 0 #fff, inset 0 -1px 0 rgba(13, 15, 22, 0.06); }
+.actions .download, .download { box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.14); }
+.download:hover { box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.14); }
