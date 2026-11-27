@@ -304,7 +304,7 @@ function updateBody() {
     : e === 'available' && upd.feature
     ? `<button type="button" class="ds-btn primary" data-download>Download</button>`
     : `<button type="button" class="ds-btn" data-update ${e === 'checking' || e === 'downloading' || e === 'available' ? 'disabled' : ''}>Check for updates</button>`;
-  return `<div class="ds-upd"><span class="ds-upd-dot ${status[2]}"></span><div class="ds-row-text"><b>${status[0]}</b><span>${status[1]}</span></div>${action}</div>${bar}`;
+  return `<div class="ds-upd"><div class="ds-row-text"><b>${status[0]}</b><span>${status[1]}</span></div>${action}</div>${bar}`;
 }
 async function paintAbout(el: HTMLElement) {
   const version = (await invoke('get-app-version')) || '';
