@@ -1327,3 +1327,14 @@ kbd { font: 600 10px var(--font); color: var(--muted); padding: 2px 6px; border-
 /* the percentage now sits inside the battery */
 .battery #bat-pct { display: none; }
 .battery #bat-svg svg { display: block; }
+
+/* ══ Minimised bubble: steady ══
+   Its size never changes under the pointer (a growing bubble flipped the window between clickable and
+   click-through near the edges, which looked like a flicker or a hang). Hover and drag only change light
+   and shadow; the snap to the side eases in without overshooting the screen edge. */
+.pill[data-phase='mini'] { transition: width var(--spring), height var(--spring), border-radius var(--spring), left 0.32s cubic-bezier(0.2, 0.8, 0.2, 1), top 0.32s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.2s ease, background 0.2s ease !important; }
+.pill[data-phase='mini']:hover { transform: translateX(-50%) !important; background: #111; box-shadow: 0 12px 30px -8px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.14) inset; }
+.pill[data-phase='mini'].dragging { transform: translateX(-50%) !important; transition: none !important; box-shadow: 0 18px 40px -10px rgba(0, 0, 0, 0.65), 0 0 0 1px rgba(255, 255, 255, 0.18) inset; }
+.pill[data-phase='mini']:hover .view-mini img { transform: none; opacity: 1; }
+.pill[data-phase='mini'] .view:not(.view-mini) { pointer-events: none; }
+.pill[data-phase='mini'] .view-mini img { pointer-events: none; -webkit-user-drag: none; }

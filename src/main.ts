@@ -1665,7 +1665,12 @@ ipc?.on('window-blur', () => {
   if (interactive) return;
   if (appPhase === 'expanded' || appPhase === 'calendar') setPhase('idle');
 });
-window.addEventListener('resize', () => { pillX = Math.min(pillX, window.innerWidth - 160); applyPos(); });
+window.addEventListener('resize', () => {
+  // the bubble stays where it was parked; the notch keeps clear of the screen edge
+  if (appPhase === 'mini') { pillX = Math.min(Math.max(pillX, 32), window.innerWidth - 32); pillY = Math.min(Math.max(pillY, 12), window.innerHeight - 58); }
+  else pillX = Math.min(pillX, window.innerWidth - 160);
+  applyPos();
+});
 
 // ─── File drop ────────────────────────────────────────────────────────────────
 pill.addEventListener('dragover',  e => { e.preventDefault(); pill.classList.add('drop-hover'); });
