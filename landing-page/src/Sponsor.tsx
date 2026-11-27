@@ -38,7 +38,8 @@ export function SponsorStrip({ onOpen }: { onOpen: (e: React.MouseEvent) => void
 
 /* ── The /sponsor checkout ─────────────────────────────────────────────── */
 type Method = 'card' | 'upi';
-const AMOUNTS: Record<Method, number[]> = { card: [4999, 9900, 19900], upi: [419900, 829900, 1659900] };
+// one sponsor spot, one price: in dollars by card, or in rupees by UPI
+const PRICE: Record<Method, number> = { card: 4999, upi: 419900 };
 const money = (minor: number, m: Method) => new Intl.NumberFormat(m === 'upi' ? 'en-IN' : 'en-US', { style: 'currency', currency: m === 'upi' ? 'INR' : 'USD', minimumFractionDigits: m === 'upi' || minor % 100 === 0 ? 0 : 2 }).format(minor / 100);
 const KEY = 'overlay-sponsor';
 
@@ -62,23 +63,13 @@ export function SponsorPage({ onHome }: { onHome: () => void }) {
   const [d, setD] = useState<Details>(() => { try { return { ...empty, ...JSON.parse(sessionStorage.getItem(KEY) || '{}') }; } catch { return empty; } });
   const [step, setStep] = useState<'details' | 'pay' | 'done'>('details');
   const [method, setMethod] = useState<Method>('card');
-  const [amount, setAmount] = useState<number>(() => {
-    // the tier chosen on /sponsors, if any
-    try { const a = Number(sessionStorage.getItem('overlay-sponsor-amount')); if (AMOUNTS.card.includes(a)) return a; } catch { /* ignore */ }
-    return AMOUNTS.card[0];
-  });
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [qr, setQr] = useState<{ id: string; image: string; closeBy: number } | null>(null);
   const poll = useRef(0);
 
-  const firstMethod = useRef(true);
-  useEffect(() => {
-    // keep the chosen tier when switching card and UPI: same position in the other currency
-    if (firstMethod.current) { firstMethod.current = false; return; }
-    setAmount((a) => { const i = Math.max(0, AMOUNTS[method === 'card' ? 'upi' : 'card'].indexOf(a)); return AMOUNTS[method][i] ?? AMOUNTS[method][0]; });
-    setQr(null); setError('');
-  }, [method]);
+  const amount = PRICE[method];
+  useEffect(() => { window.clearInterval(poll.current); setQr(null); setError(''); }, [method]);
   useEffect(() => () => window.clearInterval(poll.current), []);
   const set = (k: keyof Details) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => setD((x) => ({ ...x, [k]: e.target.value }));
 
@@ -205,11 +196,8 @@ export function SponsorPage({ onHome }: { onHome: () => void }) {
               <div className="sp-steps" aria-label="Step 2 of 2"><i className="done" /><i className="on" /></div>
               <div className="sp-summary"><span>{d.product}</span><button type="button" onClick={() => setStep('details')}>Edit</button></div>
               <div className="sp-methods" role="radiogroup" aria-label="Payment method">
-                <button type="button" role="radio" aria-checked={method === 'card'} className={method === 'card' ? 'on' : ''} onClick={() => setMethod('card')}><b>Card</b><small>USD · any country</small></button>
-                <button type="button" role="radio" aria-checked={method === 'upi'} className={method === 'upi' ? 'on' : ''} onClick={() => setMethod('upi')}><b>UPI</b><small>INR · India</small></button>
-              </div>
-              <div className="sp-amounts">
-                {AMOUNTS[method].map((a) => <button type="button" key={a} className={amount === a ? 'on' : ''} onClick={() => { setAmount(a); setQr(null); }}>{money(a, method)}</button>)}
+                <button type="button" role="radio" aria-checked={method === 'card'} className={method === 'card' ? 'on' : ''} onClick={() => setMethod('card')}><b>USD · {money(PRICE.card, 'card')}</b><small>Card, any country</small></button>
+                <button type="button" role="radio" aria-checked={method === 'upi'} className={method === 'upi' ? 'on' : ''} onClick={() => setMethod('upi')}><b>INR · {money(PRICE.upi, 'upi')}</b><small>UPI or QR, India</small></button>
               </div>
               {qr ? (
                 <div className="sp-qr"><img src={qr.image} alt="UPI QR code" /><p>Scan with any UPI app. This page updates by itself when the payment arrives.</p></div>
@@ -237,43 +225,35 @@ export function SponsorPage({ onHome }: { onHome: () => void }) {
   );
 }
 
-/* ── /sponsors: three tiers, styled like the pricing boxes but smaller ─── */
-const TIERS = [
-  { name: 'Supporter', amount: 4999, inr: 419900, note: 'Back the beta and get your name out there.', items: ['Your logo and link on the website', 'A thank-you in the changelog'] },
-  { name: 'Partner', amount: 9900, inr: 829900, note: 'For products our users would love.', items: ['Everything in Supporter', 'A larger spot in the sponsor row', 'A shoutout on our socials'], featured: true },
-  { name: 'Featured', amount: 19900, inr: 1659900, note: 'First in line, everywhere we show sponsors.', items: ['Everything in Partner', 'First place in the sponsor row', 'Featured in the release notes'] },
-];
+/* ── /sponsors: a board of small tiles. Paid sponsors show their logo, a few open tiles take the next one ── */
+const CELLS = 21;
+const OPEN = 6;
 
-const SPOTS = 24;
-
-export function SponsorsPage({ onChoose }: { onChoose: (amount: number) => void }) {
+export function SponsorsPage({ onOpen }: { onOpen: () => void }) {
   const sponsors = useSponsors();
+  const taken = sponsors.slice(0, CELLS - 1);
+  // always leave a few open tiles after the sponsors, so there is room for the next one
+  const open = Math.min(CELLS - taken.length, OPEN);
+  const go = (e: React.MouseEvent) => { if (e.metaKey || e.ctrlKey) return; e.preventDefault(); onOpen(); };
   return (
     <section className="page sps">
-      <header className="page-head center-text"><h2>Sponsor Overlay.</h2></header>
-      {/* every sponsor as a small dot, then the open spots */}
-      <div className="sps-dots">
-        <div className="sps-row">
-          {sponsors.map((x, i) => (
-            <a key={x.name + i} className="sps-dot" href={x.link || undefined} target="_blank" rel="noopener sponsored" title={x.name}>
-              {x.host ? <img src={icon(x.host)} alt={x.name} /> : <b>{x.name.charAt(0)}</b>}
-            </a>
-          ))}
-          {Array.from({ length: Math.max(0, SPOTS - sponsors.length) }, (_, i) => <span key={i} className={`sps-dot open g${i % 5}`} aria-hidden="true" />)}
+      <div className="sps-card">
+        <div className="sps-left">
+          <h2>Our sponsors</h2>
+          <p>The people and teams who keep Overlay growing. Your logo and link here, for life, with one payment.</p>
+          <a className="sps-btn" href="/sponsor" onClick={go}>Become a sponsor<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6" /></svg></a>
         </div>
-        <span>{sponsors.length ? `${sponsors.length} of ${SPOTS} spots taken` : `${SPOTS} spots open. Yours could be the first.`}</span>
-      </div>
-      <div className="sps-tiers">
-        {TIERS.map((t) => (
-          <a key={t.name} className={`sps-tier${t.featured ? ' featured' : ''}`} href="/sponsor" onClick={(e) => { if (e.metaKey || e.ctrlKey) return; e.preventDefault(); onChoose(t.amount); }}>
-            <h3>{t.name}</h3>
-            <p className="sps-price"><b>{money(t.amount, 'card')}</b><span>/once</span></p>
-            <p className="sps-inr">or {money(t.inr, 'upi')} by UPI</p>
-            <p className="sps-note">{t.note}</p>
-            <ul>{t.items.map((i) => <li key={i}>{i}</li>)}</ul>
-            <span className="sps-go">Sponsor<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 17 17 7M8.5 7H17v8.5" /></svg></span>
-          </a>
-        ))}
+        <div className="sps-grid" role="group" aria-label="Sponsors">
+          {taken.map((x, i) => {
+            const face = <>{x.host ? <img src={icon(x.host)} alt="" /> : <b>{x.name.charAt(0).toUpperCase()}</b>}<span className="sps-name">{x.name}</span></>;
+            return x.link
+              ? <a key={x.name + i} className="sps-cell taken" href={x.link} target="_blank" rel="sponsored noopener noreferrer" aria-label={x.name}>{face}</a>
+              : <span key={x.name + i} className="sps-cell taken" aria-label={x.name}>{face}</span>;
+          })}
+          {Array.from({ length: CELLS - taken.length }, (_, i) => i < open
+            ? <a key={'o' + i} className="sps-cell open" href="/sponsor" onClick={go} aria-label="Become a sponsor"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 6v12M6 12h12" /></svg></a>
+            : <span key={'e' + i} className="sps-cell empty" aria-hidden="true" />)}
+        </div>
       </div>
     </section>
   );

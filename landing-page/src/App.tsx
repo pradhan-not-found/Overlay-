@@ -637,7 +637,7 @@ export default function App() {
           </section>
         )}
 
-        {view === 'sponsors' && <SponsorsPage onChoose={(amount) => { try { sessionStorage.setItem('overlay-sponsor-amount', String(amount)); } catch { /* private mode */ } go('sponsor'); }} />}
+        {view === 'sponsors' && <SponsorsPage onOpen={() => go('sponsor')} />}
 
         {view === 'terms' && (
           <section className="page narrow legal">
