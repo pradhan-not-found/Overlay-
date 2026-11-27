@@ -677,10 +677,25 @@ function paintIdleTimer() {
   if (timerPhase !== 'off') idleTimerHint.textContent = fmt(Math.max(0, timeLeft));
 }
 
+// The AI chip follows whichever row the closed notch shows, so an agent at work stays visible
+// during Lock In and while music plays.
+let slotHome: { parent: Node; next: Node | null } | null = null;
+function placeAgentChip() {
+  const slot = document.getElementById('ctx-slot');
+  if (!slot) return;
+  if (!slotHome && slot.parentNode) slotHome = { parent: slot.parentNode, next: slot.nextSibling };
+  const timerOn = idleStateTimer.style.display !== 'none';
+  const mediaOn = idleStateMedia.style.display !== 'none';
+  const anchor = timerOn ? document.getElementById('btn-idle-timer-toggle') : mediaOn ? document.getElementById('btn-idle-play') : null;
+  if (anchor && anchor.parentNode) { if (slot.nextSibling !== anchor) anchor.parentNode.insertBefore(slot, anchor); }
+  else if (slotHome && slot.parentNode !== slotHome.parent) slotHome.parent.insertBefore(slot, slotHome.next);
+}
+
 function updateIdleView() {
   if (!idleStateDefault) return;
   paintIdleTimer();
   if (typeof paintRun === 'function') paintRun();
+  queueMicrotask(placeAgentChip);
   idleStateDefault.style.display = 'none';
   idleStateMedia.style.display = 'none';
   idleStateTimer.style.display = 'none';

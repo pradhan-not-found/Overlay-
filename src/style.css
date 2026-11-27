@@ -1299,3 +1299,6 @@ kbd { font: 600 10px var(--font); color: var(--muted); padding: 2px 6px; border-
 .idle-msg[data-act='install'] .msg-ico svg { animation: upd-pop 0.6s cubic-bezier(0.2, 1.4, 0.4, 1) both; }
 @keyframes upd-pop { from { transform: scale(0.4); opacity: 0; } to { transform: none; opacity: 1; } }
 .idle-msg[data-act='install']:hover, .idle-msg[data-act='downloading']:hover { background: transparent; }
+
+/* the AI chip inside the Lock In and music rows */
+#idle-state-timer .ctx-slot, #idle-state-media .ctx-slot { margin-right: 4px; }
