@@ -1,4 +1,4 @@
-// POST /api/razorpay/order — starts a card payment for a sponsor spot. The secret key never leaves the server.
+// POST /api/razorpay/order — starts a card (or UPI) payment for a sponsor spot. The secret key never leaves the server.
 import { gatewayAuth, jsonBody, readSponsor, sameOrigin, saveCheckout } from '../_lib.js';
 
 export default async function handler(req, res) {
@@ -8,7 +8,8 @@ export default async function handler(req, res) {
   if (!auth) return res.status(503).json({ error: 'Payments are not set up yet.' });
 
   const body = await jsonBody(req);
-  const sponsor = readSponsor(body, 'card');
+  // card in USD, or UPI in INR through the same payment window
+  const sponsor = readSponsor(body, body?.method === 'upi' ? 'upi' : 'card');
   if (sponsor.error) return res.status(400).json({ error: sponsor.error });
 
   const r = await fetch('https://api.razorpay.com/v1/orders', {

@@ -95,10 +95,11 @@ export function SponsorPage({ onHome }: { onHome: () => void }) {
 
   const done = () => { window.clearInterval(poll.current); try { sessionStorage.removeItem(KEY); } catch { /* ignore */ } setStep('done'); };
 
-  const payCard = async () => {
+  // Razorpay's own window: cards, or UPI when the QR on this page isn't available
+  const payCard = async (via: Method = 'card') => {
     setBusy(true); setError('');
     try {
-      const [ok, r] = await Promise.all([loadRazorpay(), fetch('/api/razorpay/order', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...d, amount, method: 'card' }) })]);
+      const [ok, r] = await Promise.all([loadRazorpay(), fetch('/api/razorpay/order', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...d, amount, method: via }) })]);
       const order = await r.json();
       if (!r.ok) throw new Error(order.error || "Couldn't start the payment.");
       if (!ok || !window.Razorpay) throw new Error("The payment window couldn't load. Check your connection.");
@@ -106,14 +107,16 @@ export function SponsorPage({ onHome }: { onHome: () => void }) {
         key: order.keyId, order_id: order.orderId, amount: order.amount, currency: order.currency,
         // Overlay's own name, logo and colour at the top of the payment window
         name: 'Overlay', description: `Sponsor · ${d.product}`, image: `${location.origin}/logo.png`,
-        // reuse what the sponsor already typed, so the window asks only for the card
+        // reuse what the sponsor already typed, so the window asks only for the card or UPI
         prefill: { name: d.name, email: d.email, ...(d.phone.trim() ? { contact: d.phone.replace(/\s/g, '') } : {}) },
         readonly: { email: true, ...(d.phone.trim() ? { contact: true } : {}) },
         hidden: { email: true, ...(d.phone.trim() ? { contact: true } : {}) },
         remember_customer: false,
         notes: { product: d.product },
         theme: { color: '#0027c4', backdrop_color: 'rgba(244, 245, 248, 0.92)' },
-        config: { display: { blocks: { card: { name: 'Pay by card', instruments: [{ method: 'card' }] } }, sequence: ['block.card'], preferences: { show_default_blocks: false } } },
+        config: { display: via === 'upi'
+          ? { blocks: { upi: { name: 'Pay by UPI', instruments: [{ method: 'upi' }] } }, sequence: ['block.upi'], preferences: { show_default_blocks: false } }
+          : { blocks: { card: { name: 'Pay by card', instruments: [{ method: 'card' }] } }, sequence: ['block.card'], preferences: { show_default_blocks: false } } },
         handler: async (res: Record<string, string>) => {
           unlockScroll();
           const v = await fetch('/api/razorpay/verify', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(res) });
@@ -131,6 +134,8 @@ export function SponsorPage({ onHome }: { onHome: () => void }) {
     try {
       const r = await fetch('/api/razorpay/upi', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...d, amount, method: 'upi' }) });
       const q = await r.json();
+      // QR codes not switched on for the account: take UPI in Razorpay's window instead
+      if (r.status === 409) { setBusy(false); return payCard('upi'); }
       if (!r.ok) throw new Error(q.error || "Couldn't make the QR code.");
       setQr(q);
       window.clearInterval(poll.current);
@@ -209,8 +214,8 @@ export function SponsorPage({ onHome }: { onHome: () => void }) {
               {qr ? (
                 <div className="sp-qr"><img src={qr.image} alt="UPI QR code" /><p>Scan with any UPI app. This page updates by itself when the payment arrives.</p></div>
               ) : (
-                <button type="button" className="sp-go" disabled={busy} onClick={method === 'card' ? payCard : payUpi}>
-                  {busy ? 'Starting…' : method === 'card' ? `Pay ${money(amount, 'card')}` : `Show UPI QR for ${money(amount, 'upi')}`}
+                <button type="button" className="sp-go" disabled={busy} onClick={method === 'card' ? () => payCard() : payUpi}>
+                  {busy ? 'Starting…' : method === 'card' ? `Pay ${money(amount, 'card')}` : `Pay ${money(amount, 'upi')} by UPI`}
                 </button>
               )}
               {error && <p className="sp-error">{error}</p>}
@@ -239,11 +244,25 @@ const TIERS = [
   { name: 'Featured', amount: 19900, inr: 1659900, note: 'First in line, everywhere we show sponsors.', items: ['Everything in Partner', 'First place in the sponsor row', 'Featured in the release notes'] },
 ];
 
+const SPOTS = 24;
+
 export function SponsorsPage({ onChoose }: { onChoose: (amount: number) => void }) {
   const sponsors = useSponsors();
   return (
     <section className="page sps">
       <header className="page-head center-text"><h2>Sponsor Overlay.</h2></header>
+      {/* every sponsor as a small dot, then the open spots */}
+      <div className="sps-dots">
+        <div className="sps-row">
+          {sponsors.map((x, i) => (
+            <a key={x.name + i} className="sps-dot" href={x.link || undefined} target="_blank" rel="noopener sponsored" title={x.name}>
+              {x.host ? <img src={icon(x.host)} alt={x.name} /> : <b>{x.name.charAt(0)}</b>}
+            </a>
+          ))}
+          {Array.from({ length: Math.max(0, SPOTS - sponsors.length) }, (_, i) => <span key={i} className={`sps-dot open g${i % 5}`} aria-hidden="true" />)}
+        </div>
+        <span>{sponsors.length ? `${sponsors.length} of ${SPOTS} spots taken` : `${SPOTS} spots open. Yours could be the first.`}</span>
+      </div>
       <div className="sps-tiers">
         {TIERS.map((t) => (
           <a key={t.name} className={`sps-tier${t.featured ? ' featured' : ''}`} href="/sponsor" onClick={(e) => { if (e.metaKey || e.ctrlKey) return; e.preventDefault(); onChoose(t.amount); }}>
@@ -255,10 +274,6 @@ export function SponsorsPage({ onChoose }: { onChoose: (amount: number) => void 
             <span className="sps-go">Sponsor<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 17 17 7M8.5 7H17v8.5" /></svg></span>
           </a>
         ))}
-      </div>
-      <div className="sps-wall">
-        <span>{sponsors.length ? 'Our sponsors' : 'No sponsors yet. Yours could be the first.'}</span>
-        {sponsors.length > 0 && <div>{sponsors.map((x) => <a key={x.name} href={x.link || undefined} target="_blank" rel="noopener sponsored">{x.host && <img src={icon(x.host)} alt="" />}{x.name}</a>)}</div>}
       </div>
     </section>
   );

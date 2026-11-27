@@ -4,7 +4,7 @@ import { seo } from './seo.plugin.ts'
 import { execFileSync } from 'node:child_process'
 import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { readFileSync } from 'node:fs'
+import { readFileSync, writeFileSync } from 'node:fs'
 
 const here = dirname(fileURLToPath(import.meta.url))
 
@@ -108,10 +108,26 @@ function changelog(): Plugin {
       return []
     }
   }
+  // Hosts like Vercel clone only the last few commits, which would cut the story short. A full
+  // local history refreshes a saved copy (src/changelog.json, committed); a shallow clone uses that
+  // copy, plus any newer sessions it can see.
+  const saved = resolve(here, 'src/changelog.json')
+  const story = (): Entry[] => {
+    let shallow = true
+    try { shallow = execFileSync('git', ['rev-parse', '--is-shallow-repository'], { cwd: here, encoding: 'utf8' }).trim() === 'true' } catch { /* no git */ }
+    const fresh = read()
+    if (!shallow && fresh.length) { writeFileSync(saved, JSON.stringify(fresh, null, 1) + '\n'); return fresh }
+    let kept: Entry[] = []
+    try { kept = JSON.parse(readFileSync(saved, 'utf8')) } catch { /* none saved */ }
+    const newest = kept[0]?.date || ''
+    // newer days seen in the shallow clone go on top (the oldest one it sees may be partial, so skip it)
+    const extra = fresh.filter((e) => e.date > newest && e.size !== 'launch')
+    return [...extra, ...kept]
+  }
   return {
     name: 'overlay-changelog',
     resolveId: (s) => (s === id ? '\0' + id : null),
-    load: (s) => (s === '\0' + id ? `export default ${JSON.stringify(read())}` : null),
+    load: (s) => (s === '\0' + id ? `export default ${JSON.stringify(story())}` : null),
   }
 }
 

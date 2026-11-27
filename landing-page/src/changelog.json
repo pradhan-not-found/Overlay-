@@ -1,0 +1,441 @@
+[
+ {
+  "date": "2026-11-27",
+  "title": "Quiet updates, a sharp installer, What's new, and Overlay's icon on every notification",
+  "points": [
+   "White sponsor button with glossy dots, quieter checkout, a gradient per release",
+   "Glassy sponsor button with a dark edge, no shadow under either button",
+   "A Sponsors page, a roomier hero, and the full story in the changelog",
+   "Updates install silently and Overlay reopens by itself: no installer window after a restart. No pop-up while an update downloads; the notch badge shows it, and one notification says when it is ready",
+   "The installer is DPI aware, so text and artwork are sharp on scaled screens instead of blurry",
+   "First launch on a new version: the notch says 'Updated to Overlay x · See what's new', which opens that version's release notes",
+   "Every notification, from the notch or the main process, goes through one helper with Overlay's icon, so Windows never shows Electron's"
+  ],
+  "version": "1.1.3",
+  "size": "small",
+  "count": 4
+ },
+ {
+  "date": "2026-11-26",
+  "title": "Sponsors, with a checkout like florii's, and visit and download counts",
+  "points": [
+   "Minimise to a bubble, real launcher icons, honest updates, Overlay's own name",
+   "Sponsor checkout: the Razorpay window shows Overlay",
+   "Sponsor: a dedicated checkout page and a bold sponsor row",
+   "Sponsor checkout: a pastel order and a sleek black payment side",
+   "Sponsor checkout: pastel blue order, white payment, black button",
+   "The 'Open the notch' button is gone: clicking the notch on the laptop opens it, clicking outside closes it",
+   "In its place, a sponsor row: overlapping circles of current sponsors and a '+' that leads to /sponsor, with a tooltip on hover",
+   "/sponsor: what sponsors get, then a two-step checkout: product, link, contact and billing, then card in USD through Razorpay or UPI by a single-use QR in INR. Paid sponsors go on the site by themselves"
+  ],
+  "version": "1.1.3",
+  "size": "big",
+  "count": 8
+ },
+ {
+  "date": "2026-11-26",
+  "title": "Search and AI-answer optimisation",
+  "points": [
+   "Works on every screen, from 360px phones up",
+   "Download button with no notes under it",
+   "Build the Windows app only when the app changes",
+   "Calmer changelog pictures, tinted pricing cards with icons",
+   "Pricing back as it was; feature cards as tinted pricing-style boxes",
+   "Release the Windows app automatically on every app change",
+   "Every page is its own HTML file with its own title, description, canonical link, Open Graph and Twitter tags, so crawlers that do not run JavaScript see the right page; the tags also update as you move between pages in the browser",
+   "Sitemap.xml and robots.txt generated at build time"
+  ],
+  "version": "1.1.3",
+  "size": "big",
+  "count": 8
+ },
+ {
+  "date": "2026-11-26",
+  "title": "Branded installer, smoother laptop zoom, a sturdier build",
+  "points": [
+   "Hover to open the notch, a Windows build on every push, an honest download button",
+   "Notch: a click on a notch that hover opened keeps it open",
+   "Updates you can see and control, and a real launch-at-startup switch",
+   "Real page addresses and soft feature cards",
+   "Download button always reads Download for Windows, aligned with its neighbour",
+   "Setup and uninstall wizards with Overlay's own artwork: a brand-blue side panel with the mark, a header badge, Overlay's icon, and wording of its own on the welcome, finish and uninstall pages",
+   "Choose the folder, desktop and Start menu shortcuts, launches when done; uninstalling keeps your account and history so a reinstall restores them",
+   "Laptop zoom moves one thing at a time: it scales, then the notch opens; closing reverses it, and the frame clips the same way throughout"
+  ],
+  "version": "1.1.3",
+  "size": "big",
+  "count": 8
+ },
+ {
+  "date": "2026-11-26",
+  "title": "Notch tools rebuilt, Find on every drive, smooth open and close",
+  "points": [
+   "Downloads, Ports, Breaks and Find in the notch",
+   "Notch: dark slim scrollbars everywhere, compact Ports and file rows",
+   "Notch: no scrollbars, a soft fade at scrolling edges instead",
+   "Dock fades only where there is more to scroll",
+   "One Dashboard for everything, a local account, and a notch that knows what you are doing",
+   "Notch: one clean fade on open, a quiet slide between sections; Colour rebuilt",
+   "Water: a glass that fills with a moving surface, litres, goal dots",
+   "Habits: today's progress ring, a 7-day row per habit, one-tap starters"
+  ],
+  "version": "1.1.3",
+  "size": "big",
+  "count": 8
+ },
+ {
+  "date": "2026-11-26",
+  "title": "Discord calls and a crest-style Camera in the notch",
+  "points": [
+   "Shows the voice channel, server, who is in it and who is talking, with mute, deafen and leave. The closed notch dot turns green in a call and pulses while someone talks. A sample call previews it before setup",
+   "A wrong Client ID returns to setup with a clear message",
+   "Camera: on only while the tool is on screen; leaving it, closing the notch or hiding the window stops every track. Camera picker, mirror toggle that is remembered, and clear messages for blocked, busy or missing cameras."
+  ],
+  "version": "1.1.3",
+  "size": "small",
+  "count": 1
+ },
+ {
+  "date": "2026-11-26",
+  "title": "Folder covers, changelog with dates and logos, sleek headings",
+  "points": [
+   "Aluminium base, boxed pricing, quieter footer",
+   "Folder features, page scrollbar, notch zoom that fits",
+   "Changelog as release notes with a picture of each release",
+   "Varied release pictures with the real notch, version on every pill",
+   "Release pictures use the real notch, no mock web page",
+   "Features are folders with one large mark as the cover and the text below",
+   "Changelog keeps the date on the left as a pill, each release gets a banner of the logos it touches and a logo on every line",
+   "Page headings only, no kicker or sub line; pricing reads in one line"
+  ],
+  "version": "1.1.3",
+  "size": "small",
+  "count": 6
+ },
+ {
+  "date": "2026-11-25",
+  "title": "One Dashboard, one-click sync, and a proper landing laptop",
+  "points": [
+   "Dashboard AI Usage: every card reads stored history",
+   "Working notch, rotating sides, real pages",
+   "Every feature on show, a live notch, a cleaner base",
+   "Changelog from the app's history, sleek pricing, logos on features",
+   "One Dashboard holds everything. The notch no longer unfolds into its own Count panel; \"Open in Dashboard\" lands on the Dashboard's AI Usage page",
+   "Clicking the Overlay mark syncs everything: rescans AI usage, refreshes plan limits, then every window reloads from the database. The mark spins while it works. The Dashboard's Sync button does the same",
+   "Dashboard AI Usage, To-Dos and Note are built from the Dashboard's own components (panel header, stat cards, bar chart, duration buttons, control buttons, event rows) so they match the rest of it",
+   "From Cursor's session: update chip in the notch, shortcut opening via shell APIs, single NSIS installer named Overlay-Setup.exe. Landing page"
+  ],
+  "version": "1.1.3",
+  "size": "big",
+  "count": 7
+ },
+ {
+  "date": "2026-11-25",
+  "title": "Ship the notch tools and a one-screen landing page",
+  "points": [],
+  "version": "1.1.3",
+  "size": "small",
+  "count": 1
+ },
+ {
+  "date": "2026-11-25",
+  "title": "Polish: battery, icon weight, notification identity, landing type",
+  "points": [
+   "Landing page: use Instrument Sans throughout",
+   "Landing page: blue brand logo and favicon",
+   "Icons use 2px strokes and brighter idle colours so they read on black. Play icon stays dark on its white button",
+   "Notifications show \"Overlay\" and its icon instead of \"Electron\": when run from source, Overlay registers a Start menu shortcut carrying its app ID (com.pradhan.overlay, the same ID the installer uses)",
+   "Package build/icon.png and icon.ico so notification icons ship",
+   "Landing page: lighter headline (600, gentler tracking), no 700/800 weights, blue logo no longer inverted to yellow, blue selection, no emoji."
+  ],
+  "version": "1.1.3",
+  "size": "small",
+  "count": 4
+ },
+ {
+  "date": "2026-11-25",
+  "title": "Rebuild the notch and add Count, lyrics and everyday tools",
+  "points": [
+   "Add ten notch tools, a proper battery icon and a smoother close",
+   "Notch: black Dynamic Island style with curved shoulders, one tool at a time behind a coloured dock (Overview, Now Playing, Focus, Today, AI Usage, To-Dos, Note, Clipboard, Hardware), spring transitions between tools",
+   "The window now covers the display, transparent and click-through, and only takes the mouse over the notch. Fixes the off-centre, clipped expanded view and makes expand, drag and the sidebar smooth",
+   "Count: finds Claude Code, Codex, Cursor, Gemini CLI, OpenCode and Copilot from their local logs, shows plan limits and cost per tool, and hands the current task to the tool with the most headroom in one click, opening it in a terminal with the context loaded. Full panel docks on the right edge",
+   "Now Playing: progress bar, and synced lyrics from LRCLIB shown in the expanded view and as the live line in the closed notch",
+   "Instrument Sans everywhere; Helvetica and Playfair files removed",
+   "One consistent outline icon set; fixes line icons rendering filled",
+   "Idle notch shows only real shortcuts instead of four placeholders"
+  ],
+  "version": "1.1.3",
+  "size": "small",
+  "count": 2
+ },
+ {
+  "date": "2026-08-15",
+  "title": "Dashboard redesign - nav rail, laps, calendar, streak colors, notch fix",
+  "points": [
+   "Timer display freezing and hint hidden in notch",
+   "Timer not showing in notch - stop spamming sync-timer none when idle",
+   "Dashboard expand - robust loading with retry on fail, better logging"
+  ],
+  "version": "1.1.3",
+  "size": "big",
+  "count": 4
+ },
+ {
+  "date": "2026-08-15",
+  "title": "Copy applogo.png to public directory so it resolves correctly in the UI frontend",
+  "points": [
+   "Success message text color visibility",
+   "Release v1.0.2 with system tray and overlay fixes",
+   "Use Vite imports for logo to fix file:// path resolution in Electron"
+  ],
+  "version": "1.1.2",
+  "size": "small",
+  "count": 5
+ },
+ {
+  "date": "2026-08-11",
+  "title": "UI refinements, Pomodoro duration selector, cross-window timer sync, volume slider polish",
+  "points": [
+   "Fix landing page access gate and update download link",
+   "Fix download URL filename format",
+   "Use exact tag for download URL"
+  ],
+  "version": "1.1.2",
+  "size": "big",
+  "count": 5
+ },
+ {
+  "date": "2026-08-11",
+  "title": "Complete end-to-end tracking, expanded dashboard view with streaks and leveling, delete trace, make download public",
+  "points": [
+   "Suppress dev console warnings for CSP and console-message deprecation",
+   "Remove unused waitlist form variables",
+   "Sync shortcuts to notch overlay instantly",
+   "Multi-modal lock screen, notch expand button updates, shortcut icon res upgrade",
+   "Resolve syntax error caused by literal backslash"
+  ],
+  "version": "1.0.1",
+  "size": "small",
+  "count": 7
+ },
+ {
+  "date": "2026-08-10",
+  "title": "Restore dashboard heatmap and Add Shortcut tab, fix Helvetica font scoping, fix battery indicator",
+  "points": [],
+  "version": "1.0.1",
+  "size": "small",
+  "count": 2
+ },
+ {
+  "date": "2026-08-10",
+  "title": "Auto-update system, battery indicator, shortcut icon auto-fetch, extensions removed, settings About pane redesign",
+  "points": [],
+  "version": "1.0.1",
+  "size": "small",
+  "count": 2
+ },
+ {
+  "date": "2026-08-05",
+  "title": "Radically redesign the private beta access view into a professional centered card UI",
+  "points": [
+   "Use client-provided logo images for download buttons with white scaling",
+   "Explicit imports for logo images so Vite bundles them correctly",
+   "Exactly proportion beta tag in header to match navbar ratio (2.4x scale)",
+   "Radically redesign the download page into a centered, heroic layout"
+  ],
+  "version": "1.0.1",
+  "size": "small",
+  "count": 6
+ },
+ {
+  "date": "2026-08-05",
+  "title": "Remove white container box, add welcome text, and fix scrollbars on download page",
+  "points": [
+   "Refine download page UX with glassy buttons, inline errors, and clean navbar",
+   "Explicitly override main-content styles in download mode to prevent scrollbars",
+   "Completely isolate download page layout from main site constraints",
+   "Correct syntax error in App.tsx",
+   "Refine download page beta tags and swap Product Hunt logo to official SVG"
+  ],
+  "version": "1.0.1",
+  "size": "small",
+  "count": 7
+ },
+ {
+  "date": "2026-08-05",
+  "title": "Make download view a professional full-screen experience with a transparent navbar",
+  "points": [
+   "Ensure green cutting mat background is fully applied to download-mode",
+   "Apply full screen download mode only after access code is entered"
+  ],
+  "version": "1.0.1",
+  "size": "small",
+  "count": 3
+ },
+ {
+  "date": "2026-08-05",
+  "title": "Update access page with professional copy, logo, and beta badge",
+  "points": [
+   "Update announcement badge to professional copy",
+   "Remove arrow from announcement badge",
+   "Unify navbar logo and typography with access page design",
+   "Make navbar logo match access gateway exactly",
+   "Make access page logo match navbar logo exactly",
+   "Add download page with cutting mat background and now page",
+   "Correct mismatched quote syntax error in style tag"
+  ],
+  "version": "1.0.1",
+  "size": "big",
+  "count": 8
+ },
+ {
+  "date": "2026-08-05",
+  "title": "Make flowchart and pricing lines permanently bold and visible on all screens",
+  "points": [
+   "Implement professional 3-tier pricing layout",
+   "Make feature cards professionally glassy with dark SVGs",
+   "Convert feature cards to flat lined design with no animations",
+   "Convert features and pricing to ultra-minimal sleek lines design",
+   "Resolve syntax error caused by unclosed css block",
+   "Implement flowchart/mind-map style layout for features section"
+  ],
+  "version": "1.0.1",
+  "size": "big",
+  "count": 8
+ },
+ {
+  "date": "2026-08-05",
+  "title": "Make feature cards compact and grid 4-column to fit on one screen without scrolling",
+  "points": [
+   "Correct rotating text clipping and enforce consistent headings",
+   "Use professional vibrant gradients for feature icons instead of black",
+   "Restore hero section alignment with navigation bar",
+   "Add premium styling, hover states, and popular badge to pricing tiers",
+   "Correct pricing page flex grid layout, list padding, and button conflicts",
+   "Perfectly align rotating text baseline with static text in hero section"
+  ],
+  "version": "1.0.1",
+  "size": "big",
+  "count": 8
+ },
+ {
+  "date": "2026-08-05",
+  "title": "Fix global typography and convert feature cards to full-bleed visuals",
+  "points": [
+   "Replace Changelog with Pricing in navbar",
+   "Add Features, Pricing, and Password-Gated Access SPA views",
+   "Update badge text to Meet Lock In",
+   "Add professional gradient visuals to features page",
+   "Transform features grid into a premium bento box layout",
+   "Restore email waitlist form on the home page"
+  ],
+  "version": "1.0.1",
+  "size": "big",
+  "count": 8
+ },
+ {
+  "date": "2026-08-05",
+  "title": "Add dropped navbar style with dashed borders and fix beta tag alignment",
+  "points": [
+   "Use pure CSS scrolling for buttery smooth text rotation",
+   "Make badge highly professional with nested pill design",
+   "Speed up animations",
+   "Remove svgs from badge and update text",
+   "Use rethink sans font for overlay and add beta tag styled like casp",
+   "Add professional right-side navigation links to navbar",
+   "Fix rotating text baseline alignment and add more words"
+  ],
+  "version": "1.0.1",
+  "size": "big",
+  "count": 8
+ },
+ {
+  "date": "2026-08-05",
+  "title": "Force heading into exactly 2 lines by increasing max-width and adding nowrap",
+  "points": [
+   "Add spinning animation to badge icon"
+  ],
+  "version": "1.0.1",
+  "size": "small",
+  "count": 2
+ },
+ {
+  "date": "2026-08-05",
+  "title": "Optimize SEO for dynamic island and notch keywords, add canonical url",
+  "points": [
+   "Redesign landing page UI and add dashboard features",
+   "Resize logo to match text size",
+   "Change text selection color to light yellow",
+   "Add new badge and features list to hero section",
+   "Add professional rotating text animation to hero heading"
+  ],
+  "version": "1.0.1",
+  "size": "small",
+  "count": 8
+ },
+ {
+  "date": "2026-08-05",
+  "title": "Correctly restore original layout styles and add policy pages",
+  "points": [
+   "Remove 'Available on' text",
+   "Remove all extra content for ultra minimal sleek design",
+   "Add fading grid to background",
+   "Add internal router for footer policy pages"
+  ],
+  "version": "1.0.1",
+  "size": "small",
+  "count": 6
+ },
+ {
+  "date": "2026-08-04",
+  "title": "Remove hero graphic, add navbar grid, set pure white background",
+  "points": [
+   "Replicate professional centered reference design",
+   "Implement animated text, platform logos, and policy pages",
+   "Remove animation and lock scroll for sleek static layout"
+  ],
+  "version": "1.0.1",
+  "size": "small",
+  "count": 5
+ },
+ {
+  "date": "2026-08-04",
+  "title": "Redesign landing page with white trace ui and waitlist",
+  "points": [
+   "Apply side layout, black logo, and simple footer",
+   "Add google sheets waitlist backend logic",
+   "Remove ts error from constant comparison",
+   "Add professional footer with author link",
+   "Change content-type to text/plain for no-cors fetch",
+   "Remove unused err variable to fix lint warning"
+  ],
+  "version": "1.0.1",
+  "size": "big",
+  "count": 8
+ },
+ {
+  "date": "2026-08-03",
+  "title": "Add React Vite Landing Page, Refine Desktop App Aesthetics & Fixing Notch Behavior",
+  "points": [
+   "Match Trace aesthetics, lock viewport and import Helvetica",
+   "Redesign landing page to match clean, bright, serif-heavy aesthetic",
+   "Ultra-premium typography and layout overhaul to perfectly match Design Spells",
+   "Add app logo and configure electron builder and landing page favicon"
+  ],
+  "version": "1.0.1",
+  "size": "small",
+  "count": 5
+ },
+ {
+  "date": "2026-08-03",
+  "title": "Overlay begins",
+  "points": [
+   "The first build of Overlay: a notch at the top of the Windows screen, its logo and a landing page.",
+   "Fix layout bugs and upgrade visuals"
+  ],
+  "version": "1.0.1",
+  "size": "launch",
+  "count": 3
+ }
+]
