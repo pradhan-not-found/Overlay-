@@ -496,3 +496,38 @@ footer p { margin: 0; }
 .fcard-ico { height: 30px; margin-bottom: 14px; justify-content: flex-start; }
 .fcard-label { font-size: 14px; font-weight: 600; letter-spacing: 0.06em; color: #0d0f16; opacity: 1; }
 .fcard p { font-size: 14.5px; line-height: 1.5; color: #2d3140; max-width: none; }
+
+/* ══ Changelog pictures: each release its own gradient ══ */
+.rel-shot { background: var(--scene, #0d0f16); }
+.rel-shot .wall { background: var(--scene) !important; }
+.shot-list { background: var(--scene); }
+
+/* The Dashboard picture: Overlay's own dark Dashboard on the release's gradient */
+.shot-chart { display: grid; place-items: center; padding: 6% 7%; background: var(--scene) !important; }
+.dbx { width: 100%; max-width: 760px; aspect-ratio: 16 / 9.4; display: grid; grid-template-columns: 26% 1fr; border-radius: 14px; overflow: hidden; background: #0a0a0b; box-shadow: 0 30px 60px -24px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(255, 255, 255, 0.08); color: #f4f4f5; font-family: inherit; }
+.dbx-side { background: #0d0d0e; border-right: 1px solid rgba(255, 255, 255, 0.07); padding: 14px 10px; display: flex; flex-direction: column; gap: 3px; }
+.dbx-brand { display: flex; align-items: center; gap: 7px; font-size: 12px; margin: 0 4px 10px; }
+.dbx-brand img { width: 14px; height: auto; filter: brightness(0) invert(1); }
+.dbx-brand b { font-weight: 600; }
+.dbx-group { font-size: 8px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: rgba(255, 255, 255, 0.3); margin: 0 6px 4px; }
+.dbx-nav { display: flex; align-items: center; gap: 7px; height: 22px; padding: 0 7px; border-radius: 6px; font-size: 10px; color: rgba(255, 255, 255, 0.5); }
+.dbx-nav i { width: 9px; height: 9px; border-radius: 3px; border: 1.3px solid currentColor; opacity: 0.8; }
+.dbx-nav.on { background: #fff; color: #000; }
+.dbx-main { padding: 14px 16px; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.dbx-head { display: flex; align-items: baseline; justify-content: space-between; }
+.dbx-head b { font-size: 15px; font-weight: 600; letter-spacing: -0.02em; }
+.dbx-head span { font-size: 9px; color: rgba(255, 255, 255, 0.4); }
+.dbx-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+.dbx-stats div { background: #111113; border: 1px solid rgba(255, 255, 255, 0.07); border-radius: 8px; padding: 7px 9px; display: flex; flex-direction: column; gap: 1px; }
+.dbx-stats small { font-size: 8px; color: rgba(255, 255, 255, 0.45); }
+.dbx-stats b { font-size: 14px; font-weight: 600; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+.dbx-chart { flex: 1; min-height: 0; display: grid; grid-template-columns: 1fr auto; gap: 12px; align-items: end; background: #111113; border: 1px solid rgba(255, 255, 255, 0.07); border-radius: 8px; padding: 10px; }
+.dbx-chart > svg { width: 100%; height: 100%; display: block; }
+.dbx-ring { position: relative; width: 64px; height: 64px; align-self: center; }
+.dbx-ring svg { width: 100%; height: 100%; }
+.dbx-ring b { position: absolute; inset: 0; display: grid; place-items: center; font-size: 12px; font-weight: 600; }
+.dbx-list { list-style: none; padding: 0; margin: 0; display: flex; gap: 6px; flex-wrap: wrap; }
+.dbx-list li { display: inline-flex; align-items: center; gap: 6px; height: 22px; padding: 0 8px 0 4px; border-radius: 999px; background: #111113; border: 1px solid rgba(255, 255, 255, 0.07); font-size: 9px; color: rgba(255, 255, 255, 0.75); max-width: 100%; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.dbx-list .it-logo { width: 14px; height: 14px; border-radius: 4px; }
+.dbx-list .it-logo svg, .dbx-list .it-logo .tint, .dbx-list .it-logo .tint svg { width: 9px; height: 9px; }
+@media (max-width: 560px) { .dbx { grid-template-columns: 1fr; } .dbx-side { display: none; } }

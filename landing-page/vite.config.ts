@@ -45,7 +45,8 @@ function changelog(): Plugin {
           else if (cur && line.trim()) cur += ' ' + line.trim()
         }
         if (cur) points.push(cur)
-        const clean = (t: string) => t.replace(/\s*Co-Authored-By:.*$/is, '').trim()
+        // Drop how a change was checked, and anything after the sign-off.
+        const clean = (t: string) => t.replace(/\s*Co-Authored-By:.*$/is, '').replace(/\s*Built with npm run build.*$/is, '').replace(/\s*\((?:a later|the old)[^)]*\)/gi, '').trim()
         const version = shipped(hash)
         return { version, date, title: title.trim().replace(/\.$/, '').replace(/^(website|app|overlay)\s*:\s*/i, '').replace(/^./, (ch) => ch.toUpperCase()), points: points.map(clean).filter((p) => p && !hidden.test(p)).slice(0, 5) }
       }).filter((e) => !/^landing|^build\b|vercel|rewrite|^ci:|powershell|workflow|runner|\bnpm\b|electron-builder|^fix:|^feat:|^chore|^style|^revert|^refactor|^docs|^test|^ci\b|^wip|^merge|typescript|download|filename|waitlist|for build|beta access|beta tag|navbar|header|repos/i.test(e.title) && !hidden.test(e.title))

@@ -204,3 +204,27 @@ main.co { display: grid; align-items: stretch; justify-content: stretch; overflo
 .sp-check { background: #0d0f16; box-shadow: 0 0 0 8px rgba(13, 15, 22, 0.06); }
 @media (max-width: 900px) { main.co { align-content: start; grid-auto-rows: auto; } .co-order::after { display: none; } }
 @media (max-width: 900px) { main.co { grid-template-columns: 1fr; } .co-order { padding: 22px 22px 26px; } }
+
+/* ══ Hero sponsor button: the Download button's shape, in white, with glossy dots ══ */
+.sp-strip { height: 48px; min-width: 230px; justify-content: center; gap: 10px; padding: 0 22px 0 12px; border-radius: 999px; border: 1px solid rgba(13, 15, 22, 0.1); background: #fff; color: #0d0f16; font-size: 14.5px; font-weight: 600; letter-spacing: -0.01em; box-shadow: 0 10px 24px -14px rgba(13, 15, 22, 0.35); transform: none; }
+.sp-strip:hover { background: #fff; border-color: rgba(13, 15, 22, 0.16); transform: translateY(-1px); box-shadow: 0 14px 28px -14px rgba(13, 15, 22, 0.4); }
+.sp-dot { width: 24px; height: 24px; box-shadow: 0 0 0 2px #fff; }
+.sp-dot + .sp-dot { margin-left: -7px; }
+.sp-strip:hover .sp-dot + .sp-dot { margin-left: -3px; }
+.sp-dot.ghost.g0 { background: radial-gradient(circle at 32% 28%, #fff3b0 0%, #ffc531 38%, #ff9408 100%); }
+.sp-dot.ghost.g1 { background: radial-gradient(circle at 32% 28%, #ffb3c3 0%, #ff4f78 45%, #e0264e 100%); }
+.sp-dot.ghost.g2 { background: radial-gradient(circle at 32% 28%, #c6e6ff 0%, #3aa0ff 45%, #1662e8 100%); }
+.sp-dot.ghost.g3 { background: radial-gradient(circle at 32% 28%, #ffe0cc 0%, #ff9f7a 48%, #f0724d 100%); }
+.sp-plus { background: radial-gradient(circle at 32% 28%, #ffc2ec 0%, #f548c0 45%, #a335d6 100%); box-shadow: 0 0 0 2px #fff; }
+.sp-strip:hover .sp-plus { background: radial-gradient(circle at 32% 28%, #ffc2ec 0%, #f548c0 45%, #a335d6 100%); box-shadow: 0 0 0 2px #fff; }
+.sp-plus svg { width: 12px; height: 12px; stroke-width: 2.6; }
+.sp-strip:hover .sp-plus svg { transform: rotate(90deg); }
+.sp-label { font-weight: 600; }
+
+/* ══ Checkout: step dots, no back button, the logo goes home ══ */
+.co-home { display: inline-flex; align-items: center; gap: 10px; color: inherit; text-decoration: none; }
+.co-home:hover .co-brand { opacity: 0.75; }
+.sp-steps { display: flex; gap: 6px; margin-bottom: 24px; }
+.sp-steps i { width: 8px; height: 8px; border-radius: 50%; background: #e3e5ec; border: none; padding: 0; transition: background 0.2s ease, width 0.3s ease; }
+.sp-steps i.on { width: 22px; border-radius: 999px; background: #0d0f16; }
+.sp-steps i.done { background: #0d0f16; }

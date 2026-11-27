@@ -243,7 +243,18 @@ function seeded(text: string) {
   return () => ((h = Math.imul(h ^ (h >>> 15), 2246822507) >>> 0) % 1000) / 1000;
 }
 
-function Shot({ kind, items, version, when, seed }: { kind: ShotKind; items: string[]; version: string; when: string; seed: string }) {
+// One considered gradient per release, in the family of the laptop's wallpaper.
+const SCENES = [
+  'radial-gradient(70% 45% at 30% 100%, rgba(255, 214, 140, 0.5), transparent 70%), linear-gradient(180deg, #1d1c21 0%, #3b2552 36%, #8a4f8f 62%, #ef9f92 86%, #f8c57d 100%)',
+  'radial-gradient(60% 50% at 80% 10%, rgba(140, 230, 220, 0.35), transparent 70%), linear-gradient(170deg, #06131f 0%, #0b3150 40%, #137b8a 75%, #7fd6c8 100%)',
+  'radial-gradient(60% 50% at 20% 0%, rgba(160, 130, 255, 0.4), transparent 70%), linear-gradient(165deg, #0b0d1c 0%, #1d2559 40%, #4a3b9c 70%, #c08be6 100%)',
+  'radial-gradient(70% 50% at 70% 100%, rgba(255, 200, 170, 0.45), transparent 70%), linear-gradient(180deg, #19121c 0%, #4b2138 38%, #9b3c5b 66%, #e3807b 88%, #f7c6a4 100%)',
+  'radial-gradient(60% 50% at 85% 15%, rgba(190, 240, 200, 0.3), transparent 70%), linear-gradient(170deg, #0a1311 0%, #14362b 42%, #2e6d55 75%, #9ccfaa 100%)',
+  'radial-gradient(70% 50% at 25% 100%, rgba(255, 220, 150, 0.45), transparent 70%), linear-gradient(180deg, #130c0a 0%, #4a1c12 40%, #a3401f 70%, #f08a3c 90%, #ffd08a 100%)',
+];
+
+function Shot({ kind, items, version, when, seed, tone = 0 }: { kind: ShotKind; items: string[]; version: string; when: string; seed: string; tone?: number }) {
+  const scene = { '--scene': SCENES[tone % SCENES.length] } as React.CSSProperties;
   const rnd = seeded(seed);
   const list = items.length ? items : ['Polish'];
 
@@ -255,7 +266,7 @@ function Shot({ kind, items, version, when, seed }: { kind: ShotKind; items: str
       : /hardware|battery|cpu/i.test(seed) ? 'hardware'
       : (['media', 'ai', 'today', 'hardware', 'focus', 'todos'] as Space[])[Math.floor(rnd() * 6)];
     return (
-      <figure className="rel-shot shot-notch">
+      <figure className="rel-shot shot-notch" style={scene}>
         <div className="display shot-display">
           <div className="wall" aria-hidden="true" />
           <NotchDemo open start={start} onOpen={() => {}} onClose={() => {}} />
@@ -265,44 +276,56 @@ function Shot({ kind, items, version, when, seed }: { kind: ShotKind; items: str
   }
 
   if (kind === 'chart') {
-    const bars = Array.from({ length: 14 }, () => 0.25 + rnd() * 0.75);
+    const bars = Array.from({ length: 14 }, () => 0.22 + rnd() * 0.78);
     const pct = 55 + Math.round(rnd() * 40);
-    const r = 34, circ = 2 * Math.PI * r;
+    const r = 30, circ = 2 * Math.PI * r;
+    const nav = ['Overview', 'Calendar', 'AI Usage', 'To-Dos', 'Note'];
     return (
-      <figure className="rel-shot shot-chart" aria-hidden="true">
-        <div className="sc-card">
-          <div className="sc-top"><img src="/mark.png" alt="" /><b>Dashboard</b><span>{when}</span></div>
-          <div className="sc-body">
-            <svg className="sc-bars" viewBox="0 0 420 160" preserveAspectRatio="none">
-              {[40, 80, 120].map((y) => <line key={y} x1="0" x2="420" y1={y} y2={y} stroke="#0d0f16" strokeOpacity="0.06" />)}
-              {bars.map((b, n) => (
-                <rect key={n} x={n * 30 + 6} y={160 - b * 150} width="18" height={b * 150} rx="5" fill={n === bars.length - 1 ? '#0027c4' : '#c9d2ff'} />
-              ))}
-            </svg>
-            <div className="sc-ring">
-              <svg viewBox="0 0 84 84">
-                <circle cx="42" cy="42" r={r} fill="none" stroke="#e8ebf3" strokeWidth="8" />
-                <circle cx="42" cy="42" r={r} fill="none" stroke="#0027c4" strokeWidth="8" strokeLinecap="round" strokeDasharray={`${(circ * pct) / 100} ${circ}`} transform="rotate(-90 42 42)" />
-              </svg>
-              <b>{pct}%</b>
+      <figure className="rel-shot shot-chart" aria-hidden="true" style={scene}>
+        <div className="dbx">
+          <aside className="dbx-side">
+            <div className="dbx-brand"><img src="/mark.png" alt="" /><b>Overlay</b></div>
+            <span className="dbx-group">Track</span>
+            {nav.map((n) => <span key={n} className={`dbx-nav${n === 'AI Usage' ? ' on' : ''}`}><i />{n}</span>)}
+          </aside>
+          <div className="dbx-main">
+            <div className="dbx-head"><b>AI Usage</b><span>{when}</span></div>
+            <div className="dbx-stats">
+              <div><small>Today</small><b>{(1 + rnd() * 8).toFixed(1)}M</b></div>
+              <div><small>This week</small><b>{(12 + rnd() * 40).toFixed(1)}M</b></div>
+              <div><small>Session</small><b>{pct}%</b></div>
             </div>
+            <div className="dbx-chart">
+              <svg viewBox="0 0 420 120" preserveAspectRatio="none">
+                {bars.map((b, n) => (
+                  <rect key={n} x={n * 30 + 5} y={120 - b * 112} width="20" height={b * 112} rx="4" fill={n === bars.length - 1 ? '#ffffff' : 'rgba(255,255,255,0.18)'} />
+                ))}
+              </svg>
+              <div className="dbx-ring">
+                <svg viewBox="0 0 76 76">
+                  <circle cx="38" cy="38" r={r} fill="none" stroke="rgba(255,255,255,0.1)" strokeWidth="7" />
+                  <circle cx="38" cy="38" r={r} fill="none" stroke="#fff" strokeWidth="7" strokeLinecap="round" strokeDasharray={`${(circ * pct) / 100} ${circ}`} transform="rotate(-90 38 38)" />
+                </svg>
+                <b>{pct}%</b>
+              </div>
+            </div>
+            <ul className="dbx-list">
+              {list.slice(0, 3).map((it, n) => <li key={n}><span className="it-logo">{logoFor(it).node}</span>{it}</li>)}
+            </ul>
           </div>
-          <ul className="sc-legend">
-            {list.slice(0, 4).map((it, n) => <li key={n}><span className="it-logo">{logoFor(it).node}</span>{it}</li>)}
-          </ul>
         </div>
       </figure>
     );
   }
 
   return (
-    <figure className="rel-shot shot-list" aria-hidden="true">
+    <figure className="rel-shot shot-list" aria-hidden="true" style={scene}>
       <svg className="shot-bg" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice">
         <defs>
           <linearGradient id="sky" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stopColor="#0a1238" /><stop offset="0.55" stopColor="#0b1a5c" /><stop offset="1" stopColor="#0027c4" /></linearGradient>
           <radialGradient id="sun" cx="0.5" cy="0.5" r="0.5"><stop offset="0" stopColor="#6f8dff" stopOpacity="0.55" /><stop offset="1" stopColor="#6f8dff" stopOpacity="0" /></radialGradient>
         </defs>
-        <rect width="1600" height="900" fill="url(#sky)" />
+        
         <circle cx="1180" cy="240" r="520" fill="url(#sun)" />
         <path d="M0 620Q300 500 620 580T1240 540T1600 560V900H0Z" fill="#fff" fillOpacity="0.035" />
         <path d="M0 720Q380 600 820 690T1600 650V900H0Z" fill="#fff" fillOpacity="0.05" />
@@ -552,7 +575,7 @@ export default function App() {
                     <article className="rel">
                       <h3>{sentence(c.title)}</h3>
                       {c.points.length > 0 && <p className="rel-text">{c.points.map((pt) => pt.replace(/\.?$/, '.')).join(' ')}</p>}
-                      <Shot kind={kinds[k]} items={items} version={c.version} when={when} seed={c.title} />
+                      <Shot kind={kinds[k]} items={items} version={c.version} when={when} seed={c.title} tone={k} />
                     </article>
                   </li>
                 );

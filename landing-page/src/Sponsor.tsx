@@ -25,7 +25,7 @@ export function SponsorStrip({ onOpen }: { onOpen: (e: React.MouseEvent) => void
       <span className="sp-stack">
         {shown.length
           ? shown.map((s, i) => <span className="sp-dot" key={s.name + i} style={{ zIndex: 10 - i }} title={s.name}>{s.host ? <img src={icon(s.host)} alt="" /> : <b>{s.name.charAt(0)}</b>}</span>)
-          : [0, 1, 2].map((i) => <span className={`sp-dot ghost g${i}`} key={i} style={{ zIndex: 10 - i }} />)}
+          : [0, 1, 2, 3].map((i) => <span className={`sp-dot ghost g${i}`} key={i} style={{ zIndex: 10 - i }} />)}
         <span className="sp-dot sp-plus" style={{ zIndex: 1 }}>
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 6v12M6 12h12" /></svg>
         </span>
@@ -137,11 +137,10 @@ export function SponsorPage({ onHome }: { onHome: () => void }) {
     <main className="co">
       <aside className="co-order">
         <div className="co-top">
-          <button type="button" className="co-back" onClick={onHome} aria-label="Back to Overlay">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 6l-6 6 6 6" /></svg>
-          </button>
-          <img src="/mark.png" alt="" className="co-mark" />
-          <span className="co-brand">Overlay</span>
+          <a className="co-home" href="/" onClick={(e) => { if (e.metaKey || e.ctrlKey) return; e.preventDefault(); onHome(); }} aria-label="Overlay home">
+            <img src="/mark.png" alt="" className="co-mark" />
+            <span className="co-brand">Overlay</span>
+          </a>
           <span className="co-beta">Beta</span>
         </div>
         <div className="co-sum">
@@ -169,7 +168,7 @@ export function SponsorPage({ onHome }: { onHome: () => void }) {
         <div className="co-panel">
           {step === 'details' && (
             <form onSubmit={toPay} className="sp-form">
-              <div className="sp-steps"><b className="on">1 · Your product</b><b>2 · Payment</b></div>
+              <div className="sp-steps" aria-label="Step 1 of 2"><i className="on" /><i /></div>
               <label><span>Product name</span><input required maxLength={80} value={d.product} onChange={set('product')} placeholder="Acme Studio" /></label>
               <label><span>Link</span><input required maxLength={200} value={d.link} onChange={set('link')} placeholder="acme.com" inputMode="url" /></label>
               <label><span>Short description <em>{d.description.length}/200</em></span><textarea maxLength={200} rows={2} value={d.description} onChange={set('description')} placeholder="What your product does, in a sentence." /></label>
@@ -188,7 +187,7 @@ export function SponsorPage({ onHome }: { onHome: () => void }) {
 
           {step === 'pay' && (
             <div className="sp-pay">
-              <div className="sp-steps"><b>1 · Your product</b><b className="on">2 · Payment</b></div>
+              <div className="sp-steps" aria-label="Step 2 of 2"><i className="done" /><i className="on" /></div>
               <div className="sp-summary"><span>{d.product}</span><button type="button" onClick={() => setStep('details')}>Edit</button></div>
               <div className="sp-methods" role="radiogroup" aria-label="Payment method">
                 <button type="button" role="radio" aria-checked={method === 'card'} className={method === 'card' ? 'on' : ''} onClick={() => setMethod('card')}><b>Card</b><small>USD · any country</small></button>
