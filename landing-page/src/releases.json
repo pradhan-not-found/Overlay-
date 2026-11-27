@@ -1,0 +1,248 @@
+[
+  {
+    "date": "2026-11-27",
+    "title": "Keyboard shortcuts that work anywhere",
+    "points": [
+      "Press Alt+Space in any app to open or close the notch.",
+      "Press Ctrl+Shift+F to start or pause a Lock In session without reaching for the mouse.",
+      "A new Shortcuts page in the Dashboard lists your keys and the apps and sites the notch opens in one click.",
+      "Add a launch shortcut by picking any app, and Overlay tells you if another app already uses a key."
+    ],
+    "version": "1.2.0",
+    "size": "small",
+    "count": 6
+  },
+  {
+    "date": "2026-11-27",
+    "title": "Lock In settings that stay in sync",
+    "points": [
+      "Choose your session length and break length in the Dashboard with simple buttons.",
+      "The notch and the Dashboard now share one session length, so changing it in either place updates both.",
+      "Breaks now last as long as you choose instead of a fixed five minutes.",
+      "Fixed: saving another Dashboard setting no longer resets the session length you picked in the notch."
+    ],
+    "version": "1.2.0",
+    "size": "small",
+    "count": 4
+  },
+  {
+    "date": "2026-11-27",
+    "title": "An exact battery and a notch that's easier to click",
+    "points": [
+      "The battery level and charging state update the moment Windows reports a change.",
+      "A cleaner battery icon shows a plug when you're full and plugged in, and turns red at 20% or below.",
+      "The open notch's AI card now shows the tool you're actually working in.",
+      "Fixed: hovering a button in the closed notch no longer opens it, so What's new, Restart and play can be clicked."
+    ],
+    "version": "1.2.0",
+    "size": "small",
+    "count": 5
+  },
+  {
+    "date": "2026-11-27",
+    "title": "Screenshots that save, and a colour that's yours",
+    "points": [
+      "Every screenshot is saved to Pictures › Overlay, named by date and time, and copied to your clipboard.",
+      "Full-screen captures use your display's full resolution and hide the notch while the picture is taken.",
+      "Area and window captures are saved automatically and appear under Recent in the notch.",
+      "Pick an accent colour from named swatches or your own, with a live preview, and it carries across Overlay."
+    ],
+    "version": "1.2.0",
+    "size": "small",
+    "count": 7
+  },
+  {
+    "date": "2026-11-27",
+    "title": "Lock In, rebuilt",
+    "points": [
+      "Lock In runs right in the notch, whether or not the Dashboard is open.",
+      "Set a session from 5 to 120 minutes or tap a preset, and Overlay remembers your choice.",
+      "While you focus, you see the end time and a progress bar; your week shows as simple daily bars.",
+      "The closed notch shows a realistic hourglass whose sand pauses when you pause.",
+      "The AI tool you're working with sits beside the pause button, so its limit stays in view."
+    ],
+    "version": "1.2.0",
+    "size": "big",
+    "count": 9
+  },
+  {
+    "date": "2026-11-27",
+    "title": "Updates that install themselves",
+    "points": [
+      "Updates now download and install quietly in the background, with no installer windows or pop-ups.",
+      "When an update is ready, the notch shows a Restart button; afterwards, a What's new button opens the release notes.",
+      "Overlay checks for updates shortly after it starts and regularly while it runs.",
+      "Installing is a single double-click, and the first launch opens the Dashboard and shows you where the notch is.",
+      "Fixed: notifications and the taskbar sometimes showed \"Electron\" instead of Overlay's own name and icon."
+    ],
+    "version": "1.2.0",
+    "size": "big",
+    "count": 10
+  },
+  {
+    "date": "2026-11-27",
+    "title": "A clearer Dashboard and sharper AI tracking",
+    "points": [
+      "Overview, AI usage, To-dos and Notes have clear titles and plain labels.",
+      "Your shareable report is a clean card you can download as an image.",
+      "Screen time lists each app with its own icon and proper name.",
+      "When two AI tools are working at once, both now appear in the notch.",
+      "Fixed: an idle Cursor no longer shows as working, and long Claude Code sessions are tracked again."
+    ],
+    "version": "1.2.0",
+    "size": "small",
+    "count": 8
+  },
+  {
+    "date": "2026-11-26",
+    "title": "Minimise to a bubble, and updates you can follow",
+    "points": [
+      "Minimise the notch to a small bubble you can drag to any corner; one click brings it back.",
+      "The Dashboard's About page shows update progress and a Restart and update button when it's ready.",
+      "The notch's update badge fills as an update downloads and glows when it's ready to install.",
+      "Overlay launches at startup by default, and a switch in the Dashboard turns it off.",
+      "A new branded installer lets you choose the install folder, and uninstalling keeps your history for a reinstall."
+    ],
+    "version": "1.1.4",
+    "size": "small",
+    "count": 9
+  },
+  {
+    "date": "2026-11-26",
+    "title": "Every notch tool, rebuilt",
+    "points": [
+      "Water and Habits track your day with a filling glass, progress rings and a seven-day view.",
+      "Capture takes full-screen, area or window shots with a timer; Recorder shows a live waveform.",
+      "Screen time charts your day hour by hour, alongside new Wallpapers and Trading tools.",
+      "Find now searches every drive and ranks exact matches first.",
+      "The notch opens when you hover over it and closes when you move away; you can switch this off.",
+      "Fixed: long voice recordings now save reliably."
+    ],
+    "version": "1.1.3",
+    "size": "big",
+    "count": 12
+  },
+  {
+    "date": "2026-11-26",
+    "title": "Downloads, ports, breaks and Discord calls",
+    "points": [
+      "See your newest downloads in the notch and drag any of them straight into another app.",
+      "Ports lists local servers with the app behind each, so you can open or stop them.",
+      "Breaks reminds you to rest your eyes, stand up and drink water, each with its own switch.",
+      "Follow your Discord voice call with who's talking, plus mute, deafen and leave, after a one-click connect.",
+      "A camera preview lets you check yourself before a call and switches off the moment you leave it."
+    ],
+    "version": "1.1.3",
+    "size": "small",
+    "count": 7
+  },
+  {
+    "date": "2026-11-26",
+    "title": "One Dashboard, a private account and live AI limits",
+    "points": [
+      "Settings, connections and tracking now live in one Dashboard with a clear sidebar.",
+      "A local account with your name, photo and password keeps Overlay locked, and nothing leaves your PC.",
+      "Connect Discord, GitHub and LeetCode, with a live status for each.",
+      "While you code, the notch shows the AI tool you're using and how close you are to its limit.",
+      "Antigravity usage is now counted, and every AI tool shows its real logo."
+    ],
+    "version": "1.1.3",
+    "size": "big",
+    "count": 10
+  },
+  {
+    "date": "2026-11-25",
+    "title": "Your AI tools' limits, live in the notch",
+    "points": [
+      "A rebuilt notch with smooth transitions and a dock that shows one tool at a time.",
+      "Overlay finds Claude Code, Codex, Cursor, Gemini CLI, OpenCode and Copilot and shows each one's limits and cost.",
+      "Hand your current task to the tool with the most headroom in one click.",
+      "Now Playing shows a progress bar and synced lyrics, including a live line in the closed notch.",
+      "New tools: To-dos, Notes, Clipboard history, Hardware, Weather, World clocks, Calculator, Shelf, Colour picker and Launcher.",
+      "Fixed: dropping files onto the notch now works again."
+    ],
+    "version": "1.1.3",
+    "size": "big",
+    "count": 12
+  },
+  {
+    "date": "2026-11-25",
+    "title": "One-click sync across Overlay",
+    "points": [
+      "Click the Overlay mark to rescan AI usage, refresh your limits and update every window at once.",
+      "AI usage, To-dos and Notes now live in the Dashboard and match the rest of it.",
+      "Fixed: AI usage no longer shows zero for today while a scan is still running.",
+      "Fixed: switching AI tools automatically no longer writes files into your projects."
+    ],
+    "version": "1.1.3",
+    "size": "small",
+    "count": 6
+  },
+  {
+    "date": "2026-08-15",
+    "title": "A redesigned Dashboard and a tray icon",
+    "points": [
+      "The Dashboard gets a navigation rail, a calendar, lap times and colour-coded streaks.",
+      "Overlay now lives in the system tray, so it's always one click away.",
+      "Fixed: the focus timer sometimes froze or didn't appear in the notch.",
+      "Fixed: the Dashboard now loads reliably and retries if something goes wrong."
+    ],
+    "version": "1.1.3",
+    "size": "small",
+    "count": 7
+  },
+  {
+    "date": "2026-08-11",
+    "title": "Pomodoro lengths, streaks and levels",
+    "points": [
+      "Choose your Pomodoro length before a focus session.",
+      "The timer stays in sync between the notch and the Dashboard.",
+      "Focus sessions are fully tracked, with streaks and levels in an expanded Dashboard view.",
+      "New lock screen modes and sharper shortcut icons.",
+      "Fixed: new shortcuts now appear in the notch instantly."
+    ],
+    "version": "1.1.2",
+    "size": "small",
+    "count": 9
+  },
+  {
+    "date": "2026-08-10",
+    "title": "Automatic updates and a battery indicator",
+    "points": [
+      "Overlay can now update itself, so you always have the latest version.",
+      "A battery indicator in the notch shows your charge at a glance.",
+      "Shortcuts fetch their app's icon automatically.",
+      "Settings gains a redesigned About page.",
+      "Fixed: the focus heatmap and the Add Shortcut tab are back in the Dashboard."
+    ],
+    "version": "1.0.1",
+    "size": "big",
+    "count": 5
+  },
+  {
+    "date": "2026-08-05",
+    "title": "A Dashboard for your focus, and Settings",
+    "points": [
+      "A new Dashboard shows your focus history as a 60-day heatmap and a seven-day chart.",
+      "Add quick shortcuts to the apps you use most.",
+      "A Settings window lets you choose your music source and tune how the notch looks and behaves.",
+      "Your focus sessions are saved on your PC, so your history is kept between launches."
+    ],
+    "version": "1.0.1",
+    "size": "small",
+    "count": 6
+  },
+  {
+    "date": "2026-08-03",
+    "title": "The first Overlay",
+    "points": [
+      "A Dynamic Island-style notch at the top of your Windows screen that expands when you need it.",
+      "Lock In, a built-in focus timer, runs right in the notch.",
+      "Music controls and quick shortcuts sit one click away.",
+      "Overlay gets its own app icon and installer."
+    ],
+    "version": "1.0.1",
+    "size": "launch",
+    "count": 5
+  }
+]

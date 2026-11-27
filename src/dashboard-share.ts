@@ -1,7 +1,8 @@
-// A shareable report, drawn as an image with Canvas 2D: a clean white card in
-// the spirit of a Strava share, with the Overlay mark, today's focus, the week,
-// your streak and (when there is any) the AI tokens you used. It opens in a
-// white sheet with Download (saves a PNG) and Copy image.
+// A shareable report, drawn as an image with Canvas 2D: a dark, full-bleed card
+// in the spirit of a Strava activity share. A huge focus time up top, a clean
+// stats row, the last seven days as rounded bars with today lit in your accent
+// colour, and the Overlay mark as the only branding. It opens in a sheet with
+// Download (saves a PNG) and Copy image.
 import overlayMark from './assets/overlay-mark.png';
 
 const ipc: any = (() => { try { return (window as any).require('electron').ipcRenderer; } catch { return null; } })();
@@ -12,8 +13,8 @@ const hm = (s: number) => { const h = Math.floor(s / 3600), m = Math.floor((s % 
 const tokens = (n: number) => (n >= 1e9 ? `${(n / 1e9).toFixed(1)}B` : n >= 1e6 ? `${(n / 1e6).toFixed(1)}M` : n >= 1e3 ? `${Math.round(n / 1e3)}K` : String(Math.round(n)));
 const esc = (v: string) => String(v).replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
 
-// Card palette: white paper, near-black ink, the brand blue for today.
-const INK = '#131316', MUTED = '#7a7a76', LINE = '#e9e9e6', TILE = '#f6f6f4', BLUE = '#0027c4', BAR = '#d8d8d3';
+const FAMILY = `'Instrument Sans Variable', 'Instrument Sans', 'Segoe UI', system-ui, sans-serif`;
+type RGB = [number, number, number];
 
 function load(src: string) {
   return new Promise<HTMLImageElement>((resolve, reject) => { const i = new Image(); i.onload = () => resolve(i); i.onerror = reject; i.src = src; });
@@ -24,6 +25,23 @@ function roundRect(g: CanvasRenderingContext2D, x: number, y: number, w: number,
   g.beginPath();
   g.moveTo(x + r, y); g.arcTo(x + w, y, x + w, y + h, r); g.arcTo(x + w, y + h, x, y + h, r); g.arcTo(x, y + h, x, y, r); g.arcTo(x, y, x + w, y, r);
   g.closePath();
+}
+
+// The user's accent (the Dashboard keeps it in --blue), as RGB.
+function accent(): RGB {
+  let v = '';
+  try { v = getComputedStyle(document.documentElement).getPropertyValue('--blue').trim(); } catch {}
+  const m = /^#?([0-9a-f]{6}|[0-9a-f]{3})$/i.exec(v);
+  let hex = m ? m[1] : '3d6bff';
+  if (hex.length === 3) hex = hex.split('').map((c) => c + c).join('');
+  return [0, 2, 4].map((i) => parseInt(hex.slice(i, i + 2), 16)) as RGB;
+}
+const mix = (a: RGB, b: RGB, t: number) => a.map((v, i) => Math.round(v + (b[i] - v) * t)) as RGB;
+const rgba = (c: RGB, a = 1) => `rgba(${c[0]}, ${c[1]}, ${c[2]}, ${a})`;
+// Keep the accent bright enough to glow on near-black, whatever colour was picked.
+function vivid(c: RGB): RGB {
+  const lum = (0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2]) / 255;
+  return lum < 0.3 ? mix(c, [255, 255, 255], Math.min(0.4, (0.3 - lum) * 1.5)) : c;
 }
 
 type Report = { today: number; week: number; streak: number; best: { day: string; secs: number }; days: { label: string; secs: number }[]; ai: number; name: string };
@@ -39,70 +57,120 @@ function report(stats: any, streak: number, name: string, ai: number): Report {
 }
 
 async function draw(r: Report): Promise<HTMLCanvasElement> {
+  try { await Promise.all([500, 600, 700].map((w) => document.fonts.load(`${w} 40px 'Instrument Sans Variable'`))); } catch {}
   await document.fonts.ready;
-  const W = 1080, H = 1350, P = 88;
+  const W = 1080, H = 1350, P = 84;
   const c = document.createElement('canvas');
   c.width = W; c.height = H;
   const g = c.getContext('2d')!;
-  const font = (w: number, px: number) => `${w} ${px}px 'Instrument Sans Variable', 'Instrument Sans', system-ui, sans-serif`;
+  const font = (w: number, px: number) => `${w} ${px}px ${FAMILY}`;
   const track = (px: number) => { try { (g as any).letterSpacing = `${px}px`; } catch {} };
+  const tabular = (on: boolean) => { try { (g as any).fontVariantNumeric = on ? 'tabular-nums' : 'normal'; } catch {} };
   const text = (s: string, x: number, y: number, f: string, color: string, align: CanvasTextAlign = 'left', ls = 0) => {
     g.font = f; g.fillStyle = color; g.textAlign = align; track(ls); g.fillText(s, x, y); track(0);
   };
+  const width = (s: string, f: string, ls = 0) => { g.font = f; track(ls); const w = g.measureText(s).width; track(0); return w; };
 
-  // Paper
-  g.fillStyle = '#ffffff'; g.fillRect(0, 0, W, H);
+  const A = vivid(accent());
+  const WHITE = '#ffffff', SOFT = 'rgba(255, 255, 255, 0.66)', FAINT = 'rgba(255, 255, 255, 0.42)', RULE = 'rgba(255, 255, 255, 0.12)';
 
-  // Header: the mark on a blue tile, the name, the date on the right.
-  const mark = await load(overlayMark);
-  g.fillStyle = BLUE; roundRect(g, P, P, 64, 64, 18); g.fill();
-  const mw = 40, mh = (40 * mark.height) / mark.width;
-  g.drawImage(mark, P + (64 - mw) / 2, P + (64 - mh) / 2, mw, mh);
-  text('Overlay', P + 84, P + 43, font(600, 32), INK, 'left', -0.5);
+  // Background: near-black, washed with the accent from the top-right corner.
+  g.fillStyle = '#08090d'; g.fillRect(0, 0, W, H);
+  let glow = g.createRadialGradient(W * 0.95, -80, 40, W * 0.95, -80, 1150);
+  glow.addColorStop(0, rgba(A, 0.6)); glow.addColorStop(0.45, rgba(A, 0.16)); glow.addColorStop(1, rgba(A, 0));
+  g.fillStyle = glow; g.fillRect(0, 0, W, H);
+  glow = g.createRadialGradient(-160, H + 120, 40, -160, H + 120, 950);
+  glow.addColorStop(0, rgba(A, 0.24)); glow.addColorStop(1, rgba(A, 0));
+  g.fillStyle = glow; g.fillRect(0, 0, W, H);
+
+  // Header: the mark and wordmark, quiet, and the date on the right.
   const now = new Date();
-  text(now.toLocaleDateString('en-US', { weekday: 'long', day: 'numeric', month: 'long' }), W - P, P + 43, font(500, 26), MUTED, 'right');
+  const mark = await load(overlayMark);
+  const mw = 46, mh = (mw * mark.height) / mark.width, mid = P + mh / 2;
+  g.drawImage(mark, P, P, mw, mh);
+  text('Overlay', P + mw + 16, mid + 11, font(600, 30), WHITE, 'left', -0.6);
+  tabular(true);
+  text(now.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }), W - P, mid + 10, font(500, 26), SOFT, 'right');
+  tabular(false);
 
-  // Headline: today's focus, big.
+  // Who and when.
   const first = r.name.trim().split(/\s+/)[0] || '';
-  text(first ? `${first}'s focus today` : 'Focus today', P, 300, font(500, 30), MUTED);
-  text(r.today ? hm(r.today) : '0m', P - 6, 470, font(600, 188), INK, 'left', -8);
-  text(r.today ? 'Locked in with Overlay' : 'A fresh start. Lock In from the notch.', P, 530, font(500, 28), MUTED);
+  const when = `${now.toLocaleDateString('en-US', { weekday: 'long' })} · ${now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}`;
+  text(first ? `${first}'s focus` : 'Focus time', P, 238, font(600, 38), WHITE, 'left', -0.6);
+  text(when, P, 284, font(500, 26), FAINT);
 
-  // Three stat tiles.
-  const third: [string, string] = r.ai > 0 ? ['AI tokens today', tokens(r.ai)] : r.best.secs > 0 ? ['Best day', r.best.day] : ['Best day', 'Still to come'];
-  const cells: [string, string][] = [['This week', r.week ? hm(r.week) : '0m'], ['Streak', `${r.streak} ${r.streak === 1 ? 'day' : 'days'}`], third];
-  const gap = 20, tw = (W - P * 2 - gap * 2) / 3, ty = 610, th = 176;
-  cells.forEach(([label, value], i) => {
-    const x = P + i * (tw + gap);
-    g.fillStyle = TILE; roundRect(g, x, ty, tw, th, 26); g.fill();
-    g.strokeStyle = LINE; g.lineWidth = 2; roundRect(g, x + 1, ty + 1, tw - 2, th - 2, 25); g.stroke();
-    text(label, x + 30, ty + 60, font(500, 24), MUTED);
-    let size = 58; g.font = font(600, size);
-    while (g.measureText(value).width > tw - 60 && size > 30) { size -= 2; g.font = font(600, size); }
-    text(value, x + 28, ty + 134, font(600, size), INK, 'left', -1.5);
-  });
+  // Hero: the focus time, huge, with the units set smaller like a sports app.
+  const heroY = 528;
+  const parts: [string, boolean][] = [];
+  const hh = Math.floor(r.today / 3600), mm = Math.floor((r.today % 3600) / 60);
+  if (hh) parts.push([String(hh), true], ['h', false], [' ', false]);
+  parts.push([String(mm), true], ['m', false]);
+  const big = font(650, 256), unit = font(600, 108);
+  tabular(true);
+  let x = P - 10;
+  for (const [s, isNum] of parts) {
+    if (s === ' ') { x += 36; continue; }
+    const f = isNum ? big : unit, ls = isNum ? -12 : -2;
+    text(s, x, heroY, f, isNum ? WHITE : SOFT, 'left', ls);
+    x += width(s, f, ls) + (isNum ? 6 : 0);
+  }
+  tabular(false);
+  // a short accent bar and a one-line caption
+  const capY = heroY + 72;
+  const ul = g.createLinearGradient(P, 0, P + 56, 0);
+  ul.addColorStop(0, rgba(mix(A, [255, 255, 255], 0.3))); ul.addColorStop(1, rgba(A));
+  g.fillStyle = ul; roundRect(g, P, capY - 15, 48, 8, 4); g.fill();
+  text(r.today ? 'Locked in today' : 'Ready to lock in', P + 66, capY - 3, font(600, 28), SOFT, 'left', -0.2);
 
-  // The week, one bar a day, today in blue.
-  const cy = 826, ch = 380;
-  g.fillStyle = TILE; roundRect(g, P, cy, W - P * 2, ch, 26); g.fill();
-  g.strokeStyle = LINE; g.lineWidth = 2; roundRect(g, P + 1, cy + 1, W - P * 2 - 2, ch - 2, 25); g.stroke();
-  text('Last 7 days', P + 30, cy + 58, font(500, 24), MUTED);
-  text(r.week ? `${hm(r.week)} in total` : 'No focus yet this week', W - P - 30, cy + 58, font(600, 24), INK, 'right');
+  // Stats row: only the numbers worth showing.
+  const stats: [string, string][] = [];
+  if (r.week) stats.push(['This week', hm(r.week)]);
+  if (r.streak > 0) stats.push(['Streak', `${r.streak} ${r.streak === 1 ? 'day' : 'days'}`]);
+  if (r.ai > 0) stats.push(['AI tokens', tokens(r.ai)]);
+  else if (r.best.secs > 0 && r.best.secs > r.today) stats.push(['Best day', r.best.day]);
+  const rowY = 690, rowH = 164;
+  if (stats.length) {
+    g.fillStyle = RULE; g.fillRect(P, rowY, W - P * 2, 2); g.fillRect(P, rowY + rowH, W - P * 2, 2);
+    const cw = (W - P * 2) / 3;
+    stats.forEach(([label, value], i) => {
+      const cx = P + i * cw + (i ? 40 : 0);
+      if (i) { g.fillStyle = RULE; g.fillRect(P + i * cw, rowY + 36, 2, rowH - 72); }
+      text(label.toUpperCase(), cx, rowY + 60, font(600, 21), FAINT, 'left', 2.4);
+      let size = 60; const room = cw - (i ? 56 : 20);
+      while (width(value, font(650, size), -1.5) > room && size > 34) size -= 2;
+      tabular(true); text(value, cx, rowY + 128, font(650, size), WHITE, 'left', -1.5); tabular(false);
+    });
+  }
+
+  // The week: seven rounded bars, today lit in the accent.
+  const chartTop = stats.length ? rowY + rowH + 76 : rowY + 20;
+  text('LAST 7 DAYS', P, chartTop, font(600, 21), FAINT, 'left', 2.4);
+  if (r.week) { tabular(true); text(`${hm(r.week)} total`, W - P, chartTop, font(600, 24), SOFT, 'right'); tabular(false); }
+  const base = H - P - 52, bh = base - (chartTop + 84);
   const max = Math.max(1, ...r.days.map((d) => d.secs));
-  const left = P + 30, right = W - P - 30, base = cy + ch - 70, bh = 200, col = (right - left) / 7;
+  const col = (W - P * 2) / 7, bw = Math.min(80, col * 0.6);
+  g.fillStyle = 'rgba(255, 255, 255, 0.07)';
+  g.fillRect(P, base + 1, W - P * 2, 2);
+  if (!r.week) {
+    const cy = chartTop + 84 + bh / 2;
+    text('A clean slate', W / 2, cy - 10, font(650, 52), WHITE, 'center', -1.2);
+    text('Start a Lock In from the notch and this week fills in.', W / 2, cy + 44, font(500, 26), FAINT, 'center');
+  }
   r.days.forEach((d, i) => {
-    const w = col * 0.5, x = left + i * col + (col - w) / 2;
-    const h = d.secs ? Math.max(14, (d.secs / max) * bh) : 10;
-    g.fillStyle = i === 6 ? BLUE : d.secs ? BAR : '#ebebe7';
-    roundRect(g, x, base - h, w, h, Math.min(12, w / 2)); g.fill();
-    text(d.label, x + w / 2, base + 42, font(i === 6 ? 600 : 500, 22), i === 6 ? INK : MUTED, 'center');
+    const bx = P + i * col + (col - bw) / 2, isToday = i === 6;
+    const h = d.secs ? Math.max(bw * 0.45, (d.secs / max) * bh) : 10;
+    if (isToday && d.secs) {
+      const grad = g.createLinearGradient(0, base - h, 0, base);
+      grad.addColorStop(0, rgba(mix(A, [255, 255, 255], 0.28))); grad.addColorStop(1, rgba(A));
+      g.save(); g.shadowColor = rgba(A, 0.6); g.shadowBlur = 44;
+      g.fillStyle = grad; roundRect(g, bx, base - h, bw, h, 16); g.fill(); g.restore();
+      tabular(true); text(hm(d.secs), bx + bw / 2, base - h - 18, font(650, 25), WHITE, 'center', -0.4); tabular(false);
+    } else {
+      g.fillStyle = d.secs ? 'rgba(255, 255, 255, 0.22)' : isToday ? rgba(A, 0.6) : 'rgba(255, 255, 255, 0.10)';
+      roundRect(g, bx, base - h, bw, h, d.secs ? 16 : 5); g.fill();
+    }
+    text(d.label, bx + bw / 2, base + 48, font(isToday ? 650 : 500, 23), isToday ? WHITE : FAINT, 'center');
   });
-
-  // Footer
-  g.strokeStyle = LINE; g.lineWidth = 2; g.beginPath(); g.moveTo(P, H - 120); g.lineTo(W - P, H - 120); g.stroke();
-  // one quiet line: what made it, and where to get it
-  text('Tracked with Overlay for Windows', P, H - 70, font(500, 24), MUTED);
-  text('getoverlay.vercel.app', W - P, H - 70, font(600, 24), INK, 'right');
   return c;
 }
 
@@ -125,7 +193,7 @@ export async function openShare(stats: any, streak: number) {
     <div class="ds-share-side">
       <button type="button" class="ds-share-x" data-share="close" title="Close">${X}</button>
       <h2>Share your day</h2>
-      <p>Today's focus, your week and your streak, as a picture. Download it, or copy it straight into a post or chat.</p>
+      <p>Today's focus, your week and your streak on one card, sized for Instagram, X and LinkedIn. Download it, or copy it straight into a post or chat.</p>
       <div class="ds-share-actions">
         <button type="button" class="ds-share-btn primary" data-share="save">${DOWN}<span>Download PNG</span></button>
         <button type="button" class="ds-share-btn" data-share="copy">${COPY}<span>Copy image</span></button>

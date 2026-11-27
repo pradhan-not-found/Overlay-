@@ -112,7 +112,11 @@ function changelog(): Plugin {
   // local history refreshes a saved copy (src/changelog.json, committed); a shallow clone uses that
   // copy, plus any newer sessions it can see.
   const saved = resolve(here, 'src/changelog.json')
+  // A hand-written changelog (src/releases.json) wins when present: clear, professional entries for
+  // the features and fixes that matter, instead of raw commit messages.
+  const curated = resolve(here, 'src/releases.json')
   const story = (): Entry[] => {
+    try { const list = JSON.parse(readFileSync(curated, 'utf8')); if (Array.isArray(list) && list.length) return list } catch { /* none yet */ }
     let shallow = true
     try { shallow = execFileSync('git', ['rev-parse', '--is-shallow-repository'], { cwd: here, encoding: 'utf8' }).trim() === 'true' } catch { /* no git */ }
     const fresh = read()
