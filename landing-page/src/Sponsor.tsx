@@ -167,14 +167,13 @@ export function SponsorPage({ onHome }: { onHome: () => void }) {
             </div>
           )}
         </div>
-        <p className="co-foot">Secure payment by Razorpay · Cards from any country · UPI in India</p>
+        <p className="co-foot">Secure payment by Razorpay</p>
       </aside>
 
       <section className="co-pay">
         <div className="co-panel">
           {step === 'details' && (
             <form onSubmit={toPay} className="sp-form">
-              <div className="sp-steps" aria-label="Step 1 of 2"><i className="on" /><i /></div>
               <label><span>Product name</span><input required maxLength={80} value={d.product} onChange={set('product')} placeholder="Acme Studio" /></label>
               <label><span>Link</span><input required maxLength={200} value={d.link} onChange={set('link')} placeholder="acme.com" inputMode="url" /></label>
               <label><span>Short description <em>{d.description.length}/200</em></span><textarea maxLength={200} rows={2} value={d.description} onChange={set('description')} placeholder="What your product does, in a sentence." /></label>
@@ -193,7 +192,6 @@ export function SponsorPage({ onHome }: { onHome: () => void }) {
 
           {step === 'pay' && (
             <div className="sp-pay">
-              <div className="sp-steps" aria-label="Step 2 of 2"><i className="done" /><i className="on" /></div>
               <div className="sp-summary"><span>{d.product}</span><button type="button" onClick={() => setStep('details')}>Edit</button></div>
               <div className="sp-methods" role="radiogroup" aria-label="Payment method">
                 <button type="button" role="radio" aria-checked={method === 'card'} className={method === 'card' ? 'on' : ''} onClick={() => setMethod('card')}><b>USD · {money(PRICE.card, 'card')}</b><small>Card, any country</small></button>
