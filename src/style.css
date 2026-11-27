@@ -1210,16 +1210,57 @@ kbd { font: 600 10px var(--font); color: var(--muted); padding: 2px 6px; border-
 /* a second agent at work, beside the first */
 .ctx-also { display: inline-flex; margin-left: 4px; padding-left: 6px; border-left: 1px solid rgba(255, 255, 255, 0.14); opacity: 0.85; }
 
-/* ══ Lock In: session length ══ */
-.p-timer .t-top { display: flex; align-items: center; gap: 14px; }
-.t-len { display: inline-flex; align-items: center; gap: 2px; padding: 2px; border-radius: 999px; background: rgba(255, 255, 255, 0.06); transition: opacity 0.25s ease; }
-.t-len.locked { opacity: 0.35; pointer-events: none; }
-.t-len button { height: 22px; min-width: 32px; padding: 0 8px; border: 0; border-radius: 999px; background: transparent; color: rgba(255, 255, 255, 0.6); font: inherit; font-size: 11.5px; font-weight: 600; cursor: pointer; transition: background 0.2s ease, color 0.2s ease; }
-.t-len button:hover { color: #fff; background: rgba(255, 255, 255, 0.08); }
+
+/* ══ Lock In, closed notch ══ */
+#idle-state-timer { gap: 9px; }
+.lk-ring { width: 18px; height: 18px; flex-shrink: 0; display: grid; place-items: center; }
+.lk-ring svg { width: 18px; height: 18px; transform: rotate(-90deg); overflow: visible; }
+.lk-track { fill: none; stroke: rgba(255, 255, 255, 0.12); stroke-width: 2.4; }
+.lk-prog { fill: none; stroke: var(--amber); stroke-width: 2.4; stroke-linecap: round; stroke-dasharray: 100; stroke-dashoffset: 100; transition: stroke-dashoffset 1s linear, stroke 0.3s ease; }
+#idle-state-timer[data-phase='break'] .lk-prog { stroke: #4ade80; }
+#idle-state-timer[data-phase='paused'] .lk-prog { stroke: rgba(255, 255, 255, 0.45); }
+#idle-state-timer .idle-timer-hint { font-size: 15px; font-weight: 600; letter-spacing: -0.01em; color: #fff; font-variant-numeric: tabular-nums; }
+#idle-state-timer[data-phase='paused'] .idle-timer-hint { color: rgba(255, 255, 255, 0.55); }
+.lk-label { font-size: 12px; font-weight: 500; color: rgba(255, 255, 255, 0.5); }
+#idle-state-timer .ibtn { width: 26px; height: 26px; border-radius: 50%; background: rgba(255, 255, 255, 0.07); color: rgba(255, 255, 255, 0.85); transition: background 0.2s ease, color 0.2s ease; }
+#idle-state-timer .ibtn:hover { background: rgba(255, 255, 255, 0.14); color: #fff; }
+#idle-state-timer .ibtn svg { width: 12px; height: 12px; }
+#idle-state-timer .ibtn + .ibtn { margin-left: 2px; }
+
+/* ══ Lock In panel: length picker, running card, week ══ */
+.p-timer { gap: 28px; }
+.t-side { width: 232px; flex-shrink: 0; display: flex; flex-direction: column; gap: 14px; }
+.t-set, .t-run { padding: 14px 14px 12px; border-radius: 16px; background: rgba(255, 255, 255, 0.045); border: 1px solid rgba(255, 255, 255, 0.07); animation: t-card-in 0.35s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+.t-set.hide, .t-run.hide { display: none; }
+@keyframes t-card-in { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+.t-set-head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+.t-set-head span { font-size: 11.5px; font-weight: 500; color: rgba(255, 255, 255, 0.5); }
+.t-set-head b { font-size: 15px; font-weight: 600; letter-spacing: -0.01em; color: #fff; font-variant-numeric: tabular-nums; }
+#t-range { -webkit-appearance: none; appearance: none; width: 100%; height: 4px; margin: 14px 0 12px; border-radius: 999px; background: linear-gradient(90deg, var(--amber) var(--fill, 17%), rgba(255, 255, 255, 0.12) var(--fill, 17%)); outline: none; cursor: pointer; }
+#t-range::-webkit-slider-thumb { -webkit-appearance: none; width: 16px; height: 16px; border-radius: 50%; background: #fff; box-shadow: 0 2px 6px rgba(0, 0, 0, 0.5); transition: transform 0.15s ease; }
+#t-range:active::-webkit-slider-thumb { transform: scale(1.15); }
+.t-len { display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; }
+.t-len button { height: 26px; border: 0; border-radius: 8px; background: rgba(255, 255, 255, 0.05); color: rgba(255, 255, 255, 0.65); font: inherit; font-size: 12px; font-weight: 600; font-variant-numeric: tabular-nums; cursor: pointer; transition: background 0.2s ease, color 0.2s ease; }
+.t-len button:hover { background: rgba(255, 255, 255, 0.1); color: #fff; }
 .t-len button[aria-checked='true'] { background: #fff; color: #0b0b0f; }
-.t-len .t-step { min-width: 22px; padding: 0; font-size: 14px; font-weight: 500; }
-.t-len[data-custom]:not([data-custom=''])::after { content: attr(data-custom); height: 22px; display: inline-flex; align-items: center; padding: 0 8px; border-radius: 999px; background: #fff; color: #0b0b0f; font-size: 11.5px; font-weight: 600; order: 5; }
-.t-len .t-step[data-step='5'] { order: 6; }
+.t-bar { height: 4px; margin-top: 12px; border-radius: 999px; background: rgba(255, 255, 255, 0.1); overflow: hidden; }
+.t-bar i { display: block; height: 100%; width: 0; border-radius: inherit; background: var(--amber); transition: width 1s linear; }
+.t-week { align-items: stretch !important; gap: 8px !important; }
+.t-week-label { font-size: 11.5px !important; font-weight: 500; color: rgba(255, 255, 255, 0.5) !important; }
+.heatmap { display: grid !important; grid-template-columns: repeat(7, 1fr); gap: 6px !important; }
+.wk-col { display: flex; flex-direction: column; align-items: center; gap: 5px; }
+.wk-bar { width: 100%; height: 38px; border-radius: 6px; background: rgba(255, 255, 255, 0.05); display: flex; align-items: flex-end; overflow: hidden; }
+.wk-bar i { display: block; width: 100%; border-radius: 6px; background: rgba(255, 159, 67, 0.55); transition: height 0.4s cubic-bezier(0.2, 0.8, 0.2, 1); }
+.wk-col.today .wk-bar i { background: var(--amber); }
+.wk-col span { font-size: 10.5px; font-weight: 600; color: rgba(255, 255, 255, 0.4); }
+.wk-col.today span { color: #fff; }
 .ring-time { cursor: ns-resize; }
 .ring-time.bump { animation: t-bump 0.28s cubic-bezier(0.2, 0.8, 0.2, 1); }
 @keyframes t-bump { 40% { transform: scale(1.03); } }
+.t-side { width: 240px !important; min-width: 240px; align-items: stretch !important; } .t-side > * { width: 100%; box-sizing: border-box; }
+
+/* screen time: each app with its own icon */
+.st-app > span:first-child { display: flex; align-items: center; gap: 9px; min-width: 0; }
+.st-ico { width: 18px; height: 18px; flex-shrink: 0; border-radius: 5px; object-fit: contain; }
+.st-ico-letter { display: grid; place-items: center; font-size: 10.5px; font-weight: 700; color: #0b0b0f; background: var(--t); font-style: normal; }
+.st-name { font-style: normal; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

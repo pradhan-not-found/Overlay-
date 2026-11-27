@@ -107,33 +107,17 @@ function loadSessions() {
 function renderHeatmap() {
   const container = document.getElementById('t-heatmap');
   if (!container) return;
-  
-  container.innerHTML = '';
   const today = new Date();
-  
-  // Render last 7 days
+  const days: { key: string; letter: string; mins: number; count: number; today: boolean }[] = [];
   for (let i = 6; i >= 0; i--) {
     const d = new Date(today);
     d.setDate(today.getDate() - i);
-    const y = d.getFullYear();
-    const m = String(d.getMonth() + 1).padStart(2, '0');
-    const dd = String(d.getDate()).padStart(2, '0');
-    const key = `${y}-${m}-${dd}`;
-    
-    const count = globalStats[key]?.count || 0;
-    
-    const box = document.createElement('div');
-    box.className = 'heat-box';
-    box.title = `${key}: ${count} sessions`;
-    
-    if (count === 0) box.style.background = 'rgba(255,255,255,0.07)';
-    else if (count < 3) box.style.background = '#16224f';
-    else if (count < 5) box.style.background = '#1d3aa6';
-    else if (count < 7) box.style.background = '#3d6bff';
-    else box.style.background = '#8fa8ff';
-    
-    container.appendChild(box);
+    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    const st = globalStats[key];
+    days.push({ key, letter: 'SMTWTFS'[d.getDay()], mins: Math.round((st?.totalSecs || 0) / 60), count: st?.count || 0, today: i === 0 });
   }
+  const top = Math.max(30, ...days.map((d) => d.mins));
+  container.innerHTML = days.map((d) => `<div class="wk-col${d.today ? ' today' : ''}" title="${d.key}: ${d.mins} min focused, ${d.count} session${d.count === 1 ? '' : 's'}"><div class="wk-bar"><i style="height:${d.mins ? Math.max(8, (d.mins / top) * 100) : 0}%"></i></div><span>${d.letter}</span></div>`).join('');
 }
 
 
@@ -266,9 +250,9 @@ document.getElementById('app')!.innerHTML = `
     </div>
 
     <div class="idle-state" id="idle-state-timer" style="display:none">
-      <span class="focus-dot"></span>
-      <span class="idle-label">Lock In</span>
+      <span class="lk-ring" aria-hidden="true"><svg viewBox="0 0 20 20"><circle class="lk-track" cx="10" cy="10" r="8"/><circle class="lk-prog" id="lk-prog" cx="10" cy="10" r="8" pathLength="100"/></svg></span>
       <span class="idle-timer-hint" id="idle-timer-hint"></span>
+      <span class="lk-label" id="lk-label">Focus</span>
       <span class="idle-spacer"></span>
       <button class="ibtn ibtn-sm" id="btn-idle-timer-toggle" title="Pause or resume">${playSvgRaw}</button>
       <button class="ibtn ibtn-sm" id="btn-idle-notch-expand" title="Open focus screen">${expandSvgRaw}</button>
@@ -343,14 +327,7 @@ document.getElementById('app')!.innerHTML = `
 
       <section class="space p-timer" data-space="focus">
         <div class="t-main">
-          <div class="t-top">
-            <p class="p-label" id="t-label">Lock In</p>
-            <div class="t-len" id="t-len" role="radiogroup" aria-label="Session length">
-              <button type="button" class="t-step" data-step="-5" title="5 minutes less" aria-label="5 minutes less">&minus;</button>
-              ${[15, 25, 45, 60].map((m) => `<button type="button" role="radio" data-min="${m}">${m}m</button>`).join('')}
-              <button type="button" class="t-step" data-step="5" title="5 minutes more" aria-label="5 minutes more">+</button>
-            </div>
-          </div>
+          <p class="p-label" id="t-label">Lock In</p>
           <span class="ring-time" id="ring-time">25:00</span>
           <div class="t-stats">
             <span class="chip" id="stat-sessions">0 sessions today</span>
@@ -362,7 +339,20 @@ document.getElementById('app')!.innerHTML = `
             <button class="btn btn-g btn-icon" id="btn-exp-notch-expand" title="Open focus screen">${expandSvgRaw}</button>
           </div>
         </div>
-        <div class="t-week"><span class="t-week-label">Last 7 days</span><div id="t-heatmap" class="heatmap"></div></div>
+        <div class="t-side">
+          <div class="t-set" id="t-set">
+            <div class="t-set-head"><span>Session length</span><b id="t-set-val">25 min</b></div>
+            <input type="range" id="t-range" min="5" max="120" step="5" value="25" aria-label="Session length in minutes" />
+            <div class="t-len" id="t-len" role="radiogroup" aria-label="Quick lengths">
+              ${[15, 25, 45, 60, 90].map((m) => `<button type="button" role="radio" data-min="${m}">${m}</button>`).join('')}
+            </div>
+          </div>
+          <div class="t-run" id="t-run">
+            <div class="t-set-head"><span id="t-run-label">Ends at</span><b id="t-ends">--:--</b></div>
+            <div class="t-bar"><i id="t-bar-fill"></i></div>
+          </div>
+          <div class="t-week"><span class="t-week-label">Last 7 days</span><div id="t-heatmap" class="heatmap"></div></div>
+        </div>
       </section>
 
       <section class="space p-right" data-space="today">
@@ -639,8 +629,23 @@ function updateStats() {
   }
 }
 
+// the closed notch's Lock In: ring fills as the session goes, the time, and Focus / Break / Paused
+function paintIdleTimer() {
+  const total = timerPhase === 'break' ? BREAK_SECS : FOCUS_SECS;
+  const done = total > 0 ? Math.min(1, Math.max(0, 1 - timeLeft / total)) : 0;
+  const prog = document.getElementById('lk-prog');
+  if (prog) prog.style.strokeDashoffset = String(100 - done * 100);
+  const label = document.getElementById('lk-label');
+  if (label) label.textContent = timerPhase === 'break' ? 'Break' : timerPhase === 'paused' ? 'Paused' : 'Focus';
+  const box = document.getElementById('idle-state-timer');
+  if (box) box.dataset.phase = timerPhase;
+  if (timerPhase !== 'off') idleTimerHint.textContent = fmt(Math.max(0, timeLeft));
+}
+
 function updateIdleView() {
   if (!idleStateDefault) return;
+  paintIdleTimer();
+  if (typeof paintRun === 'function') paintRun();
   idleStateDefault.style.display = 'none';
   idleStateMedia.style.display = 'none';
   idleStateTimer.style.display = 'none';
@@ -1005,20 +1010,41 @@ btnLockin.addEventListener('click', e => {
 const lenBox = document.getElementById('t-len')!;
 function paintLen() {
   const m = Math.round(FOCUS_SECS / 60);
-  lenBox.classList.toggle('locked', timerPhase !== 'off');
+  const running = timerPhase !== 'off';
+  document.getElementById('t-set')?.classList.toggle('hide', running);
+  document.getElementById('t-run')?.classList.toggle('hide', !running);
   lenBox.querySelectorAll<HTMLButtonElement>('[data-min]').forEach((b) => b.setAttribute('aria-checked', String(Number(b.dataset.min) === m)));
-  const custom = ![15, 25, 45, 60].includes(m);
-  lenBox.dataset.custom = custom ? `${m}m` : '';
+  const range = document.getElementById('t-range') as HTMLInputElement | null;
+  if (range) { range.value = String(m); range.style.setProperty('--fill', `${((m - 5) / 115) * 100}%`); }
+  const val = document.getElementById('t-set-val');
+  if (val) val.textContent = m >= 60 ? `${Math.floor(m / 60)} h${m % 60 ? ` ${m % 60} min` : ''}` : `${m} min`;
+  paintRun();
+}
+// while a session runs: when it ends, and how far along it is
+function paintRun() {
+  if (timerPhase === 'off') return;
+  const total = timerPhase === 'break' ? BREAK_SECS : FOCUS_SECS;
+  const lab = document.getElementById('t-run-label');
+  const ends = document.getElementById('t-ends');
+  const fill = document.getElementById('t-bar-fill');
+  if (lab) lab.textContent = timerPhase === 'paused' ? 'Paused' : timerPhase === 'break' ? 'Break ends at' : 'Ends at';
+  if (ends) {
+    const at = new Date(Date.now() + Math.max(0, timeLeft) * 1000);
+    ends.textContent = timerPhase === 'paused' ? `${fmt(Math.max(0, timeLeft))} left` : at.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+  }
+  if (fill) fill.style.width = `${Math.min(100, Math.max(0, (1 - timeLeft / total) * 100))}%`;
 }
 function setLength(min: number) {
   if (timerPhase !== 'off') return; // never mid-session
   FOCUS_SECS = Math.min(120, Math.max(5, Math.round(min))) * 60;
   timeLeft = FOCUS_SECS;
   ringTime.textContent = fmt(FOCUS_SECS);
-  ringTime.classList.remove('bump'); void ringTime.offsetWidth; ringTime.classList.add('bump');
+  if (!(document.activeElement as HTMLElement | null)?.matches?.('#t-range')) { ringTime.classList.remove('bump'); void ringTime.offsetWidth; ringTime.classList.add('bump'); }
   send('set-setting', 'focusMinutes', String(FOCUS_SECS / 60));
   paintLen();
 }
+document.getElementById('t-range')?.addEventListener('input', (e) => { e.stopPropagation(); setLength(Number((e.target as HTMLInputElement).value)); });
+document.getElementById('t-range')?.addEventListener('pointerdown', (e) => e.stopPropagation());
 lenBox.addEventListener('click', (e) => {
   e.stopPropagation();
   const b = (e.target as HTMLElement).closest<HTMLButtonElement>('button');
@@ -1163,7 +1189,8 @@ if (ipc) {
     if (!updateChip || !status) return;
     const ev = status.event;
     // only feature releases show the badge; fixes come in without a sign
-    const show = !!status.feature && (ev === 'available' || ev === 'downloading' || ev === 'downloaded');
+    // updates are silent: the badge only appears once one is ready, for anyone who wants it now
+    const show = ev === 'downloaded';
     updateChip.classList.toggle('show', show);
     updateChip.classList.toggle('ready', ev === 'downloaded');
     updateChip.style.setProperty('--p', String(ev === 'downloaded' ? 100 : ev === 'downloading' ? status.percent ?? 0 : 6));

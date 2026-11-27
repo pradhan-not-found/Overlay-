@@ -289,8 +289,7 @@ export function mountContext(opts: { invoke: Invoke; send: Send; on: On; openSpa
     // fixes stay silent; a feature release asks once, with a Download button
     if (!s?.feature) return;
     const v = s.version ? ` ${s.version}` : '';
-    if (s.event === 'available') say(`Overlay${v} has new features · Download`, I.update, 900, 'update', 'download');
-    else if (s.event === 'downloaded') say(`Overlay${v} is ready · Restart to update`, I.update, 900, 'update', 'install');
+    void v; // updates are silent; What's new shows after one installs
   });
   setInterval(loadSnap, 60000);
   const loadActivity = () => invoke('count:active').then((a) => {

@@ -266,8 +266,14 @@ export function mountDesk(opts: { invoke: Invoke; send: Send }) {
   agents.addEventListener('click', (e) => { if ((e.target as HTMLElement).closest('[data-agents-dash]')) { e.stopPropagation(); send('open-dashboard', { nav: 'ai' }); } });
 
   const loadScreen = () => {
-    invoke('desk:screen').then((data: { apps?: Record<string, number>; hour?: Record<string, number> }) => {
+    invoke('desk:screen').then((data: { apps?: Record<string, number>; hour?: Record<string, number>; meta?: Record<string, { label: string; icon: string }> }) => {
+      const label = (n: string) => data?.meta?.[n]?.label || n;
+      const icon = (n: string, k: number) => {
+        const src = data?.meta?.[n]?.icon;
+        return src ? `<img class="st-ico" src="${src}" alt=""/>` : `<span class="st-ico st-ico-letter" style="--t:${tint[k] || '#64748b'}">${esc(label(n).charAt(0).toUpperCase())}</span>`;
+      };
       const apps = Object.entries(data?.apps || {}).sort((a, b) => b[1] - a[1]);
+      const tint = ['#38bdf8', '#a78bfa', '#34d399', '#fbbf24', '#f472b6'];
       const total = apps.reduce((n, [, sec]) => n + sec, 0);
       const hours = Array.from({ length: 24 }, (_, h) => data?.hour?.[String(h)] || 0);
       const peakH = Math.max(1, ...hours);
@@ -275,12 +281,11 @@ export function mountDesk(opts: { invoke: Invoke; send: Send }) {
       const top = apps.slice(0, 5);
       const max = Math.max(1, ...top.map(([, sec]) => sec));
       const hm = (sec: number) => { const m = Math.round(sec / 60); return m >= 60 ? `${Math.floor(m / 60)}h ${m % 60}m` : `${m}m`; };
-      const tint = ['#38bdf8', '#a78bfa', '#34d399', '#fbbf24', '#f472b6'];
       screen.innerHTML = `<div class="kit st">
-        <div class="st-top"><div><b>${hm(total)}</b><small>Screen time today</small></div><div class="st-legend">${top.slice(0, 3).map(([n], k) => `<span><i style="background:${tint[k]}"></i>${esc(n)}</span>`).join('')}</div></div>
+        <div class="st-top"><div><b>${hm(total)}</b><small>Screen time today</small></div><div class="st-legend">${top.slice(0, 3).map(([n], k) => `<span><i style="background:${tint[k]}"></i>${esc(label(n))}</span>`).join('')}</div></div>
         <div class="st-hours">${hours.map((sec, h) => `<span class="${h === now ? 'now' : ''}" title="${h}:00 · ${hm(sec)}"><i style="height:${sec ? Math.max(6, (sec / peakH) * 100) : 0}%"></i></span>`).join('')}</div>
         <div class="st-axis"><span>12 AM</span><span>6 AM</span><span>12 PM</span><span>6 PM</span><span>11 PM</span></div>
-        <div class="st-apps">${top.map(([n, sec], k) => `<div class="st-app"><span>${esc(n)}</span><i><em style="width:${(sec / max) * 100}%;background:${tint[k]}"></em></i><b>${hm(sec)}</b></div>`).join('') || '<p class="kit-empty">Time counts from the app in front, every 20 seconds.</p>'}</div>
+        <div class="st-apps">${top.map(([n, sec], k) => `<div class="st-app"><span>${icon(n, k)}<em class="st-name">${esc(label(n))}</em></span><i><em style="width:${(sec / max) * 100}%;background:${tint[k]}"></em></i><b>${hm(sec)}</b></div>`).join('') || '<p class="kit-empty">Time counts from the app in front, every 20 seconds.</p>'}</div>
       </div>`;
     });
   };

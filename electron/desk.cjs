@@ -1,6 +1,6 @@
 'use strict';
 
-const { ipcMain, desktopCapturer, dialog, shell, safeStorage, session, nativeImage } = require('electron');
+const { app, ipcMain, desktopCapturer, dialog, shell, safeStorage, session, nativeImage } = require('electron');
 const { execFile } = require('child_process');
 const fs = require('fs');
 const os = require('os');
@@ -44,9 +44,38 @@ Add-Type -Namespace OvFg -Name Win -MemberDefinition $sig
 $hwnd = [OvFg.Win]::GetForegroundWindow()
 $proc = [uint32]0
 [void][OvFg.Win]::GetWindowThreadProcessId($hwnd, [ref]$proc)
-if ($proc -eq 0) { '' } else { (Get-Process -Id $proc -ErrorAction SilentlyContinue).ProcessName }
+if ($proc -eq 0) { '' } else { $p = Get-Process -Id $proc -ErrorAction SilentlyContinue; if ($p) { "$($p.ProcessName)|$($p.Path)|$($p.Description)" } else { '' } }
 `);
-  return name.split(/\r?\n/).pop().trim();
+  const [proc, exe, desc] = name.split(/\r?\n/).pop().trim().split('|');
+  if (proc && exe) rememberApp(proc, exe, desc);
+  return proc || '';
+}
+
+// What each tracked process is called and where it lives, so the list shows real names and icons.
+const APP_KEY = 'screenapps';
+let appInfo = null;
+function apps() {
+  if (!appInfo) { try { appInfo = JSON.parse(db.getSetting(APP_KEY, '') || '{}') || {}; } catch { appInfo = {}; } }
+  return appInfo;
+}
+function rememberApp(proc, exe, desc) {
+  const all = apps();
+  const label = (desc || '').trim();
+  if (all[proc] && all[proc].exe === exe && all[proc].label === label) return;
+  all[proc] = { exe, label };
+  db.setSetting(APP_KEY, JSON.stringify(all));
+}
+// 'SnippingTool' -> 'Snipping Tool', 'chrome' -> 'Chrome'
+const tidyName = (n) => String(n).replace(/([a-z])([A-Z])/g, '$1 $2').replace(/[_-]+/g, ' ').replace(/^./, (c) => c.toUpperCase());
+const NICE = { explorer: 'File Explorer', ApplicationFrameHost: 'Windows apps', msedge: 'Microsoft Edge', Code: 'VS Code', WindowsTerminal: 'Terminal' };
+const iconCache = new Map();
+async function iconFor(exe) {
+  if (!exe) return '';
+  if (iconCache.has(exe)) return iconCache.get(exe);
+  let url = '';
+  try { const img = await app.getFileIcon(exe, { size: 'normal' }); url = img.isEmpty() ? '' : img.toDataURL(); } catch { /* no icon */ }
+  iconCache.set(exe, url);
+  return url;
 }
 
 function addScreen(name, secs) {
@@ -105,9 +134,19 @@ function init() {
   setInterval(sample, 20_000);
   setTimeout(sample, 4000);
 
-  ipcMain.handle('desk:screen', () => {
+  ipcMain.handle('desk:screen', async () => {
     const raw = db.getSetting(`screentime:${dayKey()}`, '');
-    try { return raw ? JSON.parse(raw) : { apps: {}, hour: {} }; } catch { return { apps: {}, hour: {} }; }
+    let data = { apps: {}, hour: {} };
+    try { if (raw) data = JSON.parse(raw); } catch { /* fresh day */ }
+    // a proper name and the app's own icon for each one
+    const meta = {};
+    const known = apps();
+    await Promise.all(Object.keys(data.apps || {}).map(async (proc) => {
+      const k = known[proc] || {};
+      const label = NICE[proc] || (k.label && k.label.length <= 32 ? k.label : '') || tidyName(proc);
+      meta[proc] = { label, icon: await iconFor(k.exe) };
+    }));
+    return { ...data, meta };
   });
 
   ipcMain.handle('desk:shot', async () => {

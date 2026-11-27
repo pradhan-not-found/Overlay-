@@ -112,13 +112,8 @@ function initAutoUpdater() {
     // changed) is offered with a Download button; the download then runs in the background.
     const feature = isFeatureRelease(info.version);
     sendUpdateStatus('available', { version: info.version, feature, releaseNotes: info.releaseNotes || '' });
-    if (!feature) { startDownload(); return; }
-    try {
-      if (db.getSetting('updateToldFor', '') !== info.version) {
-        db.setSetting('updateToldFor', info.version);
-        notify(`Overlay ${info.version} has new features`, 'Click to download it in the background.', () => startDownload());
-      }
-    } catch {}
+    // every update downloads quietly; the notch says What's new after it installs
+    startDownload();
   });
 
   autoUpdater.on('update-not-available', (info) => {
@@ -135,8 +130,7 @@ function initAutoUpdater() {
     console.log('[Updater] Update downloaded:', info.version);
     const feature = isFeatureRelease(info.version);
     sendUpdateStatus('downloaded', { version: info.version, feature });
-    // fixes install without a word; a feature release says it is ready
-    if (feature) notify(`Overlay ${info.version} is ready`, 'It installs quietly the next time you step away, or click to update now.', () => installUpdate());
+    // no notification: it installs by itself when you step away or quit
     // Install on its own once the PC has been idle for five minutes: silent, and Overlay opens again by itself.
     clearInterval(idleInstall);
     idleInstall = setInterval(() => {
@@ -718,8 +712,19 @@ ipcMain.on('save-config', (_e, cfg) => {
 const APP_ID = 'com.pradhan.overlay';
 app.setName('Overlay');
 
+function registerToastName() {
+  try {
+    const key = `HKCU\\Software\\Classes\\AppUserModelId\\${APP_ID}`;
+    const icon = path.join(app.getPath('userData'), 'toast-icon.png');
+    try { fs.writeFileSync(icon, fs.readFileSync(path.join(__dirname, '../build/icon.png'))); } catch {}
+    const { execFile } = require('child_process');
+    execFile('reg', ['add', key, '/v', 'DisplayName', '/t', 'REG_SZ', '/d', 'Overlay', '/f'], () => {});
+    if (fs.existsSync(icon)) execFile('reg', ['add', key, '/v', 'IconUri', '/t', 'REG_SZ', '/d', icon, '/f'], () => {});
+  } catch {}
+}
 function registerDevIdentity() {
   if (process.platform !== 'win32') return;
+  registerToastName();
   try {
     const link = path.join(app.getPath('appData'), 'Microsoft', 'Windows', 'Start Menu', 'Programs', 'Overlay.lnk');
     // The installer makes this shortcut; a copy run straight from a folder makes its own.
