@@ -175,11 +175,18 @@ function paintUpdateBadge() {
 }
 export const SETTINGS_PAGES = ['connections', 'general', 'notch', 'media', 'shortcuts', 'about', 'account'];
 
+/** A row of choices, like the notch's own length picker. */
+function seg(key: string, values: number[], current: number, unit: string) {
+  return `<div class="ds-seg" role="radiogroup" data-seg="${key}">${values.map((v) => `<button type="button" role="radio" aria-checked="${v === current}" data-seg-val="${v}"><b>${v}</b><small>${unit}</small></button>`).join('')}</div>`;
+}
 async function paintGeneral(el: HTMLElement) {
   const login = !!(await invoke('login-item:get'));
   el.innerHTML = `<div class="ds-page">${head('General', 'How Overlay starts and how long a focus session runs.')}
     ${card('Startup', row('Launch at startup', 'Open Overlay every time you sign in to Windows. Turn it off and it stays off.', sw(login, 'data-login')))}
-    ${card('Focus', row('Session length', 'Used by Lock In in the notch.', `<select class="ds-select" data-cfg-num="pomodoroDuration">${[15, 25, 45, 50, 60, 90].map((m) => `<option value="${m}"${(config.pomodoroDuration || 25) === m ? ' selected' : ''}>${m} min</option>`).join('')}</select>`))}
+    ${card('Lock In', [
+      `<div class="ds-row ds-row-stack"><div class="ds-row-text"><b>Session length</b><span>How long one focus session runs. You can also change it in the notch.</span></div>${seg('pomodoroDuration', [15, 25, 45, 60, 90], Number(config.pomodoroDuration) || 25, 'min')}</div>`,
+      `<div class="ds-row ds-row-stack"><div class="ds-row-text"><b>Break</b><span>The short rest after each session.</span></div>${seg('breakMinutes', [5, 10, 15], Number(config.breakMinutes) || 5, 'min')}</div>`,
+    ].join(''))}
   </div>`;
 }
 
@@ -385,6 +392,15 @@ export async function mountSettings() {
     if (cfgSw) { const k = cfgSw.dataset.cfg!; const cur = config[k] === undefined ? cfgSw.dataset.cfgDef !== '0' : config[k] !== false; config[k] = !cur; saveConfig(); repaintActive(); return; }
     const acc = t.closest<HTMLElement>('[data-accent]');
     if (acc) { setAccent(acc.dataset.accent!); return; }
+    const segBtn = t.closest<HTMLElement>('[data-seg-val]');
+    if (segBtn) {
+      const key = segBtn.closest<HTMLElement>('[data-seg]')!.dataset.seg!;
+      const v = Number(segBtn.dataset.segVal);
+      config[key] = v; saveConfig();
+      if (key === 'pomodoroDuration') send('set-setting', 'focusMinutes', String(v));
+      segBtn.parentElement!.querySelectorAll('[data-seg-val]').forEach((b) => b.setAttribute('aria-checked', String(b === segBtn)));
+      return;
+    }
     if (t.closest('[data-accent-reset]')) { setAccent(DEFAULT_ACCENT); return; }
     if (t.closest('.ds-switch[data-login]')) { await invoke('login-item:set', !t.closest('.ds-switch')!.classList.contains('on')); repaintActive(); return; }
     const del = t.closest<HTMLElement>('[data-sc-del]');

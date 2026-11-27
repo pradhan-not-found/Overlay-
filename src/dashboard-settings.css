@@ -234,3 +234,12 @@ label.ds-btn { display: inline-flex; align-items: center; }
 .ds-swatch.on { box-shadow: 0 0 0 2px var(--bg-card, #141414), 0 0 0 4px var(--c) !important; }
 .ds-swatch.custom.on { background: var(--c); }
 .ds-swatch.custom.on::before { content: ''; position: absolute; inset: -6px; border-radius: 50%; background: conic-gradient(#ff5a4e, #facc15, #32d27a, #14b8a6, #3d6bff, #8b5cf6, #ec4899, #ff5a4e); z-index: -1; -webkit-mask: radial-gradient(circle, transparent 18px, #000 19px); mask: radial-gradient(circle, transparent 18px, #000 19px); }
+
+/* segmented choices (Lock In length, break) */
+.ds-row-stack { flex-direction: column; align-items: stretch !important; gap: 12px; }
+.ds-seg { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 6px; padding: 4px; border-radius: 12px; background: rgba(255, 255, 255, 0.04); border: 1px solid rgba(255, 255, 255, 0.06); }
+.ds-seg button { display: flex; align-items: baseline; justify-content: center; gap: 3px; height: 40px; border: 0; border-radius: 9px; background: transparent; color: rgba(255, 255, 255, 0.6); font: inherit; cursor: pointer; transition: background 0.2s ease, color 0.2s ease, box-shadow 0.2s ease; }
+.ds-seg button b { font-size: 15px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.ds-seg button small { font-size: 11.5px; font-weight: 500; opacity: 0.7; }
+.ds-seg button:hover { background: rgba(255, 255, 255, 0.06); color: #fff; }
+.ds-seg button[aria-checked='true'] { background: var(--blue); color: #fff; box-shadow: 0 6px 16px -8px var(--blue); }

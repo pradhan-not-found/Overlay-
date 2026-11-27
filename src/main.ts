@@ -82,7 +82,7 @@ let sessionCountToday = 0;
 let totalFocusSecsToday = 0;
 
 let FOCUS_SECS = 25 * 60;
-const BREAK_SECS =  5 * 60;
+let BREAK_SECS =  5 * 60;
 
 let globalStats: Record<string, { count: number, totalSecs: number }> = {};
 
@@ -107,6 +107,7 @@ function loadSessions() {
     
     ipc.invoke('get-config').then((cfg: any) => {
       renderShortcuts(cfg?.shortcuts || []);
+      if (Number(cfg?.breakMinutes) >= 1) BREAK_SECS = Math.min(30, Number(cfg.breakMinutes)) * 60;
     }).catch(() => {});
   }
 }
@@ -209,8 +210,10 @@ loadSessions();
 
 if (ipc) {
   ipc.on('widget-config', (_e: any, cfg: any) => {
-    if (cfg && cfg.pomodoroDuration) {
-      const newFocus = cfg.pomodoroDuration * 60;
+    if (cfg && Number(cfg.breakMinutes) >= 1) BREAK_SECS = Math.min(30, Number(cfg.breakMinutes)) * 60;
+    // never change the length mid-session
+    if (cfg && cfg.pomodoroDuration && timerPhase === 'off') {
+      const newFocus = Math.min(120, Math.max(5, Number(cfg.pomodoroDuration))) * 60;
       if (FOCUS_SECS !== newFocus) {
         FOCUS_SECS = newFocus;
         if (timerPhase === 'off') {
@@ -222,6 +225,7 @@ if (ipc) {
             ring.textContent = `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
           }
         }
+        if (typeof paintLen === 'function') paintLen();
       }
     }
   });
@@ -1098,6 +1102,7 @@ function setLength(min: number) {
   ringTime.textContent = fmt(FOCUS_SECS);
   if (!(document.activeElement as HTMLElement | null)?.matches?.('#t-range')) { ringTime.classList.remove('bump'); void ringTime.offsetWidth; ringTime.classList.add('bump'); }
   send('set-setting', 'focusMinutes', String(FOCUS_SECS / 60));
+  send('save-config', { pomodoroDuration: FOCUS_SECS / 60 });
   paintLen();
 }
 document.getElementById('t-range')?.addEventListener('input', (e) => { e.stopPropagation(); setLength(Number((e.target as HTMLInputElement).value)); });
