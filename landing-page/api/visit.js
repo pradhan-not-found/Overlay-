@@ -2,7 +2,7 @@
 // the country Vercel reports, the device type and the referring site. Nothing personal.
 import { country, jsonBody, sbRpc } from './_lib.js';
 
-const PAGES = new Set(['/', '/features', '/pricing', '/changelog', '/privacy', '/terms', '/sponsor']);
+const PAGES = new Set(['/', '/features', '/pricing', '/changelog', '/privacy', '/terms', '/sponsor', '/sponsors']);
 
 export default async function handler(req, res) {
   res.setHeader('Cache-Control', 'no-store');

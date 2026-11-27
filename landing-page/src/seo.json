@@ -40,6 +40,11 @@
       "path": "/sponsor",
       "title": "Sponsor Overlay — put your product at the top of the screen",
       "description": "Sponsor Overlay for Windows: your logo and link on the Overlay website for life, from one payment of $49.99 by card or ₹4,199 by UPI. Secure checkout by Razorpay."
+    },
+    "sponsors": {
+      "path": "/sponsors",
+      "title": "Sponsors — Overlay, the notch for Windows",
+      "description": "Sponsor Overlay for Windows: Supporter $49.99, Partner $99 or Featured $199, once. Your logo and link on the Overlay website, with secure payment by card or UPI."
     }
   },
   "faq": [

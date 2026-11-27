@@ -8,7 +8,7 @@ import { readFileSync } from 'node:fs'
 
 const here = dirname(fileURLToPath(import.meta.url))
 
-type Entry = { date: string; title: string; points: string[]; version: string }
+type Entry = { date: string; title: string; points: string[]; version: string; size: 'launch' | 'big' | 'small'; count: number }
 
 /**
  * The changelog page is built from the app's commit history at build time,
@@ -19,25 +19,46 @@ function changelog(): Plugin {
   const id = 'virtual:changelog'
   // The release a change first shipped in; newer changes carry the app's current version.
   const current = (() => { try { return JSON.parse(readFileSync(resolve(here, '../package.json'), 'utf8')).version as string } catch { return 'Beta' } })()
-  const shipped = (hash: string) => {
+  // Which release each commit first shipped in, worked out once from the tags.
+  const releases = (cwd: string) => {
+    const of = new Map<string, string>()
     try {
-      const t = execFileSync('git', ['describe', '--tags', '--contains', hash], { cwd: resolve(here, '..'), encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim()
-      return t.replace(/[~^].*$/, '').replace(/^v/, '') || current
-    } catch {
-      return current
-    }
+      const tags = execFileSync('git', ['tag', '--sort=creatordate'], { cwd, encoding: 'utf8' }).split('\n').map((t) => t.trim()).filter(Boolean)
+      for (const tag of tags) {
+        const revs = execFileSync('git', ['rev-list', tag], { cwd, encoding: 'utf8', maxBuffer: 8_000_000 }).split('\n').filter(Boolean)
+        for (const h of revs) if (!of.has(h)) of.set(h, tag.replace(/^v/, ''))
+      }
+    } catch { /* no tags yet */ }
+    return of
   }
+
+  /**
+   * The whole story, from the first commit: commits are grouped into working sessions (a gap of more
+   * than 90 minutes starts a new one), each with a date, a headline, what changed and the release it
+   * shipped in. Busy sessions and releases get a large picture, the rest a small one, and the very
+   * first is the launch.
+   */
   const read = (): Entry[] => {
     try {
-      const raw = execFileSync('git', ['log', '--no-merges', '-n', '80', '--date=short', '--pretty=format:%ad%x1f%s%x1f%b%x1f%h%x1e'], {
-        cwd: resolve(here, '..'),
-        encoding: 'utf8',
-        maxBuffer: 4_000_000,
-      })
-      // Leave out anything internal: hosting, tooling, file names and code.
-      const hidden = /github|youtube|cursor|co-authored|claude\.com|repo|\.cjs|\.ts\b|\.md\b|landing|electron|webutils|openpath|file\.path|\beval\b|[a-z]\.[a-z]+\(|\b[a-z]+[A-Z][a-zA-Z]+\b/
-      return raw.split('\x1e').map((r) => r.trim()).filter(Boolean).map((r) => {
-        const [date, title, body, hash] = r.split('\x1f')
+      const cwd = resolve(here, '..')
+      const raw = execFileSync('git', ['log', '--no-merges', '--reverse', '--date=iso-strict', '--pretty=format:%H%x1f%ad%x1f%s%x1f%b%x1e'], { cwd, encoding: 'utf8', maxBuffer: 16_000_000 })
+      const shippedIn = releases(cwd)
+      // Leave out anything internal: hosting, tooling, file names, keys and code.
+      const hidden = /github|youtube|cursor agent|co-authored|claude\.com|\brepo|\.cjs|\.ts\b|\.md\b|webutils|openpath|file\.path|\beval\b|[a-z]\.[a-z]+\(|vercel|rewrite|workflow|runner|powershell|\bnpm\b|electron-builder|typescript|tsconfig|script url|apps script|\btoken\b|secret|\benv\b|gitignore|lockfile|merge branch|^wip\b|revert|\/api\/|^overlay \d|^\(?\d+\.\d+\.\d+\)?$/i
+      // camelCase names are code; checked case-sensitively
+      const code = /\b[a-z]+[A-Z][a-zA-Z]+\b/
+      const isHidden = (t: string) => hidden.test(t) || code.test(t)
+      const tidy = (t: string) => {
+        let s = t.trim().replace(/\.$/, '')
+          .replace(/^(feat|fix|style|chore|refactor|docs|perf|ui|build)(\([^)]*\))?\s*:\s*/i, '')
+          .replace(/^(website|app|overlay|landing|notch)\s*:\s*/i, (m) => (/notch/i.test(m) ? 'Notch: ' : ''))
+          .replace(/\s*Co-Authored-By:.*$/is, '').replace(/\s*Built with npm run build.*$/is, '').replace(/\s*\((?:a later|the old)[^)]*\)/gi, '')
+        s = s.replace(/\s*\(\d+\.\d+\.\d+\)$/, '').replace(/\s+Build$/, '').replace(/^./, (c) => c.toUpperCase())
+        return s
+      }
+      type C = { at: number; date: string; title: string; points: string[]; version: string }
+      const commits: C[] = raw.split('\x1e').map((r) => r.trim()).filter(Boolean).map((r) => {
+        const [hash, iso, title, body] = r.split('\x1f')
         const points: string[] = []
         let cur = ''
         for (const line of (body || '').split('\n')) {
@@ -45,11 +66,44 @@ function changelog(): Plugin {
           else if (cur && line.trim()) cur += ' ' + line.trim()
         }
         if (cur) points.push(cur)
-        // Drop how a change was checked, and anything after the sign-off.
-        const clean = (t: string) => t.replace(/\s*Co-Authored-By:.*$/is, '').replace(/\s*Built with npm run build.*$/is, '').replace(/\s*\((?:a later|the old)[^)]*\)/gi, '').trim()
-        const version = shipped(hash)
-        return { version, date, title: title.trim().replace(/\.$/, '').replace(/^(website|app|overlay)\s*:\s*/i, '').replace(/^./, (ch) => ch.toUpperCase()), points: points.map(clean).filter((p) => p && !hidden.test(p)).slice(0, 5) }
-      }).filter((e) => !/^landing|^build\b|vercel|rewrite|^ci:|powershell|workflow|runner|\bnpm\b|electron-builder|^fix:|^feat:|^chore|^style|^revert|^refactor|^docs|^test|^ci\b|^wip|^merge|typescript|download|filename|waitlist|for build|beta access|beta tag|navbar|header|repos/i.test(e.title) && !hidden.test(e.title))
+        return { at: Date.parse(iso), date: iso.slice(0, 10), title: tidy(title), points: points.map(tidy), version: shippedIn.get(hash) || current }
+      })
+
+      // Working sessions
+      const sessions: C[][] = []
+      for (const c of commits) {
+        const last = sessions[sessions.length - 1]
+        // a new session after 45 quiet minutes, on a new day, or once one holds 8 changes
+        if (last && c.at - last[last.length - 1].at < 45 * 60_000 && c.date === last[0].date && last.length < 8) last.push(c)
+        else sessions.push([c])
+      }
+
+      const entries: Entry[] = []
+      sessions.forEach((group, n) => {
+        const keep = group.filter((c) => c.title && !isHidden(c.title) && !/^initial commit$/i.test(c.title))
+        if (!keep.length && n !== 0) return
+        // the headline: the commit that says the most about this session
+        const lead = [...keep].sort((a, b) => b.points.length - a.points.length || b.title.length - a.title.length)[0]
+        const lines = [
+          ...keep.filter((c) => c !== lead).map((c) => c.title),
+          ...(lead ? lead.points : []),
+        ].filter((p) => p && !isHidden(p))
+        const seen = new Set<string>()
+        const points = lines.filter((p) => { const k = p.toLowerCase().slice(0, 40); if (seen.has(k)) return false; seen.add(k); return true }).slice(0, 8)
+        const first = n === 0
+        const version = group[group.length - 1].version
+        const released = n > 0 && sessions[n - 1][sessions[n - 1].length - 1].version !== version
+        entries.push({
+          date: group[0].date,
+          title: first ? 'Overlay begins' : (lead?.title || 'Improvements'),
+          points: first ? ['The first build of Overlay: a notch at the top of the Windows screen, its logo and a landing page.', ...points].slice(0, 6) : points,
+          version,
+          // a large picture for releases and the fullest sessions; a small screen for the rest
+          size: first ? 'launch' : (released || (group.length >= 7 && points.length >= 6)) ? 'big' : 'small',
+          count: group.length,
+        })
+      })
+      return entries.reverse()
     } catch {
       return []
     }

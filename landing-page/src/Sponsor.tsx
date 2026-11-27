@@ -62,13 +62,23 @@ export function SponsorPage({ onHome }: { onHome: () => void }) {
   const [d, setD] = useState<Details>(() => { try { return { ...empty, ...JSON.parse(sessionStorage.getItem(KEY) || '{}') }; } catch { return empty; } });
   const [step, setStep] = useState<'details' | 'pay' | 'done'>('details');
   const [method, setMethod] = useState<Method>('card');
-  const [amount, setAmount] = useState<number>(AMOUNTS.card[0]);
+  const [amount, setAmount] = useState<number>(() => {
+    // the tier chosen on /sponsors, if any
+    try { const a = Number(sessionStorage.getItem('overlay-sponsor-amount')); if (AMOUNTS.card.includes(a)) return a; } catch { /* ignore */ }
+    return AMOUNTS.card[0];
+  });
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [qr, setQr] = useState<{ id: string; image: string; closeBy: number } | null>(null);
   const poll = useRef(0);
 
-  useEffect(() => { setAmount(AMOUNTS[method][0]); setQr(null); setError(''); }, [method]);
+  const firstMethod = useRef(true);
+  useEffect(() => {
+    // keep the chosen tier when switching card and UPI: same position in the other currency
+    if (firstMethod.current) { firstMethod.current = false; return; }
+    setAmount((a) => { const i = Math.max(0, AMOUNTS[method === 'card' ? 'upi' : 'card'].indexOf(a)); return AMOUNTS[method][i] ?? AMOUNTS[method][0]; });
+    setQr(null); setError('');
+  }, [method]);
   useEffect(() => () => window.clearInterval(poll.current), []);
   const set = (k: keyof Details) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => setD((x) => ({ ...x, [k]: e.target.value }));
 
@@ -145,10 +155,10 @@ export function SponsorPage({ onHome }: { onHome: () => void }) {
         </div>
         <div className="co-sum">
           <span className="co-label">Sponsor Overlay</span>
-          <div className="co-amount">{money(step === 'pay' ? amount : AMOUNTS.card[0], step === 'pay' ? method : 'card')}<small>{step === 'pay' && method === 'upi' ? 'one payment, UPI' : 'one payment'}</small></div>
-          <div className="co-line"><span>Lifetime sponsor spot</span><b>{money(step === 'pay' ? amount : AMOUNTS.card[0], step === 'pay' ? method : 'card')}</b></div>
+          <div className="co-amount">{money(amount, method)}<small>{step === 'pay' && method === 'upi' ? 'one payment, UPI' : 'one payment'}</small></div>
+          <div className="co-line"><span>Lifetime sponsor spot</span><b>{money(amount, method)}</b></div>
           {d.product && <div className="co-line dim"><span>For</span><b>{d.product}</b></div>}
-          <div className="co-line total"><span>Total due today</span><b>{money(step === 'pay' ? amount : AMOUNTS.card[0], step === 'pay' ? method : 'card')}</b></div>
+          <div className="co-line total"><span>Total due today</span><b>{money(amount, method)}</b></div>
           <ul className="co-gets">
             <li>Your logo and link on the Overlay website, for life</li>
             <li>A thank-you in the changelog and on our socials</li>
@@ -219,5 +229,37 @@ export function SponsorPage({ onHome }: { onHome: () => void }) {
         </div>
       </section>
     </main>
+  );
+}
+
+/* ── /sponsors: three tiers, styled like the pricing boxes but smaller ─── */
+const TIERS = [
+  { name: 'Supporter', amount: 4999, inr: 419900, note: 'Back the beta and get your name out there.', items: ['Your logo and link on the website', 'A thank-you in the changelog'] },
+  { name: 'Partner', amount: 9900, inr: 829900, note: 'For products our users would love.', items: ['Everything in Supporter', 'A larger spot in the sponsor row', 'A shoutout on our socials'], featured: true },
+  { name: 'Featured', amount: 19900, inr: 1659900, note: 'First in line, everywhere we show sponsors.', items: ['Everything in Partner', 'First place in the sponsor row', 'Featured in the release notes'] },
+];
+
+export function SponsorsPage({ onChoose }: { onChoose: (amount: number) => void }) {
+  const sponsors = useSponsors();
+  return (
+    <section className="page sps">
+      <header className="page-head center-text"><h2>Sponsor Overlay.</h2></header>
+      <div className="sps-tiers">
+        {TIERS.map((t) => (
+          <a key={t.name} className={`sps-tier${t.featured ? ' featured' : ''}`} href="/sponsor" onClick={(e) => { if (e.metaKey || e.ctrlKey) return; e.preventDefault(); onChoose(t.amount); }}>
+            <h3>{t.name}</h3>
+            <p className="sps-price"><b>{money(t.amount, 'card')}</b><span>/once</span></p>
+            <p className="sps-inr">or {money(t.inr, 'upi')} by UPI</p>
+            <p className="sps-note">{t.note}</p>
+            <ul>{t.items.map((i) => <li key={i}>{i}</li>)}</ul>
+            <span className="sps-go">Sponsor<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 17 17 7M8.5 7H17v8.5" /></svg></span>
+          </a>
+        ))}
+      </div>
+      <div className="sps-wall">
+        <span>{sponsors.length ? 'Our sponsors' : 'No sponsors yet. Yours could be the first.'}</span>
+        {sponsors.length > 0 && <div>{sponsors.map((x) => <a key={x.name} href={x.link || undefined} target="_blank" rel="noopener sponsored">{x.host && <img src={icon(x.host)} alt="" />}{x.name}</a>)}</div>}
+      </div>
+    </section>
   );
 }

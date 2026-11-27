@@ -5,7 +5,7 @@ import './pages.css';
 import NotchDemo, { type Space } from './NotchDemo';
 import changelog from 'virtual:changelog';
 import seoData from './seo.json';
-import { SponsorPage, SponsorStrip } from './Sponsor';
+import { SponsorPage, SponsorStrip, SponsorsPage } from './Sponsor';
 import { CLAUDE, DISCORD, GCAL, GITHUB, OPENAI, SPOTIFY } from './brand/marks';
 
 // The source repo is private, so installers live in the public overlay-releases
@@ -14,12 +14,13 @@ import { CLAUDE, DISCORD, GCAL, GITHUB, OPENAI, SPOTIFY } from './brand/marks';
 const WINDOWS = import.meta.env.VITE_DOWNLOAD_URL
   || 'https://github.com/pradhan-not-found/overlay-releases/releases/latest/download/Overlay-Setup.exe';
 
-type View = 'home' | 'features' | 'pricing' | 'changelog' | 'privacy' | 'terms' | 'sponsor';
+type View = 'home' | 'features' | 'pricing' | 'changelog' | 'privacy' | 'terms' | 'sponsor' | 'sponsors';
 
 const NAV: { id: View; label: string }[] = [
   { id: 'features', label: 'Features' },
   { id: 'pricing', label: 'Pricing' },
   { id: 'changelog', label: 'Changelog' },
+  { id: 'sponsors', label: 'Sponsors' },
 ];
 
 const Stroke = ({ d }: { d: string }) => (
@@ -343,13 +344,46 @@ function Shot({ kind, items, version, when, seed, tone = 0 }: { kind: ShotKind; 
   );
 }
 
-const PAGES: View[] = ['features', 'pricing', 'changelog', 'privacy', 'terms', 'sponsor'];
+const PAGES: View[] = ['features', 'pricing', 'changelog', 'privacy', 'terms', 'sponsor', 'sponsors'];
 const pathOf = (v: View) => (v === 'home' ? '/' : `/${v}`);
 function viewFromLocation(): View {
   const fromPath = window.location.pathname.replace(/^\/+|\/+$/g, '').toLowerCase() as View;
   if (PAGES.includes(fromPath)) return fromPath;
   const fromHash = window.location.hash.slice(1) as View;
   return PAGES.includes(fromHash) ? fromHash : 'home';
+}
+
+const KINDS_ALL = shotKinds(changelog.map((e) => e.title));
+
+/** A compact laptop screen with the notch showing what changed. */
+function MiniShot({ item, tone, seed }: { item: string; tone: number; seed: string }) {
+  const k = seeded(seed)();
+  const accents = ['#4ade80', '#60a5fa', '#f472b6', '#fbbf24', '#a78bfa'];
+  return (
+    <figure className="mini-shot" aria-hidden="true">
+      <div className="mini-screen" style={{ background: SCENES[tone % SCENES.length] }}>
+        <div className="mini-notch">
+          <img src="/mark.png" alt="" />
+          <span>{item}</span>
+          <i style={{ background: accents[Math.floor(k * accents.length)] }} />
+        </div>
+      </div>
+      <div className="mini-base" />
+    </figure>
+  );
+}
+
+/** Day one: the Overlay app icon on its first gradient. */
+function LaunchShot({ when, tone }: { when: string; tone: number }) {
+  return (
+    <figure className="rel-shot launch-shot" aria-hidden="true" style={{ background: SCENES[tone % SCENES.length] }}>
+      <div className="launch-card">
+        <img src="/logo.png" alt="" />
+        <b>Overlay</b>
+        <span>Day one · {when}</span>
+      </div>
+    </figure>
+  );
 }
 
 export default function App() {
@@ -445,7 +479,6 @@ export default function App() {
           {NAV.map((item) => (
             <a key={item.id} className={`nav-link${view === item.id ? ' on' : ''}`} {...link(item.id as View)}>{item.label}</a>
           ))}
-          <a className={`cta${view === 'home' ? ' on' : ''}`} {...link('home')}>Get Access</a>
         </nav>
       </header>
 
@@ -559,8 +592,9 @@ export default function App() {
               <h2>What's new in Overlay.</h2>
             </header>
             <ol className="changelog">
+              {/* one entry per working session, newest first */}
               {changelog.map((c, k) => {
-                const kinds = shotKinds(changelog.map((e) => e.title));
+                const kinds = KINDS_ALL;
                 const when = new Date(`${c.date}T12:00`).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
                 const items = splitTitle(c.title, c.points);
                 const id = `v-${c.date}-${k}`;
@@ -572,10 +606,14 @@ export default function App() {
                       </a>
                       <time>{when}</time>
                     </div>
-                    <article className="rel">
-                      <h3>{sentence(c.title)}</h3>
-                      {c.points.length > 0 && <p className="rel-text">{c.points.map((pt) => pt.replace(/\.?$/, '.')).join(' ')}</p>}
-                      <Shot kind={kinds[k]} items={items} version={c.version} when={when} seed={c.title} tone={k} />
+                    <article className={`rel ${c.size}`}>
+                      <div className="rel-copy">
+                        <h3>{sentence(c.title)}</h3>
+                        {c.points.length > 0 && <ul className="rel-points">{c.points.map((pt, n) => <li key={n}>{pt.replace(/\.$/, '')}</li>)}</ul>}
+                      </div>
+                      {c.size === 'launch' && <LaunchShot when={when} tone={k} />}
+                      {c.size === 'big' && <Shot kind={kinds[k]} items={items} version={c.version} when={when} seed={c.title} tone={k} />}
+                      {c.size === 'small' && <MiniShot item={items[0] || c.title} tone={k} seed={c.title} />}
                     </article>
                   </li>
                 );
@@ -598,6 +636,8 @@ export default function App() {
             <p>Questions about privacy can be sent through the project's GitHub page.</p>
           </section>
         )}
+
+        {view === 'sponsors' && <SponsorsPage onChoose={(amount) => { try { sessionStorage.setItem('overlay-sponsor-amount', String(amount)); } catch { /* private mode */ } go('sponsor'); }} />}
 
         {view === 'terms' && (
           <section className="page narrow legal">
