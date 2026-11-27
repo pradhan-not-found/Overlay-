@@ -38,24 +38,33 @@ const lyricsSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16
  */
 let batteryMaskId = 0;
 type Power = 'battery' | 'charging' | 'full';
+/**
+ * iOS-style battery: the level fills a soft body and the percentage sits inside it, dark over the
+ * filled part and light over the rest. A small bolt while charging; green when charging, red when low.
+ */
 function batterySvg(pct: number, power: Power): string {
-  const id = `bat-cut-${++batteryMaskId}`;
-  const fill = power === 'charging' ? '#30d158' : pct <= 20 && power === 'battery' ? '#ff453a' : '#f5f5f7';
-  const inner = 18.6;
-  const w = pct <= 0 ? 0 : Math.max(2, (Math.min(100, pct) / 100) * inner);
-  const bolt = 'M13.1 2.2 9.3 7.05h2.55l-.95 3.25 3.85-4.95h-2.6l.95-3.15Z';
-  const plug = 'M10.6 3.6v1.6M13.4 3.6v1.6M9.7 5.2h4.6v1.3a2.3 2.3 0 0 1-4.6 0Zm2.3 3.6v1.4';
-  const mark = power === 'charging' ? bolt : power === 'full' ? plug : '';
-  return `<svg width="28" height="13" viewBox="0 0 28 13" aria-hidden="true">
-    ${mark ? `<defs><mask id="${id}" maskUnits="userSpaceOnUse" x="0" y="0" width="28" height="13">
-      <rect width="28" height="13" fill="#fff"/>
-      <path d="${mark}" fill="${power === 'charging' ? '#000' : 'none'}" stroke="#000" stroke-width="${power === 'charging' ? 1.6 : 2.6}" stroke-linejoin="round" stroke-linecap="round"/>
-    </mask></defs>` : ''}
-    <rect x="0.6" y="0.6" width="22.8" height="11.8" rx="3.6" fill="rgba(255,255,255,0.04)" stroke="rgba(255,255,255,0.42)" stroke-width="1.2"/>
-    <path d="M24.6 4.4h.4a1.3 1.3 0 0 1 1.3 1.3v1.6a1.3 1.3 0 0 1-1.3 1.3h-.4Z" fill="rgba(255,255,255,0.42)"/>
-    ${w ? `<rect x="2.2" y="2.2" width="${w.toFixed(2)}" height="8.6" rx="2" fill="${fill}" ${mark ? `mask="url(#${id})"` : ''}/>` : ''}
-    ${power === 'charging' ? `<path d="${bolt}" fill="#fff"/>` : ''}
-    ${power === 'full' ? `<path d="${plug}" fill="none" stroke="#fff" stroke-width="1.15" stroke-linecap="round" stroke-linejoin="round"/>` : ''}
+  const id = `bat-${++batteryMaskId}`;
+  const W = 30, H = 15, R = 4.6;
+  const p = Math.max(0, Math.min(100, Math.round(pct)));
+  const fill = power === 'charging' ? '#30d158' : p <= 20 && power === 'battery' ? '#ff453a' : '#ffffff';
+  const level = (p / 100) * W;
+  const bolt = power === 'charging';
+  const tx = bolt ? 13.2 : W / 2;
+  const label = `<text x="${tx}" y="11.1" text-anchor="middle" font-family="Instrument Sans Variable, Segoe UI, sans-serif" font-size="9.6" font-weight="700" letter-spacing="-0.2">${p}</text>`;
+  const boltPath = 'M23.6 3.6 20.6 8h2.1l-.7 3.4 3.1-4.6h-2.1l.6-3.2Z';
+  return `<svg width="${W + 3}" height="${H}" viewBox="0 0 ${W + 3} ${H}" aria-hidden="true">
+    <defs>
+      <clipPath id="${id}-b"><rect width="${W}" height="${H}" rx="${R}"/></clipPath>
+      <clipPath id="${id}-l"><rect width="${level.toFixed(2)}" height="${H}"/></clipPath>
+      <clipPath id="${id}-r"><rect x="${level.toFixed(2)}" width="${(W - level).toFixed(2)}" height="${H}"/></clipPath>
+    </defs>
+    <g clip-path="url(#${id}-b)">
+      <rect width="${W}" height="${H}" fill="rgba(255,255,255,0.24)"/>
+      <rect width="${level.toFixed(2)}" height="${H}" fill="${fill}"/>
+    </g>
+    <path d="M${W + 1} 5.2a1.6 1.6 0 0 1 1.6 1.6v1.4a1.6 1.6 0 0 1-1.6 1.6Z" fill="rgba(255,255,255,0.32)"/>
+    <g clip-path="url(#${id}-l)" fill="${fill === '#ffffff' ? '#0b0b0f' : '#ffffff'}">${label}${bolt ? `<path d="${boltPath}"/>` : ''}</g>
+    <g clip-path="url(#${id}-r)" fill="#ffffff">${label}${bolt ? `<path d="${boltPath}"/>` : ''}</g>
   </svg>`;
 }
 

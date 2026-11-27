@@ -117,6 +117,16 @@ document.addEventListener('change', async (e) => {
     if (box) box.textContent = err instanceof Error ? err.message : 'Could not use that image.';
   }
 });
+document.addEventListener('input', (e) => {
+  const t = e.target as HTMLInputElement;
+  if (!t.matches?.('.pf-name input')) return;
+  const btn = t.form?.querySelector<HTMLButtonElement>('button');
+  if (btn) btn.hidden = !t.value.trim() || t.value.trim() === auth.name;
+});
+document.addEventListener('click', (e) => {
+  const go = (e.target as HTMLElement).closest<HTMLElement>('[data-scroll="password"]');
+  if (go) setTimeout(() => document.getElementById('pf-password')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 120);
+});
 let repaintActiveSoon = () => {};
 document.addEventListener('submit', async (e) => {
   const form = (e.target as HTMLElement).closest<HTMLFormElement>('form[data-auth]');
@@ -147,7 +157,8 @@ export function profileHtml() {
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m7 14 5-5 5 5"/></svg>
     </button>
     <div class="ds-menu" data-profile-menu hidden>
-      <button type="button" data-nav-go="account">${SET_ICONS.lock}<span>Account and password</span></button>
+      <button type="button" data-nav-go="account">${svg('<circle cx="12" cy="8.5" r="3.5"/><path d="M5 19.5c1.2-3.3 3.8-5 7-5s5.8 1.7 7 5"/>')}<span>Profile</span></button>
+      <button type="button" data-nav-go="account" data-scroll="password">${SET_ICONS.lock}<span>Password</span></button>
       <button type="button" data-signout>${SET_ICONS.signout}<span>Sign out</span></button>
     </div>
   </div>`;
@@ -234,9 +245,15 @@ function paintNotch(el: HTMLElement) {
 
 function paintMedia(el: HTMLElement) {
   const src = config.mediaSource || 'now_playing';
-  const opt = (v: string, label: string) => `<option value="${v}"${src === v ? ' selected' : ''}>${label}</option>`;
+  const SOURCES: [string, string, string][] = [
+    ['now_playing', 'Any player', '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V6l11-2v12"/><circle cx="6.5" cy="18" r="2.5"/><circle cx="17.5" cy="16" r="2.5"/></svg>'],
+    ['spotify', 'Spotify', '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="#1DB954"/><path d="M7 9.6c3.4-1 7.2-.7 10.2.9M7.6 12.6c2.8-.8 5.8-.5 8.3.8M8.2 15.4c2.2-.6 4.4-.4 6.3.6" fill="none" stroke="#000" stroke-width="1.5" stroke-linecap="round"/></svg>'],
+    ['apple_music', 'Apple Music', '<svg viewBox="0 0 24 24"><rect x="2" y="2" width="20" height="20" rx="5.5" fill="#FA2D48"/><path d="M15.5 6.5v8.2a2 2 0 1 1-1.4-1.9V8.6l-4.3 1v6.2a2 2 0 1 1-1.4-1.9V8.3z" fill="#fff"/></svg>'],
+    ['youtube', 'YouTube', '<svg viewBox="0 0 24 24"><rect x="1.5" y="5" width="21" height="14" rx="4" fill="#FF0033"/><path d="m10 9 5 3-5 3z" fill="#fff"/></svg>'],
+  ];
   el.innerHTML = `<div class="ds-page">${head('Media', 'Where Now Playing reads the song from.')}
-    ${card('Source', row('Music source', 'Any player that Windows shows in its media controls, or one app only.', `<select class="ds-select" data-cfg-str="mediaSource">${opt('now_playing', 'Any player')}${opt('spotify', 'Spotify')}${opt('apple_music', 'Apple Music')}${opt('youtube', 'YouTube')}</select>`))}
+    ${card('Source', `<div class="ds-row ds-row-stack"><div class="ds-row-text"><b>Music source</b><span>Any player Windows shows in its media controls, or just one app.</span></div>
+      <div class="ds-seg wide" role="radiogroup" data-seg-str="mediaSource">${SOURCES.map(([v, label, ico]) => `<button type="button" role="radio" aria-checked="${src === v}" data-seg-str-val="${v}">${ico}<span>${label}</span></button>`).join('')}</div></div>`)}
   </div>`;
 }
 
@@ -300,9 +317,28 @@ async function paintAbout(el: HTMLElement) {
 }
 
 function paintAccount(el: HTMLElement) {
-  el.innerHTML = `<div class="ds-page">${head('Account', 'Your Overlay account is stored on this PC only.')}
-    ${card('Photo', row('Profile photo', 'Shown in the sidebar and when you sign in.', `<div class="ds-actions">${avatarHtml(auth.name, auth.avatar, 40)}<label class="ds-btn">Choose a photo<input type="file" accept="image/*" data-avatar-file hidden/></label>${auth.avatar ? '<button type="button" class="ds-btn ghost" data-avatar-clear>Remove</button>' : ''}</div>`))}
-    ${card('Profile', `<form class="ds-inline" data-rename><input name="name" value="${esc(auth.name)}" maxlength="40" required/><button class="ds-btn" type="submit">Save name</button></form>`, auth.since ? `Created ${new Date(auth.since).toLocaleDateString(undefined, { day: 'numeric', month: 'long', year: 'numeric' })}.` : '')}
+  const since = auth.since ? new Date(auth.since).toLocaleDateString(undefined, { day: 'numeric', month: 'long', year: 'numeric' }) : '';
+  el.innerHTML = `<div class="ds-page">${head('Profile', 'Your name and photo. Everything is stored on this PC only.')}
+    <section class="pf-card">
+      <label class="pf-photo" title="Change photo">
+        ${avatarHtml(auth.name, auth.avatar, 96)}
+        <span class="pf-photo-edit"><svg viewBox="0 0 24 24"><path d="M4 8.5A2.5 2.5 0 0 1 6.5 6h1.3l1.4-2h5.6l1.4 2h1.3A2.5 2.5 0 0 1 20 8.5v8a2.5 2.5 0 0 1-2.5 2.5h-11A2.5 2.5 0 0 1 4 16.5z"/><circle cx="12" cy="12.5" r="3.4"/></svg></span>
+        <input type="file" accept="image/png,image/jpeg,image/webp" data-avatar-file hidden/>
+      </label>
+      <div class="pf-main">
+        <form class="pf-name" data-rename>
+          <input name="name" value="${esc(auth.name)}" maxlength="40" required aria-label="Your name" spellcheck="false"/>
+          <button class="ds-btn primary" type="submit" hidden>Save</button>
+        </form>
+        <p class="pf-meta">Signed in to this PC${since ? ` · since ${since}` : ''}</p>
+        <div class="pf-actions">
+          <label class="ds-btn">Change photo<input type="file" accept="image/png,image/jpeg,image/webp" data-avatar-file hidden/></label>
+          ${auth.avatar ? '<button type="button" class="ds-btn ghost" data-avatar-clear>Remove photo</button>' : ''}
+          <span class="pf-saved" data-pf-saved></span>
+        </div>
+      </div>
+    </section>
+    <div id="pf-password"></div>
     ${card('Password', `<form class="ds-stack" data-password><input name="current" type="password" placeholder="Current password" autocomplete="current-password" required/><input name="next" type="password" placeholder="New password, 6 characters or more" autocomplete="new-password" required/><div class="ds-inline-end"><span class="ds-err" data-pw-msg></span><button class="ds-btn" type="submit">Change password</button></div></form>`)}
     ${card('Session', row('Sign out', 'Locks the Dashboard and the notch until you sign in again.', `<button type="button" class="ds-btn danger" data-signout>Sign out</button>`))}
   </div>`;
@@ -411,6 +447,13 @@ export async function mountSettings() {
     if (cfgSw) { const k = cfgSw.dataset.cfg!; const cur = config[k] === undefined ? cfgSw.dataset.cfgDef !== '0' : config[k] !== false; config[k] = !cur; saveConfig(); repaintActive(); return; }
     const acc = t.closest<HTMLElement>('[data-accent]');
     if (acc) { setAccent(acc.dataset.accent!); return; }
+    const strBtn = t.closest<HTMLElement>('[data-seg-str-val]');
+    if (strBtn) {
+      const key = strBtn.closest<HTMLElement>('[data-seg-str]')!.dataset.segStr!;
+      config[key] = strBtn.dataset.segStrVal; saveConfig();
+      strBtn.parentElement!.querySelectorAll('[data-seg-str-val]').forEach((b) => b.setAttribute('aria-checked', String(b === strBtn)));
+      return;
+    }
     const segBtn = t.closest<HTMLElement>('[data-seg-val]');
     if (segBtn) {
       const key = segBtn.closest<HTMLElement>('[data-seg]')!.dataset.seg!;
@@ -481,7 +524,12 @@ export async function mountSettings() {
       send('set-setting', key, String(data.get('user') || '').trim());
       setTimeout(repaintActive, 120);
     }
-    if (form.matches('[data-rename]')) { const r = await invoke('auth:rename', String(data.get('name') || '')); if (r?.ok) { auth = r.state; paintProfile(); } }
+    if (form.matches('[data-rename]')) {
+      const r = await invoke('auth:rename', String(data.get('name') || ''));
+      if (r?.ok) { auth = r.state; paintProfile(); const s = $('[data-pf-saved]'); if (s) { s.textContent = 'Name saved'; setTimeout(() => { s.textContent = ''; }, 2200); } }
+      form.querySelector<HTMLButtonElement>('button')!.hidden = true;
+      (document.activeElement as HTMLElement | null)?.blur();
+    }
     if (form.matches('[data-password]')) {
       const r = await invoke('auth:password', { current: String(data.get('current') || ''), next: String(data.get('next') || '') });
       const msg = $('[data-pw-msg]', form);

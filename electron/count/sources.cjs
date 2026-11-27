@@ -384,7 +384,9 @@ async function codexLimits() {
         const w = rec(v);
         if (!w) return null;
         const reset = w.resets_at;
-        return { usedPercent: Math.min(100, Math.max(0, n(w.used_percent))), resetsAt: typeof reset === 'number' ? reset * (reset > 1e12 ? 1 : 1000) : null };
+        const resetsAt = typeof reset === 'number' ? reset * (reset > 1e12 ? 1 : 1000) : null;
+        const used = Math.min(100, Math.max(0, n(w.used_percent)));
+        return { usedPercent: resetsAt && resetsAt < Date.now() ? 0 : used, resetsAt: resetsAt && resetsAt < Date.now() ? null : resetsAt };
       };
       best = { session: win(l.primary), weekly: win(l.secondary), at };
     }

@@ -1312,3 +1312,18 @@ kbd { font: 600 10px var(--font); color: var(--muted); padding: 2px 6px; border-
 .space-dot::after { background: var(--accent); }
 
 .ctx-chip .ctx-wk { margin-left: 2px; font-size: 9px; font-weight: 600; opacity: 0.6; text-transform: uppercase; letter-spacing: 0.04em; }
+
+/* continue in another AI tool, from the limits dropdown */
+.ctx-tool-name { display: flex; align-items: center; gap: 8px; }
+.ctx-tool-name b { flex: 1; }
+.ctx-now { font-style: normal; font-size: 10.5px; font-weight: 600; padding: 3px 8px; border-radius: 999px; background: color-mix(in srgb, var(--accent) 18%, transparent); color: color-mix(in srgb, var(--accent) 70%, #fff); }
+.ctx-cont { display: inline-flex; align-items: center; gap: 4px; height: 24px; padding: 0 9px 0 10px; border: 0; border-radius: 999px; background: rgba(255, 255, 255, 0.08); color: #fff; font: inherit; font-size: 11.5px; font-weight: 600; cursor: pointer; transition: background 0.2s ease; }
+.ctx-cont:hover { background: var(--accent); }
+.ctx-cont svg { width: 12px; height: 12px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; transition: transform 0.2s ease; }
+.ctx-cont:hover svg { transform: translateX(2px); }
+.ctx-cont.busy { opacity: 0.6; pointer-events: none; }
+.ctx-nolim { margin: 6px 0 0; font-size: 11.5px; color: rgba(255, 255, 255, 0.4); }
+
+/* the percentage now sits inside the battery */
+.battery #bat-pct { display: none; }
+.battery #bat-svg svg { display: block; }

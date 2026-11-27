@@ -648,6 +648,15 @@ ipcMain.handle('get-file-icon', async (_e, path) => {
 });
 
 // ─── Dashboard window ─────────────────────────────────────────────────────────
+// The Dashboard's own window buttons
+ipcMain.on('dash:win', (_e, act) => {
+  if (!dashWindow || dashWindow.isDestroyed()) return;
+  if (act === 'min') dashWindow.minimize();
+  else if (act === 'max') { if (dashWindow.isMaximized()) dashWindow.unmaximize(); else dashWindow.maximize(); }
+  else if (act === 'close') dashWindow.close();
+});
+ipcMain.handle('dash:maximized', () => !!(dashWindow && !dashWindow.isDestroyed() && dashWindow.isMaximized()));
+
 function createDashWindow(options) {
   const nav = options && typeof options.nav === 'string' ? options.nav.replace(/[^a-z]/g, '') : '';
   if (nav) { try { db.setSetting('dashboard-nav', nav); } catch {} }
@@ -659,11 +668,12 @@ function createDashWindow(options) {
     presentWindow(dashWindow);
     return; 
   }
+  const sendMax = () => { if (dashWindow && !dashWindow.isDestroyed()) dashWindow.webContents.send('dash:maximized', dashWindow.isMaximized()); };
+  setImmediate(() => { if (dashWindow && !dashWindow.isDestroyed()) { dashWindow.on('maximize', sendMax); dashWindow.on('unmaximize', sendMax); } });
   dashWindow = new BrowserWindow({
     width: 1040, height: 700,
-    // No title bar: the window controls float over the Dashboard's own top edge.
-    titleBarStyle: 'hidden',
-    titleBarOverlay: { color: '#0a0a0a', symbolColor: '#a1a1aa', height: 38 },
+    // No system title bar: the Dashboard draws its own strip with Overlay's window buttons.
+    frame: false,
     transparent: false,
     backgroundColor: '#111111',
     resizable: true,

@@ -144,12 +144,19 @@ export function mountContext(opts: { invoke: Invoke; send: Send; on: On; openSpa
     hideHover();
     popKind = kind;
     if (kind === 'agent') {
-      const tools = [...new Set((snap?.limits || []).map((l: Limit) => l.kind))] as string[];
+      // every AI tool on this PC: the ones with plan limits, and the others you can carry the work to
+      const SWITCHABLE = ['claude-code', 'codex', 'cursor', 'gemini-cli', 'opencode'];
+      const withLimits = [...new Set((snap?.limits || []).map((l: Limit) => l.kind))] as string[];
+      const found = ((snap?.sources || []) as any[]).map((s) => s.kind).filter((k: string) => SWITCHABLE.includes(k));
+      const tools = [...new Set([...withLimits, ...found])] as string[];
       const current = agent();
       const order = current ? [current, ...tools.filter((t) => t !== current)] : tools;
+      const cont = (k: string) => current && k !== current && SWITCHABLE.includes(k) && SWITCHABLE.includes(current)
+        ? `<button type="button" class="ctx-cont" data-ctx-cont="${esc(k)}" title="Open ${esc(NAMES[k] || k)} in your project with what you were doing in ${esc(NAMES[current] || current)}">Continue here<svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>` : '';
       pop.innerHTML = `<div class="ctx-pop-head"><b>AI limits</b><span>${current ? `On ${esc(NAMES[current] || current)} now` : 'All tools'}</span></div>
         ${order.map((k) => `<div class="ctx-tool${k === current ? ' on' : ''}">
-          <div class="ctx-tool-name">${logo(k, 15)}<b>${esc(NAMES[k] || k)}</b></div>
+          <div class="ctx-tool-name">${logo(k, 15)}<b>${esc(NAMES[k] || k)}</b>${k === current ? '<em class="ctx-now">In use</em>' : cont(k)}</div>
+          ${limitsOf(k).length ? '' : '<p class="ctx-nolim">No plan limit to show for this tool.</p>'}
           ${limitsOf(k).map((l) => `<div class="ctx-lim"><span>${esc(l.label === 'Session' ? '5-hour' : l.label === 'Weekly' ? 'Week' : l.label)}</span><i><em style="width:${Math.min(100, Math.max(2, l.usedPercent))}%" class="${l.usedPercent >= 80 ? 'hot' : ''}"></em></i><b>${Math.round(l.usedPercent)}%</b><small>${l.resetsAt ? `resets in ${resets(l.resetsAt)}` : ''}</small></div>`).join('')}
         </div>`).join('') || '<p class="ctx-empty">No plan limits read yet.</p>'}
         <button type="button" class="ctx-pop-btn" data-ctx="usage">${I.open}<span>Open AI Usage in the Dashboard</span></button>`;
@@ -175,6 +182,21 @@ export function mountContext(opts: { invoke: Invoke; send: Send; on: On; openSpa
     if (popKind === chip.dataset.pop) closePop(); else openPop(chip.dataset.pop!);
   });
   pop.addEventListener('click', (e) => {
+    const contBtn = (e.target as HTMLElement).closest<HTMLElement>('[data-ctx-cont]');
+    if (contBtn) {
+      e.stopPropagation();
+      const to = contBtn.dataset.ctxCont!;
+      const from = agent();
+      contBtn.classList.add('busy'); contBtn.innerHTML = 'Opening…';
+      void invoke('count:continue', from, to).then(() => {
+        say(`Continuing in ${NAMES[to] || to} · your context is on the clipboard`, I.open, 8, 'update');
+        closePop();
+      }).catch((err: unknown) => {
+        contBtn.classList.remove('busy');
+        contBtn.textContent = err instanceof Error && /no other|not found/i.test(err.message) ? 'Not installed' : 'Try again';
+      });
+      return;
+    }
     const t = e.target as HTMLElement;
     e.stopPropagation();
     if (t.closest('[data-ctx="usage"]')) { send('open-dashboard', { nav: 'ai' }); closePop(); }

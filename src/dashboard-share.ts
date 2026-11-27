@@ -41,7 +41,8 @@ const rgba = (c: RGB, a = 1) => `rgba(${c[0]}, ${c[1]}, ${c[2]}, ${a})`;
 // Keep the accent bright enough to glow on near-black, whatever colour was picked.
 function vivid(c: RGB): RGB {
   const lum = (0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2]) / 255;
-  return lum < 0.3 ? mix(c, [255, 255, 255], Math.min(0.4, (0.3 - lum) * 1.5)) : c;
+  // on the white card a very light accent (white, yellow) would vanish, so it falls back to Overlay blue
+  return lum > 0.72 ? [61, 107, 255] : c;
 }
 
 type Report = { today: number; week: number; streak: number; best: { day: string; secs: number }; days: { label: string; secs: number }[]; ai: number; name: string };
@@ -72,22 +73,24 @@ async function draw(r: Report): Promise<HTMLCanvasElement> {
   const width = (s: string, f: string, ls = 0) => { g.font = f; track(ls); const w = g.measureText(s).width; track(0); return w; };
 
   const A = vivid(accent());
-  const WHITE = '#ffffff', SOFT = 'rgba(255, 255, 255, 0.66)', FAINT = 'rgba(255, 255, 255, 0.42)', RULE = 'rgba(255, 255, 255, 0.12)';
+  // a white card: dark ink, the accent as a soft wash
+  const WHITE = '#0d0f16', SOFT = 'rgba(13, 15, 22, 0.55)', FAINT = 'rgba(13, 15, 22, 0.42)', RULE = 'rgba(13, 15, 22, 0.08)';
 
-  // Background: near-black, washed with the accent from the top-right corner.
-  g.fillStyle = '#08090d'; g.fillRect(0, 0, W, H);
+  // Background: white, washed with the accent from the top-right corner.
+  g.fillStyle = '#ffffff'; g.fillRect(0, 0, W, H);
   let glow = g.createRadialGradient(W * 0.95, -80, 40, W * 0.95, -80, 1150);
-  glow.addColorStop(0, rgba(A, 0.6)); glow.addColorStop(0.45, rgba(A, 0.16)); glow.addColorStop(1, rgba(A, 0));
+  glow.addColorStop(0, rgba(A, 0.22)); glow.addColorStop(0.45, rgba(A, 0.07)); glow.addColorStop(1, rgba(A, 0));
   g.fillStyle = glow; g.fillRect(0, 0, W, H);
   glow = g.createRadialGradient(-160, H + 120, 40, -160, H + 120, 950);
-  glow.addColorStop(0, rgba(A, 0.24)); glow.addColorStop(1, rgba(A, 0));
+  glow.addColorStop(0, rgba(A, 0.1)); glow.addColorStop(1, rgba(A, 0));
   g.fillStyle = glow; g.fillRect(0, 0, W, H);
 
   // Header: the mark and wordmark, quiet, and the date on the right.
   const now = new Date();
   const mark = await load(overlayMark);
   const mw = 46, mh = (mw * mark.height) / mark.width, mid = P + mh / 2;
-  g.drawImage(mark, P, P, mw, mh);
+  // the mark is drawn white; turn it ink-dark on the white card
+  g.save(); g.filter = 'invert(1) brightness(0.1)'; g.drawImage(mark, P, P, mw, mh); g.restore();
   text('Overlay', P + mw + 16, mid + 11, font(600, 30), WHITE, 'left', -0.6);
   tabular(true);
   text(now.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }), W - P, mid + 10, font(500, 26), SOFT, 'right');
@@ -149,7 +152,7 @@ async function draw(r: Report): Promise<HTMLCanvasElement> {
   const base = H - P - 52, bh = base - (chartTop + 84);
   const max = Math.max(1, ...r.days.map((d) => d.secs));
   const col = (W - P * 2) / 7, bw = Math.min(80, col * 0.6);
-  g.fillStyle = 'rgba(255, 255, 255, 0.07)';
+  g.fillStyle = 'rgba(13, 15, 22, 0.05)';
   g.fillRect(P, base + 1, W - P * 2, 2);
   if (!r.week) {
     const cy = chartTop + 84 + bh / 2;
@@ -162,11 +165,11 @@ async function draw(r: Report): Promise<HTMLCanvasElement> {
     if (isToday && d.secs) {
       const grad = g.createLinearGradient(0, base - h, 0, base);
       grad.addColorStop(0, rgba(mix(A, [255, 255, 255], 0.28))); grad.addColorStop(1, rgba(A));
-      g.save(); g.shadowColor = rgba(A, 0.6); g.shadowBlur = 44;
+      g.save(); g.shadowColor = rgba(A, 0.35); g.shadowBlur = 36;
       g.fillStyle = grad; roundRect(g, bx, base - h, bw, h, 16); g.fill(); g.restore();
       tabular(true); text(hm(d.secs), bx + bw / 2, base - h - 18, font(650, 25), WHITE, 'center', -0.4); tabular(false);
     } else {
-      g.fillStyle = d.secs ? 'rgba(255, 255, 255, 0.22)' : isToday ? rgba(A, 0.6) : 'rgba(255, 255, 255, 0.10)';
+      g.fillStyle = d.secs ? 'rgba(13, 15, 22, 0.14)' : isToday ? rgba(A, 0.6) : 'rgba(13, 15, 22, 0.07)';
       roundRect(g, bx, base - h, bw, h, d.secs ? 16 : 5); g.fill();
     }
     text(d.label, bx + bw / 2, base + 48, font(isToday ? 650 : 500, 23), isToday ? WHITE : FAINT, 'center');

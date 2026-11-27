@@ -881,3 +881,41 @@ html, body {
 .ds-upd-dot.bad { color: #ff5a4e; --ico: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.4' stroke-linecap='round'%3E%3Cpath d='M12 7v6M12 16.5v.5'/%3E%3C/svg%3E"); }
 .ds-upd-dot:not(.ok):not(.wait):not(.bad) { color: rgba(255, 255, 255, 0.5); --ico: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round'%3E%3Cpath d='m8 9-3 3 3 3M16 9l3 3-3 3'/%3E%3C/svg%3E"); }
 .ds-upd { align-items: center !important; gap: 14px !important; }
+
+/* ══ Overlay's own window buttons ══ */
+#dash-winbtns { position: fixed; top: 0; right: 0; z-index: 1000; display: flex; height: 38px; -webkit-app-region: no-drag; }
+#dash-winbtns button { width: 46px; height: 38px; display: grid; place-items: center; border: 0; background: transparent; color: rgba(255, 255, 255, 0.55); cursor: pointer; transition: background 0.15s ease, color 0.15s ease; }
+#dash-winbtns button:hover { background: rgba(255, 255, 255, 0.07); color: #fff; }
+#dash-winbtns button:active { background: rgba(255, 255, 255, 0.04); }
+#dash-winbtns button.close:hover { background: #e5484d; color: #fff; }
+#dash-winbtns svg { width: 12px; height: 12px; fill: none; stroke: currentColor; stroke-width: 1.2; stroke-linecap: round; stroke-linejoin: round; }
+/* the strip across the top of the main area is the place to drag the window */
+.dash-main::before { background: var(--bg) !important; }
+
+/* ══ Segmented choices: labels centred in their pill ══ */
+.ds-seg button { align-items: center !important; padding: 0 !important; line-height: 1 !important; }
+.ds-seg button b, .ds-seg button small { line-height: 1; }
+
+/* ══ Media source as choices with each player's mark ══ */
+.ds-seg.wide { grid-auto-flow: row; grid-template-columns: repeat(4, 1fr); }
+.ds-seg.wide button { height: 64px; flex-direction: column; gap: 7px; }
+.ds-seg.wide button svg { width: 20px; height: 20px; }
+.ds-seg.wide button span { font-size: 12.5px; font-weight: 600; }
+@media (max-width: 760px) { .ds-seg.wide { grid-template-columns: repeat(2, 1fr); } }
+
+/* ══ Profile ══ */
+.pf-card { display: flex; align-items: center; gap: 24px; padding: 24px; border-radius: 16px; background: radial-gradient(120% 140% at 0% 0%, color-mix(in srgb, var(--blue) 16%, transparent), transparent 60%), var(--bg-card); border: 1px solid var(--border); }
+.pf-photo { position: relative; flex-shrink: 0; width: 96px; height: 96px; border-radius: 50%; cursor: pointer; }
+.pf-photo .ds-avatar { width: 96px !important; height: 96px !important; font-size: 34px !important; box-shadow: 0 0 0 4px var(--bg-card), 0 0 0 5px rgba(255, 255, 255, 0.08); object-fit: cover; }
+.pf-photo-edit { position: absolute; inset: 0; border-radius: 50%; display: grid; place-items: center; background: rgba(0, 0, 0, 0.5); opacity: 0; transition: opacity 0.2s ease; }
+.pf-photo-edit svg { width: 24px; height: 24px; fill: none; stroke: #fff; stroke-width: 1.7; stroke-linejoin: round; }
+.pf-photo:hover .pf-photo-edit { opacity: 1; }
+.pf-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px; }
+.pf-name { display: flex; align-items: center; gap: 8px; }
+.pf-name input { flex: 1; min-width: 0; height: 40px !important; padding: 0 10px !important; margin-left: -10px; border: 1px solid transparent !important; border-radius: 10px !important; background: transparent !important; color: #fff; font-size: 24px !important; font-weight: 600; letter-spacing: -0.02em; transition: border-color 0.2s ease, background 0.2s ease; }
+.pf-name input:hover { background: rgba(255, 255, 255, 0.04) !important; }
+.pf-name input:focus { border-color: color-mix(in srgb, var(--blue) 70%, transparent) !important; background: #0a0a0a !important; }
+.pf-meta { font-size: 13px; color: var(--muted); }
+.pf-actions { display: flex; align-items: center; gap: 8px; margin-top: 8px; flex-wrap: wrap; }
+.pf-saved { font-size: 12.5px; color: #32d27a; }
+@media (max-width: 640px) { .pf-card { flex-direction: column; text-align: center; } .pf-name input { text-align: center; margin-left: 0; } .pf-actions { justify-content: center; } }

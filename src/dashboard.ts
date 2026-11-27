@@ -75,7 +75,25 @@ let streak = 0;
 let todaySecs = 0;
 
 // ─── Boot ────────────────────────────────────────────────────────────────────
+/** Overlay's own minimise, maximise and close, in the title strip. */
+function mountWindowButtons() {
+  if (!ipc || document.getElementById('dash-winbtns')) return;
+  const bar = document.createElement('div');
+  bar.id = 'dash-winbtns';
+  const MAX = '<svg viewBox="0 0 12 12"><rect x="2" y="2" width="8" height="8" rx="1.6"/></svg>';
+  const RESTORE = '<svg viewBox="0 0 12 12"><rect x="1.8" y="3.6" width="6.6" height="6.6" rx="1.4"/><path d="M3.8 3.6V3a1.2 1.2 0 0 1 1.2-1.2h4A1.2 1.2 0 0 1 10.2 3v4a1.2 1.2 0 0 1-1.2 1.2h-.6"/></svg>';
+  bar.innerHTML = `<button type="button" data-win="min" title="Minimise" aria-label="Minimise"><svg viewBox="0 0 12 12"><path d="M2.5 6h7"/></svg></button>
+    <button type="button" data-win="max" title="Maximise" aria-label="Maximise">${MAX}</button>
+    <button type="button" data-win="close" class="close" title="Close" aria-label="Close"><svg viewBox="0 0 12 12"><path d="M3 3l6 6M9 3 3 9"/></svg></button>`;
+  document.body.appendChild(bar);
+  bar.addEventListener('click', (e) => { const b = (e.target as HTMLElement).closest<HTMLElement>('[data-win]'); if (b) ipc.send('dash:win', b.dataset.win); });
+  const paintMax = (m: boolean) => { const b = bar.querySelector<HTMLElement>('[data-win="max"]')!; b.innerHTML = m ? RESTORE : MAX; b.title = m ? 'Restore' : 'Maximise'; };
+  ipc.on('dash:maximized', (_e: unknown, m: boolean) => paintMax(!!m));
+  void ipc.invoke('dash:maximized').then((m: boolean) => paintMax(!!m)).catch(() => {});
+}
+
 async function boot() {
+  mountWindowButtons();
   if (ipc) {
     try {
       stats = await ipc.invoke('get-stats') || {};
