@@ -53,8 +53,9 @@ export function signatureOk(secret, payload, given) {
 
 // ── Prices, fixed on the server ────────────────────────────────────────────
 export const PRICES = { card: { amount: 4999, currency: 'USD' }, upi: { amount: 419900, currency: 'INR' } };
-export const MIN = { card: 500, upi: 10000 };
-export const MAX = { card: 500000, upi: 42000000 };
+export const MIN = { card: 100, upi: 100 };
+// no ceiling of our own: the sponsor gives what they like; Razorpay and the bank apply their limits
+export const MAX = { card: Number.MAX_SAFE_INTEGER, upi: Number.MAX_SAFE_INTEGER };
 
 const clean = (v, max) => (typeof v === 'string' ? v.trim().slice(0, max) : '');
 
@@ -75,7 +76,7 @@ export function readSponsor(body, method) {
   // the sponsor picks the amount; anything outside the range is refused, never silently changed
   if (body?.amount === undefined || body?.amount === null || body?.amount === '') s.amount = price.amount;
   else if (Number.isInteger(asked) && asked >= MIN[method] && asked <= MAX[method]) s.amount = asked;
-  else return { error: 'Choose an amount within the allowed range.' };
+  else return { error: method === 'card' ? 'The amount must be at least $1.' : 'The amount must be at least ₹1.' };
   s.currency = price.currency;
   return s;
 }
