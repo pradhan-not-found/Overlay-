@@ -53,7 +53,8 @@ export function signatureOk(secret, payload, given) {
 
 // ── Prices, fixed on the server ────────────────────────────────────────────
 export const PRICES = { card: { amount: 4999, currency: 'USD' }, upi: { amount: 419900, currency: 'INR' } };
-export const MIN = { card: 100, upi: 100 };
+// Razorpay's own smallest payment: 10 cents, or one rupee
+export const MIN = { card: 10, upi: 100 };
 // no ceiling of our own: the sponsor gives what they like; Razorpay and the bank apply their limits
 export const MAX = { card: Number.MAX_SAFE_INTEGER, upi: Number.MAX_SAFE_INTEGER };
 
@@ -76,7 +77,7 @@ export function readSponsor(body, method) {
   // the sponsor picks the amount; anything outside the range is refused, never silently changed
   if (body?.amount === undefined || body?.amount === null || body?.amount === '') s.amount = price.amount;
   else if (Number.isInteger(asked) && asked >= MIN[method] && asked <= MAX[method]) s.amount = asked;
-  else return { error: method === 'card' ? 'The amount must be at least $1.' : 'The amount must be at least ₹1.' };
+  else return { error: method === 'card' ? "Razorpay's smallest card payment is $0.10." : "Razorpay's smallest UPI payment is ₹1." };
   s.currency = price.currency;
   return s;
 }

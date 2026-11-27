@@ -43,7 +43,7 @@ const PRICE: Record<Method, number> = { card: 4999, upi: 419900 };
 // quick amounts, and the range a custom amount may take (in cents / paise)
 const PRESETS: Record<Method, number[]> = { card: [4999, 9900, 19900], upi: [419900, 829900, 1659900] };
 // at least $1 / ₹1, and no ceiling of our own
-const RANGE: Record<Method, [number, number]> = { card: [100, Number.MAX_SAFE_INTEGER], upi: [100, Number.MAX_SAFE_INTEGER] };
+const RANGE: Record<Method, [number, number]> = { card: [10, Number.MAX_SAFE_INTEGER], upi: [100, Number.MAX_SAFE_INTEGER] };
 const money = (minor: number, m: Method) => new Intl.NumberFormat(m === 'upi' ? 'en-IN' : 'en-US', { style: 'currency', currency: m === 'upi' ? 'INR' : 'USD', minimumFractionDigits: m === 'upi' || minor % 100 === 0 ? 0 : 2 }).format(minor / 100);
 const KEY = 'overlay-sponsor';
 
@@ -221,7 +221,7 @@ export function SponsorPage({ onHome }: { onHome: () => void }) {
                 <label className={`sp-other${other && !valid ? ' bad' : ''}`}>
                   <span>{method === 'card' ? '$' : '₹'}</span>
                   <input autoFocus inputMode="decimal" value={other} onChange={(e) => setOther(e.target.value.replace(/[^0-9.]/g, '').slice(0, 12))} placeholder={method === 'card' ? '25' : '2,000'} aria-label="Your amount" />
-                  <small>Any amount from {money(lo, method)}</small>
+                  <small>Any amount</small>
                 </label>
               )}
               {qr ? (
