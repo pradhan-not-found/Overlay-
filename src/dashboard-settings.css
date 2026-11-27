@@ -88,7 +88,7 @@ kbd { display: inline-flex; align-items: center; height: 26px; padding: 0 9px; m
 .ds-conn-logo { width: 40px; height: 40px; border-radius: 11px; display: grid; place-items: center; flex-shrink: 0; color: #fff; }
 .ds-conn-logo.dc { background: #5865f2; }
 .ds-conn-logo.gh { background: #24292f; border: 1px solid rgba(255, 255, 255, 0.12); }
-.ds-conn-logo.lc { background: #2b2316; color: #ffa116; }
+.ds-conn-logo.lc { background: #1c1c1e; border: 1px solid rgba(255, 255, 255, 0.08); color: #ffa116; }
 .ds-status { font-style: normal; font-size: 11.5px; font-weight: 600; padding: 4px 10px; border-radius: 999px; background: rgba(255, 255, 255, 0.07); color: var(--muted); white-space: nowrap; }
 .ds-status::before { content: ''; display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: currentColor; margin-right: 6px; vertical-align: 1px; }
 .ds-status.ok { color: var(--ok); background: rgba(50, 210, 122, 0.12); }

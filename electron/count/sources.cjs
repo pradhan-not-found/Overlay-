@@ -55,22 +55,23 @@ function walk(dir, match, out, depth = 0, budget = { n: 0 }) {
     if (!match(e.name)) continue;
     try {
       const st = fs.statSync(full);
-      if (st.size <= 60_000_000) out.push({ file: full, mtime: st.mtimeMs, size: st.size });
+      out.push({ file: full, mtime: st.mtimeMs, size: st.size });
     } catch {}
   }
 }
 
-function listFiles(kind) {
+// Usage scans skip logs over 60 MB to stay quick; the 'working now' check looks at every file's time.
+function listFiles(kind, all = false) {
   const out = [];
   for (const root of roots(kind)) {
     if (!exists(root)) continue;
     if (kind === 'cursor') {
-      // Cursor keeps its database in WAL mode: new chats land in the -wal and -shm files first,
-      // so the newest of the three is when Cursor last did something.
+      // Cursor keeps its database in WAL mode: new writes land in the -wal file first. (The -shm file
+      // changes whenever Cursor is merely open, so it would make an idle Cursor look busy.)
       try {
         const st = fs.statSync(root);
         let mtime = st.mtimeMs;
-        for (const side of ['-wal', '-shm']) { try { mtime = Math.max(mtime, fs.statSync(root + side).mtimeMs); } catch {} }
+        try { const w = fs.statSync(root + '-wal'); if (w.size > 0) mtime = Math.max(mtime, w.mtimeMs); } catch {}
         out.push({ file: root, mtime, size: st.size });
       } catch {}
       continue;
@@ -81,7 +82,7 @@ function listFiles(kind) {
         : (n) => n.endsWith('.jsonl');
     walk(root, match, out);
   }
-  return out.sort((a, b) => b.mtime - a.mtime);
+  return (all ? out : out.filter((f) => f.size <= 60_000_000)).sort((a, b) => b.mtime - a.mtime);
 }
 
 function fingerprint(kind) {
@@ -352,7 +353,7 @@ function lastActivity(kinds) {
   const out = {};
   for (const kind of kinds) {
     if (!SOURCES.some((d) => d.kind === kind)) continue;
-    const files = listFiles(kind);
+    const files = listFiles(kind, true);
     out[kind] = files.length ? files[0].mtime : 0;
   }
   return out;
