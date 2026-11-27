@@ -709,7 +709,8 @@ ipcMain.on('save-config', (_e, cfg) => {
 // Windows names a notification after the Start menu shortcut that carries the
 // app's ID. The installer makes one; when running from source we make our own,
 // so notifications say "Overlay" with the Overlay icon instead of "Electron".
-const APP_ID = 'com.pradhan.overlay';
+// A development run gets its own ID, so it can never take over the installed app's name and icon.
+const APP_ID = app.isPackaged ? 'com.pradhan.overlay' : 'com.pradhan.overlay.dev';
 app.setName('Overlay');
 
 function registerToastName() {
@@ -726,7 +727,20 @@ function registerDevIdentity() {
   if (process.platform !== 'win32') return;
   registerToastName();
   try {
-    const link = path.join(app.getPath('appData'), 'Microsoft', 'Windows', 'Start Menu', 'Programs', 'Overlay.lnk');
+    const programs = path.join(app.getPath('appData'), 'Microsoft', 'Windows', 'Start Menu', 'Programs');
+    const link = path.join(programs, app.isPackaged ? 'Overlay.lnk' : 'Overlay (dev).lnk');
+    // Windows names toasts and taskbar buttons after a shortcut with this ID; an old one that points
+    // somewhere else (a development copy of electron.exe) would show 'Electron', so it goes.
+    if (app.isPackaged) {
+      for (const name of fs.readdirSync(programs)) {
+        if (!name.toLowerCase().endsWith('.lnk') || name === 'Overlay.lnk') continue;
+        const full = path.join(programs, name);
+        try {
+          const l = shell.readShortcutLink(full);
+          if (l.appUserModelId === APP_ID && path.resolve(l.target) !== path.resolve(process.execPath)) fs.unlinkSync(full);
+        } catch {}
+      }
+    }
     // The installer makes this shortcut; a copy run straight from a folder makes its own.
     if (app.isPackaged && fs.existsSync(link)) return;
     const icon = app.isPackaged ? process.execPath : path.join(__dirname, '../build/icon.ico');
@@ -734,7 +748,7 @@ function registerDevIdentity() {
       target: process.execPath,
       args: app.isPackaged ? '' : `"${path.join(__dirname, '..')}"`,
       cwd: path.join(__dirname, '..'),
-      description: 'Overlay',
+      description: app.isPackaged ? 'Overlay' : 'Overlay (dev)',
       icon,
       iconIndex: 0,
       appUserModelId: APP_ID,

@@ -213,7 +213,10 @@ export function mountContext(opts: { invoke: Invoke; send: Send; on: On; openSpa
     if (key !== shownKey) {
       shownKey = key;
       const words = message ? message.text.split(' ').map((w, n) => `<span class="w" style="--i:${n}">${esc(w)}</span>`).join(' ') : '';
-      msg.innerHTML = message ? `${message.ico ? `<span class="msg-ico">${message.ico}</span>` : ''}<span class="msg-text">${words}</span>` : '';
+      // after an update: the note, then a real What's new button that opens the changelog
+      const btn = message?.act === 'whatsnew' ? `<span class="msg-btn" role="button">What's new<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 17 17 7M8.5 7H17v8.5"/></svg></span>`
+        : message?.act === 'install' ? `<span class="msg-btn" role="button">Restart<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.34-5.66M20 4v4.5h-4.5"/></svg></span>` : '';
+      msg.innerHTML = message ? `${message.ico ? `<span class="msg-ico">${message.ico}</span>` : ''}<span class="msg-text">${words}</span>${btn}` : '';
     }
     if (clock) clock.style.display = opt('idleClock', true) && !show ? '' : 'none';
   }
@@ -282,14 +285,14 @@ export function mountContext(opts: { invoke: Invoke; send: Send; on: On; openSpa
   });
   on('whats-new', (_e: unknown, w: { version: string }) => {
     whatsNewVersion = w?.version || '';
-    say(`Updated to Overlay ${whatsNewVersion} · See what's new`, I.update, 120, 'update', 'whatsnew');
+    say(`Updated to Overlay ${whatsNewVersion}`, I.update, 300, 'update', 'whatsnew');
   });
   on('update-status', (_e: unknown, s: any) => {
     // a short note; the update badge keeps showing the progress after it fades
-    // fixes stay silent; a feature release asks once, with a Download button
-    if (!s?.feature) return;
-    const v = s.version ? ` ${s.version}` : '';
-    void v; // updates are silent; What's new shows after one installs
+    // no Windows notification: the notch says it once while it downloads, then offers a restart when ready
+    const v = s?.version ? ` ${s.version}` : '';
+    if (s?.event === 'available') say(`Downloading Overlay${v}`, I.update, 10, 'update', 'downloading');
+    else if (s?.event === 'downloaded') say(`Overlay${v} is ready`, I.update, 900, 'update', 'install');
   });
   setInterval(loadSnap, 60000);
   const loadActivity = () => invoke('count:active').then((a) => {

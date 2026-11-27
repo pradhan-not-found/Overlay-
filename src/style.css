@@ -1282,3 +1282,20 @@ kbd { font: 600 10px var(--font); color: var(--muted); padding: 2px 6px; border-
 /* turns over when focus becomes a break, like flipping a real one */
 .lk-glass.flip svg { animation: lk-flip 0.8s cubic-bezier(0.65, 0, 0.35, 1); }
 @keyframes lk-flip { from { transform: rotate(-180deg); } to { transform: rotate(0deg); } }
+
+/* What's new, as a button after an update */
+.idle-msg .msg-btn { display: inline-flex; align-items: center; gap: 4px; height: 22px; margin-left: 8px; padding: 0 9px 0 11px; border-radius: 999px; background: #fff; color: #0b0b0f; font-size: 11.5px; font-weight: 600; letter-spacing: -0.01em; flex-shrink: 0; animation: msg-btn-in 0.5s 0.35s cubic-bezier(0.2, 0.8, 0.2, 1) both; transition: transform 0.2s ease, background 0.2s ease; }
+.idle-msg .msg-btn svg { width: 12px; height: 12px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; color: #0b0b0f !important; }
+.idle-msg:hover .msg-btn { transform: translateY(-1px); background: #f1f1f4; }
+.idle-msg[data-act='whatsnew']:hover { background: transparent; }
+@keyframes msg-btn-in { from { opacity: 0; transform: translateX(-4px) scale(0.96); } to { opacity: 1; transform: none; } }
+
+/* update in the notch: the arrow drops while it downloads, a sheen passes when it is ready */
+.idle-msg[data-act='downloading'] .msg-ico svg { animation: upd-drop 1.2s cubic-bezier(0.5, 0, 0.5, 1) infinite; }
+@keyframes upd-drop { 0% { transform: translateY(-3px); opacity: 0; } 35% { opacity: 1; } 70% { transform: translateY(2px); opacity: 1; } 100% { transform: translateY(3px); opacity: 0; } }
+.idle-msg[data-act='install'] { position: relative; overflow: hidden; }
+.idle-msg[data-act='install']::after { content: ''; position: absolute; top: 0; bottom: 0; width: 40%; left: -50%; background: linear-gradient(100deg, transparent, rgba(255, 255, 255, 0.14), transparent); animation: upd-sheen 3.2s ease-in-out 0.6s infinite; pointer-events: none; }
+@keyframes upd-sheen { 0% { left: -50%; } 45%, 100% { left: 120%; } }
+.idle-msg[data-act='install'] .msg-ico svg { animation: upd-pop 0.6s cubic-bezier(0.2, 1.4, 0.4, 1) both; }
+@keyframes upd-pop { from { transform: scale(0.4); opacity: 0; } to { transform: none; opacity: 1; } }
+.idle-msg[data-act='install']:hover, .idle-msg[data-act='downloading']:hover { background: transparent; }

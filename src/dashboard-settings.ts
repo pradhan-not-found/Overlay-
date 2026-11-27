@@ -233,7 +233,7 @@ function updateBody() {
     e === 'checking' ? ['Checking for updates…', '', 'wait']
     : e === 'available' ? [`Overlay ${esc(upd.version)} is available`, upd.feature ? 'New features. Download it in the background, then restart once.' : 'A small fix, downloading in the background.', upd.feature ? 'ok' : 'wait']
     : e === 'downloading' ? [`Downloading ${esc(upd.version || 'the update')}`, `${upd.percent ?? 0}% · ${upd.total ? `${(upd.transferred / 1048576).toFixed(1)} of ${(upd.total / 1048576).toFixed(1)} MB` : ''}`, 'wait']
-    : e === 'downloaded' ? [`Overlay ${esc(upd.version)} is ready`, 'Restart to finish. It also installs the next time Overlay quits.', 'ok']
+    : e === 'downloaded' ? [`Overlay ${esc(upd.version)} is ready`, 'Restart now, or it installs by itself when you step away.', 'ok']
     : e === 'error' ? ['Could not check for updates', 'Check your connection and try again.', 'bad']
     : upd.dev ? ['Running from source', 'Updates install in the downloaded app, not in a development copy.', '']
     : ['You are up to date', upd.lastChecked ? `Checked ${ago(upd.lastChecked)}` : 'Overlay checks by itself every 5 minutes.', 'ok'];
@@ -251,7 +251,7 @@ async function paintAbout(el: HTMLElement) {
   if (st) upd = { ...upd, ...st };
   el.innerHTML = `<div class="ds-page">${head('About', 'Overlay for Windows.')}
     ${card('', `<div class="ds-about"><img src="${overlayMark}" alt=""/><div><b>Overlay</b><span>Version ${esc(version)}</span></div><button type="button" class="ds-btn" data-whatsnew>What's new</button></div>`)}
-    ${card('Updates', `<div data-upd>${updateBody()}</div>`, 'Small fixes download and install by themselves. New features ask first, then download in the background.')}
+    ${card('Updates', `<div data-upd>${updateBody()}</div>`, 'Updates download and install by themselves. The notch tells you when one is ready.')}
   </div>`;
 }
 
