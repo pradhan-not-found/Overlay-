@@ -1,5 +1,7 @@
 ; Overlay installer wording. electron-builder includes this before its pages.
 !macro customHeader
+  ; Sharp text and artwork on scaled (high-DPI) screens.
+  ManifestDPIAware true
   !define MUI_WELCOMEPAGE_TITLE "Welcome to Overlay"
   !define MUI_WELCOMEPAGE_TEXT "Overlay puts music, focus, your calendar and every AI tool's limits in a notch at the top of your screen.$\r$\n$\r$\nIt runs quietly in the background and keeps everything on this PC.$\r$\n$\r$\nClick Next to continue."
   !define MUI_FINISHPAGE_TITLE "Overlay is ready"

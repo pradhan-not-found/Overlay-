@@ -937,11 +937,11 @@ function startTick() {
         btnLockin.textContent = 'Start Break';
         updateRing();
         ringTime.textContent = fmt(BREAK_SECS);
-        if (Notification.permission === 'granted') new Notification('Focus session complete.', { body: 'Take a 5-minute break.' });
+        send('notify', { title: 'Focus session complete', body: 'Take a 5-minute break.' });
       } else {
         // Break over — reset to idle
         resetTimer();
-        if (Notification.permission === 'granted') new Notification('Break over.', { body: 'Ready to lock in again?' });
+        send('notify', { title: 'Break over', body: 'Ready to lock in again?' });
       }
     }
   }, 1000) as unknown as ReturnType<typeof setInterval>;

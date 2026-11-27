@@ -57,6 +57,7 @@ export function mountContext(opts: { invoke: Invoke; send: Send; on: On; openSpa
   let popKind = '';
   let lastWater = Date.now();
   let shownKey = '';
+  let whatsNewVersion = '';
   const alerted = new Set<string>();
 
   const opt = (k: string, fallback: boolean) => (cfg[k] === undefined ? fallback : cfg[k] !== false);
@@ -219,6 +220,7 @@ export function mountContext(opts: { invoke: Invoke; send: Send; on: On; openSpa
     const act = msg.dataset.act;
     if (act === 'unlock') send('open-dashboard', {});
     if (act === 'update') send('open-dashboard', { nav: 'about' });
+    if (act === 'whatsnew') send('open-whats-new', whatsNewVersion);
     if (act !== 'unlock') { message = null; paintMsg(); }
   });
 
@@ -274,6 +276,10 @@ export function mountContext(opts: { invoke: Invoke; send: Send; on: On; openSpa
     if (a.signedIn && !was && opt('idleGreeting', true)) { const g = greet(); say(g.text, g.ico, 8); } else { message = null; paintMsg(); }
     paintChip();
   });
+  on('whats-new', (_e: unknown, w: { version: string }) => {
+    whatsNewVersion = w?.version || '';
+    say(`Updated to Overlay ${whatsNewVersion} · See what's new`, I.update, 120, 'update', 'whatsnew');
+  });
   on('update-status', (_e: unknown, s: any) => {
     if (s?.event === 'available' || s?.event === 'downloaded') say(s.event === 'downloaded' ? `Update ${s.version || ''} is ready`.replace('  ', ' ') : `Overlay ${s.version || ''} is on its way`, I.update, 3600, 'update', 'update');
   });
@@ -290,7 +296,7 @@ export function mountContext(opts: { invoke: Invoke; send: Send; on: On; openSpa
     if (auth.signedIn && every > 0 && Date.now() - lastWater >= every * 60000) {
       lastWater = Date.now();
       say('Time for a glass of water', I.water, 45, 'water');
-      try { new Notification('Drink some water', { body: 'A glass of water, then back to it.', silent: true }); } catch {}
+      send('notify', { title: 'Drink some water', body: 'A glass of water, then back to it.' });
     }
     paintMsg();
   }, 5000);

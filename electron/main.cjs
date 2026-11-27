@@ -46,6 +46,19 @@ try {
   console.warn('[Updater] electron-updater not available:', e.message);
 }
 
+// Every notification carries Overlay's own icon, so Windows never shows Electron's.
+const NOTE_ICON = () => nativeImage.createFromPath(path.join(__dirname, '../build/icon.png'));
+function notify(title, body, onClick) {
+  if (!Notification.isSupported()) return;
+  const n = new Notification({ title: String(title).slice(0, 120), body: String(body || '').slice(0, 240), icon: NOTE_ICON(), silent: false });
+  if (onClick) n.on('click', onClick);
+  n.show();
+}
+ipcMain.on('notify', (_e, p) => {
+  if (!p || typeof p.title !== 'string') return;
+  notify(p.title, p.body, () => { if (mainWindow && !mainWindow.isDestroyed()) mainWindow.show(); });
+});
+
 // No release published yet (404, or an empty feed) means there is nothing newer.
 function reportUpdateError(e) {
   const msg = String(e && e.message || e);
@@ -81,18 +94,7 @@ function initAutoUpdater() {
     console.log('[Updater] Update available:', info.version);
     sendUpdateStatus('available', { version: info.version, releaseNotes: info.releaseNotes || '' });
     
-    // Fire a native OS notification
-    if (Notification.isSupported()) {
-      const notif = new Notification({
-        title: `Overlay ${info.version} is available`,
-        body: 'Downloading update in the background…',
-        icon: path.join(__dirname, '../build/icon.png')
-      });
-      notif.on('click', () => {
-        openSettings('About');
-      });
-      notif.show();
-    }
+    // No pop-up while it downloads: the notch's update badge shows the progress.
   });
 
   autoUpdater.on('update-not-available', (info) => {
@@ -109,18 +111,7 @@ function initAutoUpdater() {
     console.log('[Updater] Update downloaded:', info.version);
     sendUpdateStatus('downloaded', { version: info.version });
     
-    // Notify user it's ready
-    if (Notification.isSupported()) {
-      const notif = new Notification({
-        title: `Overlay ${info.version} ready to install`,
-        body: 'Click to restart and apply the update.',
-        icon: path.join(__dirname, '../build/icon.png')
-      });
-      notif.on('click', () => {
-        autoUpdater.quitAndInstall(false, true);
-      });
-      notif.show();
-    }
+    notify(`Overlay ${info.version} is ready`, 'Restart to finish the update. It also installs the next time Overlay quits.', () => installUpdate());
   });
 
   autoUpdater.on('error', (err) => {
@@ -779,6 +770,18 @@ if (!gotTheLock) {
       }, 1500);
     }
 
+    // ── What's new: the first launch on a new version says so in the notch ──
+    try {
+      const now = app.getVersion();
+      const before = db.getSetting('lastVersion', '');
+      db.setSetting('lastVersion', now);
+      if (before && before !== now) {
+        setTimeout(() => {
+          if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send('whats-new', { version: now, from: before });
+        }, 5000);
+      }
+    } catch {}
+
     // ── Auto-update: wire up events then check after 10 s (let app load first) ──
     initAutoUpdater();
     if (app.isPackaged && autoUpdater) {
@@ -828,9 +831,20 @@ ipcMain.on('check-for-updates', () => {
   }
 });
 
+// The notes for a version: its release page on the public downloads repository.
+ipcMain.on('open-whats-new', (_e, version) => {
+  const v = String(version || app.getVersion()).replace(/[^0-9.]/g, '');
+  shell.openExternal(`https://github.com/pradhan-not-found/overlay-releases/releases/tag/v${v}`);
+});
 ipcMain.handle('update:state', () => ({ ...lastUpdate, current: app.getVersion(), lastChecked, packaged: app.isPackaged }));
 
+// Silent install, then Overlay opens again: no installer window during an update.
+function installUpdate() {
+  if (!autoUpdater) return;
+  try { db.setSetting('updatedFrom', app.getVersion()); } catch {}
+  autoUpdater.quitAndInstall(true, true);
+}
 ipcMain.on('install-update', () => {
-  if (autoUpdater) autoUpdater.quitAndInstall(false, true);
+  installUpdate();
 });
 

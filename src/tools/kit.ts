@@ -192,7 +192,7 @@ export function mountKit(opts: { invoke: Invoke; send: Send }) {
   const startRest = (kind: Kind) => {
     resting = { kind, left: KINDS[kind].secs };
     reset(kind);
-    try { new Notification(KINDS[kind].label, { body: KINDS[kind].line, silent: true }); } catch {}
+    send('notify', { title: KINDS[kind].label, body: KINDS[kind].line });
     paintBreaks();
   };
   br.addEventListener('click', (e) => {

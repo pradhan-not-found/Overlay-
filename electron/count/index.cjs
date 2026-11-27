@@ -3,7 +3,7 @@
  * Count engine for Overlay: local AI usage, plan limits, and one-click
  * handoff between coding agents. Everything runs on this machine.
  */
-const { app, ipcMain, clipboard, Notification, BrowserWindow } = require('electron');
+const { app, ipcMain, clipboard, Notification, BrowserWindow, nativeImage } = require('electron');
 const { execFile } = require('child_process');
 const fs = require('fs');
 const os = require('os');
@@ -201,7 +201,7 @@ async function handoff(from, to, reason, launch) {
     const note = new Notification({
       title: canLaunch ? `Continue in ${src.NAMES[target]}` : `Switch to ${src.NAMES[target]}`,
       body: canLaunch ? `${reason} Click to open ${src.NAMES[target]} in ${path.basename(cwd)} with your context.` : `${reason} Your context is on the clipboard.`,
-      icon: path.join(__dirname, '../../build/icon.png'),
+      icon: nativeImage.createFromPath(path.join(__dirname, '../../build/icon.png')),
     });
     note.on('click', () => {
       if (!canLaunch) return;
