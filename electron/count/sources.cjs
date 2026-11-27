@@ -98,7 +98,7 @@ function detect(hidden = []) {
     if (hidden.includes(def.kind)) continue;
     const root = roots(def.kind).find(exists);
     if (!root) continue;
-    const files = listFiles(def.kind);
+    const files = listFiles(def.kind, true); // every log counts for "when was it last used"
     if (!files.length) continue;
     found.push({ kind: def.kind, name: def.name, path: root, lastActive: files[0].mtime });
   }

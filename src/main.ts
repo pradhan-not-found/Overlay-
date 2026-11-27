@@ -1579,11 +1579,20 @@ let openedByHover = false;
 let hoverTimer = 0;
 let leaveTimer = 0;
 const typing = () => { const a = document.activeElement as HTMLElement | null; return !!a && pill.contains(a) && ['INPUT', 'TEXTAREA', 'SELECT'].includes(a.tagName); };
+pill.addEventListener('mouseover', (e) => {
+  if (appPhase !== 'idle') return;
+  const t = e.target as HTMLElement;
+  if (t.closest('.msg-btn, .ctx-slot, .ibtn')) { clearTimeout(hoverTimer); hoverTimer = 0; }
+  else if (hoverOpen && !hoverTimer && !dragging && !(window as any).__overlayLocked) pill.dispatchEvent(new MouseEvent('mouseenter'));
+});
 pill.addEventListener('mouseenter', () => {
   clearTimeout(leaveTimer);
   if (!hoverOpen || appPhase !== 'idle' || dragging || (window as any).__overlayLocked) return; // never from the bubble
   hoverTimer = window.setTimeout(() => {
+    hoverTimer = 0;
     if (appPhase !== 'idle' || dragging || pDown) return;
+    // resting on something you can click (What's new, Restart, the AI chip, play) never opens the notch
+    if (pill.querySelector('.msg-btn:hover, .ctx-slot:hover, .ibtn:hover')) return;
     openedByHover = true;
     setPhase('expanded');
   }, 320);

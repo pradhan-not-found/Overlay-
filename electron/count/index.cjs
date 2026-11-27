@@ -115,6 +115,10 @@ async function refreshLimits(force = false) {
 const peak = (kind) => Math.max(0, ...limits.filter((l) => l.kind === kind).map((l) => l.usedPercent));
 
 function currentTool() {
+  // the tool whose logs moved most recently, read live (a big log never refreshes 'detected' on its own)
+  let live = {};
+  try { live = src.lastActivity(detected.map((d) => d.kind)); } catch {}
+  for (const d of detected) if (live[d.kind]) d.lastActive = Math.max(d.lastActive || 0, live[d.kind]);
   const list = detected.filter((d) => SWITCHABLE.includes(d.kind)).sort((a, b) => (b.lastActive || 0) - (a.lastActive || 0));
   return list[0] ? list[0].kind : null;
 }

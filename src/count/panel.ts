@@ -115,7 +115,9 @@ function nestedRing(session: number, week: number, size = 34): string {
 function renderOverviewChip(s: Snapshot) {
   const el = document.getElementById('ov-ai');
   if (!el) return;
-  const g = grouped(s.limits).sort((a, b) => b.peak - a.peak)[0];
+  // the tool you are on first; otherwise the one closest to its limit
+  const groups = grouped(s.limits);
+  const g = groups.find((x) => x.kind === s.current) || groups.sort((a, b) => b.peak - a.peak)[0];
   if (!g) {
     // no limits to show: today's AI use, or a quiet line before any
     const bars = '<svg class="ov-ai-bars" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M5 20v-6M12 20V8M19 20V4"/></svg>';
