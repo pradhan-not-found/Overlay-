@@ -1310,3 +1310,5 @@ kbd { font: 600 10px var(--font); color: var(--muted); padding: 2px 6px; border-
 .wk-col.today .wk-bar i { background: var(--accent) !important; }
 .t-len button[aria-checked='true'] { background: var(--accent) !important; color: #fff !important; }
 .space-dot::after { background: var(--accent); }
+
+.ctx-chip .ctx-wk { margin-left: 2px; font-size: 9px; font-weight: 600; opacity: 0.6; text-transform: uppercase; letter-spacing: 0.04em; }

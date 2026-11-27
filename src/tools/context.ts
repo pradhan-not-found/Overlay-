@@ -87,11 +87,16 @@ export function mountContext(opts: { invoke: Invoke; send: Send; on: On; openSpa
       if (k && (working() || ctx.kind === 'code' || ctx.kind === 'terminal')) {
         const lim = limitsOf(k);
         const top = lim.reduce((m, l) => Math.max(m, l.usedPercent), 0);
+        // the 5-hour (session) limit is the one you watch while working; the week takes over only when it is nearly used up
+        const sess = lim.find((l) => l.label === 'Session');
+        const week = lim.find((l) => l.label === 'Weekly');
+        const showWeek = !!week && week.usedPercent >= 80 && (!sess || week.usedPercent > sess.usedPercent);
+        const shown = showWeek ? week! : sess || week;
         const tip = [NAMES[k] || k, ...lim.map((l) => `${l.label} ${Math.round(l.usedPercent)}%`)].join(' · ');
         void tip;
         // a second agent working at the same time sits beside the first as a small logo
         const also = Object.entries(activity).filter(([o, t]) => o !== k && Date.now() - t < 120000).sort((x, y) => y[1] - x[1]).map(([o]) => o)[0];
-        html = `<span class="ctx-chip${top >= 80 ? ' hot' : ''}" data-pop="agent" data-hover="agent" role="button" tabindex="0" aria-label="${esc(NAMES[k] || k)} limits">${logo(k, 15)}${lim.length ? `<span>${Math.round(top)}%</span>` : ''}${also ? `<i class="ctx-also" title="${esc(NAMES[also] || also)} is working too">${logo(also, 13)}</i>` : ''}</span>`;
+        html = `<span class="ctx-chip${top >= 80 ? ' hot' : ''}" data-pop="agent" data-hover="agent" role="button" tabindex="0" aria-label="${esc(NAMES[k] || k)} limits">${logo(k, 15)}${shown ? `<span>${Math.round(shown.usedPercent)}%${showWeek ? '<small class="ctx-wk">wk</small>' : ''}</span>` : ''}${also ? `<i class="ctx-also" title="${esc(NAMES[also] || also)} is working too">${logo(also, 13)}</i>` : ''}</span>`;
       } else if (ctx.kind === 'browser') {
         html = `<span class="ctx-chip" data-pop="browser" role="button" tabindex="0" aria-label="Browser tools">${I.browser}</span>`;
       }
@@ -111,7 +116,7 @@ export function mountContext(opts: { invoke: Invoke; send: Send; on: On; openSpa
     if (!k || !pop.hidden) return;
     const lim = limitsOf(k);
     hover.innerHTML = `<div class="ctx-hover-head">${logo(k, 16)}<b>${esc(NAMES[k] || k)}</b><span>Click for every tool</span></div>
-      ${lim.map((l) => `<div class="ctx-lim"><span>${esc(l.label)}</span><i><em style="width:${Math.min(100, Math.max(2, l.usedPercent))}%" class="${l.usedPercent >= 80 ? 'hot' : ''}"></em></i><b>${Math.round(l.usedPercent)}%</b><small>${l.resetsAt ? `resets in ${resets(l.resetsAt)}` : ''}</small></div>`).join('') || '<p class="ctx-empty">No plan limits read yet.</p>'}`;
+      ${lim.map((l) => `<div class="ctx-lim"><span>${esc(l.label === 'Session' ? '5-hour' : l.label === 'Weekly' ? 'Week' : l.label)}</span><i><em style="width:${Math.min(100, Math.max(2, l.usedPercent))}%" class="${l.usedPercent >= 80 ? 'hot' : ''}"></em></i><b>${Math.round(l.usedPercent)}%</b><small>${l.resetsAt ? `resets in ${resets(l.resetsAt)}` : ''}</small></div>`).join('') || '<p class="ctx-empty">No plan limits read yet.</p>'}`;
     const r = pill.getBoundingClientRect();
     hover.style.top = `${r.bottom + 8}px`;
     hover.style.left = `${r.left + r.width / 2}px`;
@@ -145,7 +150,7 @@ export function mountContext(opts: { invoke: Invoke; send: Send; on: On; openSpa
       pop.innerHTML = `<div class="ctx-pop-head"><b>AI limits</b><span>${current ? `On ${esc(NAMES[current] || current)} now` : 'All tools'}</span></div>
         ${order.map((k) => `<div class="ctx-tool${k === current ? ' on' : ''}">
           <div class="ctx-tool-name">${logo(k, 15)}<b>${esc(NAMES[k] || k)}</b></div>
-          ${limitsOf(k).map((l) => `<div class="ctx-lim"><span>${esc(l.label)}</span><i><em style="width:${Math.min(100, Math.max(2, l.usedPercent))}%" class="${l.usedPercent >= 80 ? 'hot' : ''}"></em></i><b>${Math.round(l.usedPercent)}%</b><small>${l.resetsAt ? `resets in ${resets(l.resetsAt)}` : ''}</small></div>`).join('')}
+          ${limitsOf(k).map((l) => `<div class="ctx-lim"><span>${esc(l.label === 'Session' ? '5-hour' : l.label === 'Weekly' ? 'Week' : l.label)}</span><i><em style="width:${Math.min(100, Math.max(2, l.usedPercent))}%" class="${l.usedPercent >= 80 ? 'hot' : ''}"></em></i><b>${Math.round(l.usedPercent)}%</b><small>${l.resetsAt ? `resets in ${resets(l.resetsAt)}` : ''}</small></div>`).join('')}
         </div>`).join('') || '<p class="ctx-empty">No plan limits read yet.</p>'}
         <button type="button" class="ctx-pop-btn" data-ctx="usage">${I.open}<span>Open AI Usage in the Dashboard</span></button>`;
     } else {

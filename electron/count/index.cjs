@@ -90,7 +90,7 @@ async function refreshLimits(force = false) {
   // Claude's usage endpoint uses your existing Claude login; poll it gently.
   const prevClaude = limits.filter((l) => l.kind === 'claude-code');
   let claude = prevClaude;
-  if (force || Date.now() - lastRemote > 180_000) {
+  if (force || Date.now() - lastRemote > 60_000) {
     try { claude = await claudeRemote(); lastRemote = Date.now(); } catch { claude = prevClaude; }
   }
   try {
