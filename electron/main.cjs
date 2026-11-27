@@ -1,7 +1,7 @@
 'use strict';
 process.env['ELECTRON_DISABLE_SECURITY_WARNINGS'] = 'true';
 
-const { app, BrowserWindow, ipcMain, shell, screen, nativeImage, Notification, Tray, Menu } = require('electron');
+const { app, BrowserWindow, ipcMain, shell, screen, nativeImage, Notification, Tray, Menu, globalShortcut, dialog } = require('electron');
 const path   = require('path');
 const fs     = require('fs');
 const si     = require('systeminformation');
@@ -589,6 +589,43 @@ ipcMain.on('open-shortcut', (_e, target) => {
   exec(`start "" "${value.replace(/"/g, '')}"`, (err) => {
     if (err) console.error('Failed to open shortcut:', err);
   });
+});
+
+// ── Keys that work anywhere ──
+const HOTKEYS = [
+  { id: 'toggle', accel: 'Alt+Space', label: 'Open or close the notch' },
+  { id: 'lockin', accel: 'Control+Shift+F', label: 'Start or pause Lock In' },
+];
+const hotkeyState = {};
+function registerHotkeys() {
+  for (const k of HOTKEYS) {
+    try { globalShortcut.unregister(k.accel); } catch {}
+    let ok = false;
+    try {
+      ok = globalShortcut.register(k.accel, () => {
+        if (!mainWindow || mainWindow.isDestroyed()) return;
+        if (k.id === 'lockin') mainWindow.webContents.send('start-local-timer');
+        else { mainWindow.show(); mainWindow.webContents.send('hotkey:toggle'); }
+      });
+    } catch {}
+    hotkeyState[k.id] = ok; // false when another app already uses the keys
+  }
+}
+app.whenReady().then(registerHotkeys);
+app.on('will-quit', () => { try { globalShortcut.unregisterAll(); } catch {} });
+ipcMain.handle('hotkeys:state', () => HOTKEYS.map((k) => ({ ...k, ok: !!hotkeyState[k.id] })));
+
+// Pick an app for a launch shortcut: a program or a Start menu shortcut.
+ipcMain.handle('shortcut:pick-app', async () => {
+  const r = await dialog.showOpenDialog(dashWindow && !dashWindow.isDestroyed() ? dashWindow : undefined, {
+    title: 'Choose an app',
+    defaultPath: path.join(process.env.ProgramData || 'C:\\ProgramData', 'Microsoft', 'Windows', 'Start Menu', 'Programs'),
+    filters: [{ name: 'Apps', extensions: ['exe', 'lnk', 'url', 'bat', 'cmd'] }, { name: 'All files', extensions: ['*'] }],
+    properties: ['openFile'],
+  });
+  if (r.canceled || !r.filePaths[0]) return null;
+  const file = r.filePaths[0];
+  return { target: file, name: path.basename(file).replace(/\.(exe|lnk|url|bat|cmd)$/i, '') };
 });
 
 ipcMain.handle('get-file-icon', async (_e, path) => {

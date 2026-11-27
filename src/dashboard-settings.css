@@ -169,7 +169,7 @@ label.ds-btn { display: inline-flex; align-items: center; }
 .ds-gate-logo img { width: 24px; height: auto; border-radius: 0; box-shadow: none; }
 /* Room for the window controls that float over the top edge. */
 .dash-main { padding-top: 0; }
-.ds-page { padding-top: 52px; }
+.ds-page { padding-top: 28px; }
 .nav-rail { padding-top: 22px; }
 
 /* ── Share report ─────────────────────────────────────────────────────── */

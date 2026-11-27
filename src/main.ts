@@ -948,6 +948,11 @@ if (ipc) {
   });
 
   // Fired by main.cjs when dashboard is NOT open and user clicks Lock In in notch
+  ipc.on('hotkey:toggle', () => {
+    if (appPhase === 'mini') { restoreFromMini(); return; }
+    openedByHover = false;
+    setPhase(appPhase === 'idle' ? 'expanded' : 'idle');
+  });
   ipc.on('start-local-timer', () => {
     if (timerPhase === 'off') {
       timerPhase = 'focus';

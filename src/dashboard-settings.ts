@@ -240,13 +240,32 @@ function paintMedia(el: HTMLElement) {
   </div>`;
 }
 
-function paintShortcuts(el: HTMLElement) {
+let scAdding: '' | 'app' | 'site' = '';
+async function paintShortcuts(el: HTMLElement) {
   const list: any[] = config.shortcuts || [];
-  el.innerHTML = `<div class="ds-page">${head('Shortcuts', 'Keys that work anywhere, and the apps and sites the notch can open.')}
-    ${card('Keyboard', [row('Show or hide the notch', '', '<kbd>Alt</kbd><kbd>Space</kbd>'), row('Lock In', '', '<kbd>Ctrl</kbd><kbd>Shift</kbd><kbd>F</kbd>')].join(''))}
-    ${card('Launch shortcuts', (list.map((s, i) => row(esc(s.name), esc(s.target), `<button type="button" class="ds-btn ghost" data-sc-del="${i}">Remove</button>`)).join('') || '<p class="ds-empty">No shortcuts yet.</p>') +
-      `<form class="ds-inline" data-sc-add><input name="name" placeholder="Name, like Chrome" required/><input name="target" placeholder="Path or https:// address" required/><button class="ds-btn" type="submit">Add</button></form>`)}
+  const keys: { id: string; accel: string; label: string; ok: boolean }[] = (await invoke('hotkeys:state')) || [
+    { id: 'toggle', accel: 'Alt+Space', label: 'Open or close the notch', ok: true },
+    { id: 'lockin', accel: 'Control+Shift+F', label: 'Start or pause Lock In', ok: true },
+  ];
+  const kbd = (accel: string) => accel.split('+').map((k) => `<kbd>${esc(k === 'Control' ? 'Ctrl' : k)}</kbd>`).join('<i class="sc-plus">+</i>');
+  const host = (t: string) => { try { return new URL(t).hostname.replace(/^www\./, ''); } catch { return ''; } };
+  const where = (t: string) => /^https?:/i.test(t) ? host(t) : t.split(/[\\/]/).pop() || t;
+  const tile = (s: any, i: number) => `<div class="sc-tile" title="${esc(s.target)}">
+      <span class="sc-ico">${s.iconUrl ? `<img src="${esc(s.iconUrl)}" alt="" onerror="this.replaceWith(Object.assign(document.createElement('b'),{textContent:'${esc((s.name || '?').charAt(0).toUpperCase())}'}))"/>` : `<b>${esc((s.name || '?').charAt(0).toUpperCase())}</b>`}</span>
+      <span class="sc-text"><b>${esc(s.name)}</b><small>${esc(where(s.target))}</small></span>
+      <button type="button" class="sc-del" data-sc-del="${i}" title="Remove" aria-label="Remove ${esc(s.name)}"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+    </div>`;
+  const addPanel = scAdding === 'site'
+    ? `<form class="sc-add-form" data-sc-add><input name="target" placeholder="https://example.com" required autofocus/><input name="name" placeholder="Name (optional)"/><button class="ds-btn primary" type="submit">Add site</button><button class="ds-btn ghost" type="button" data-sc-cancel>Cancel</button></form>`
+    : '';
+  el.innerHTML = `<div class="ds-page">${head('Shortcuts', 'Keys that work anywhere, and the apps and sites the notch opens in one click.')}
+    ${card('Keyboard', keys.map((k) => `<div class="ds-row"><div class="ds-row-text"><b>${esc(k.label)}</b><span>${k.ok ? 'Works in any app.' : 'Another app already uses these keys, so Overlay could not take them.'}</span></div><span class="sc-keys${k.ok ? '' : ' off'}">${kbd(k.accel)}</span></div>`).join(''))}
+    ${card('Apps and sites', `<div class="sc-grid">${list.map(tile).join('')}
+        <button type="button" class="sc-tile sc-new" data-sc-new="app"><span class="sc-ico"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="4"/><path d="M12 8.5v7M8.5 12h7"/></svg></span><span class="sc-text"><b>Add an app</b><small>Pick it from your PC</small></span></button>
+        <button type="button" class="sc-tile sc-new" data-sc-new="site"><span class="sc-ico"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M3.5 12h17M12 3.5c2.6 2.4 2.6 14.6 0 17M12 3.5c-2.6 2.4-2.6 14.6 0 17"/></svg></span><span class="sc-text"><b>Add a website</b><small>Paste its address</small></span></button>
+      </div>${addPanel}`, 'The first five show as buttons in the open notch, and the first three in the closed notch.')}
   </div>`;
+  if (scAdding === 'site') (el.querySelector('[data-sc-add] input[name="target"]') as HTMLInputElement | null)?.focus();
 }
 
 // ── Updates ─────────────────────────────────────────────────────────────────
@@ -403,6 +422,18 @@ export async function mountSettings() {
     }
     if (t.closest('[data-accent-reset]')) { setAccent(DEFAULT_ACCENT); return; }
     if (t.closest('.ds-switch[data-login]')) { await invoke('login-item:set', !t.closest('.ds-switch')!.classList.contains('on')); repaintActive(); return; }
+    const scNew = t.closest<HTMLElement>('[data-sc-new]');
+    if (scNew) {
+      if (scNew.dataset.scNew === 'site') { scAdding = 'site'; repaintActive(); return; }
+      const picked = await invoke('shortcut:pick-app');
+      if (picked?.target) {
+        const iconUrl = (await invoke('get-file-icon', picked.target)) || '';
+        config.shortcuts = [...(config.shortcuts || []), { name: picked.name, target: picked.target, iconUrl }];
+        send('save-shortcuts', config.shortcuts); saveConfig();
+      }
+      scAdding = ''; repaintActive(); return;
+    }
+    if (t.closest('[data-sc-cancel]')) { scAdding = ''; repaintActive(); return; }
     const del = t.closest<HTMLElement>('[data-sc-del]');
     if (del) { const list = [...(config.shortcuts || [])]; list.splice(Number(del.dataset.scDel), 1); config.shortcuts = list; send('save-shortcuts', list); saveConfig(); repaintActive(); return; }
     if (t.closest('[data-update]')) { upd = { ...upd, event: 'checking' }; const box = $('[data-upd]'); if (box) box.innerHTML = updateBody(); send('check-for-updates'); return; }
@@ -431,8 +462,12 @@ export async function mountSettings() {
     e.preventDefault();
     const data = new FormData(form);
     if (form.matches('[data-sc-add]')) {
-      const name = String(data.get('name') || '').trim(), target = String(data.get('target') || '').trim();
-      if (!name || !target) return;
+      let target = String(data.get('target') || '').trim();
+      if (target && !/^[a-z]+:/i.test(target) && /\.[a-z]{2,}/i.test(target)) target = `https://${target}`;
+      let name = String(data.get('name') || '').trim();
+      if (!name) { try { const h = new URL(target).hostname.replace(/^www\./, ''); name = h.split('.')[0].replace(/^./, (c) => c.toUpperCase()); } catch { name = target; } }
+      if (!target) return;
+      scAdding = '';
       let iconUrl = '';
       if (/^https?:/i.test(target)) { try { iconUrl = `https://t3.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://${new URL(target).hostname}&size=128`; } catch {} }
       else iconUrl = (await invoke('get-file-icon', target)) || '';

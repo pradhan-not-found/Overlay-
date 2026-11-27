@@ -206,7 +206,7 @@ function init() {
       try { const st = fs.statSync(file); return { file, name, at: st.mtimeMs, size: st.size }; } catch { return null; }
     }).filter(Boolean).sort((a, b) => b.at - a.at).slice(0, n);
   };
-  ipcMain.handle('desk:shots', () => newest(shotDir(), /\.(png|jpe?g)$/i, 6).map((f) => ({ ...f, thumb: thumb(f.file, 220) })));
+  ipcMain.handle('desk:shots', () => newest(shotDir(), /\.(png|jpe?g)$/i, 7).map((f) => ({ ...f, thumb: thumb(f.file, 220) })));
   ipcMain.handle('desk:recs', () => newest(recDir(), /\.(webm|ogg|wav|m4a)$/i, 6));
   ipcMain.handle('desk:open', (_e, file) => {
     const target = path.resolve(String(file || ''));
