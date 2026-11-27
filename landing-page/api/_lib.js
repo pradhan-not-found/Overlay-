@@ -53,7 +53,7 @@ export function signatureOk(secret, payload, given) {
 
 // ── Prices, fixed on the server ────────────────────────────────────────────
 export const PRICES = { card: { amount: 4999, currency: 'USD' }, upi: { amount: 419900, currency: 'INR' } };
-export const MIN = { card: 100, upi: 100 };
+export const MIN = { card: 500, upi: 10000 };
 export const MAX = { card: 500000, upi: 42000000 };
 
 const clean = (v, max) => (typeof v === 'string' ? v.trim().slice(0, max) : '');
@@ -72,7 +72,10 @@ export function readSponsor(body, method) {
   if (!s.name) return { error: 'Add your full name.' };
   if (!s.address) return { error: 'Add your billing address.' };
   const asked = Number(body?.amount);
-  s.amount = Number.isInteger(asked) && asked >= MIN[method] && asked <= MAX[method] ? asked : price.amount;
+  // the sponsor picks the amount; anything outside the range is refused, never silently changed
+  if (body?.amount === undefined || body?.amount === null || body?.amount === '') s.amount = price.amount;
+  else if (Number.isInteger(asked) && asked >= MIN[method] && asked <= MAX[method]) s.amount = asked;
+  else return { error: 'Choose an amount within the allowed range.' };
   s.currency = price.currency;
   return s;
 }

@@ -40,6 +40,9 @@ export function SponsorStrip({ onOpen }: { onOpen: (e: React.MouseEvent) => void
 type Method = 'card' | 'upi';
 // one sponsor spot, one price: in dollars by card, or in rupees by UPI
 const PRICE: Record<Method, number> = { card: 4999, upi: 419900 };
+// quick amounts, and the range a custom amount may take (in cents / paise)
+const PRESETS: Record<Method, number[]> = { card: [4999, 9900, 19900], upi: [419900, 829900, 1659900] };
+const RANGE: Record<Method, [number, number]> = { card: [500, 500000], upi: [10000, 42000000] };
 const money = (minor: number, m: Method) => new Intl.NumberFormat(m === 'upi' ? 'en-IN' : 'en-US', { style: 'currency', currency: m === 'upi' ? 'INR' : 'USD', minimumFractionDigits: m === 'upi' || minor % 100 === 0 ? 0 : 2 }).format(minor / 100);
 const KEY = 'overlay-sponsor';
 
@@ -68,8 +71,20 @@ export function SponsorPage({ onHome }: { onHome: () => void }) {
   const [qr, setQr] = useState<{ id: string; image: string; closeBy: number } | null>(null);
   const poll = useRef(0);
 
-  const amount = PRICE[method];
-  useEffect(() => { window.clearInterval(poll.current); setQr(null); setError(''); }, [method]);
+  const [pick, setPick] = useState<number | 'other'>(PRICE.card);
+  const [other, setOther] = useState('');
+  const typed = Math.round(parseFloat(other.replace(/[^0-9.]/g, '')) * 100) || 0;
+  const amount = pick === 'other' ? typed : pick;
+  const [lo, hi] = RANGE[method];
+  const valid = amount >= lo && amount <= hi;
+  // switching currency keeps the same position: the second dollar amount becomes the second rupee amount
+  const switchTo = (m: Method) => {
+    if (m === method) return;
+    if (pick !== 'other') { const i = Math.max(0, PRESETS[method].indexOf(pick)); setPick(PRESETS[m][i]); }
+    else setOther('');
+    setMethod(m);
+  };
+  useEffect(() => { window.clearInterval(poll.current); setQr(null); setError(''); }, [method, amount]);
   useEffect(() => () => window.clearInterval(poll.current), []);
   const set = (k: keyof Details) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => setD((x) => ({ ...x, [k]: e.target.value }));
 
@@ -194,14 +209,25 @@ export function SponsorPage({ onHome }: { onHome: () => void }) {
             <div className="sp-pay">
               <div className="sp-summary"><span>{d.product}</span><button type="button" onClick={() => setStep('details')}>Edit</button></div>
               <div className="sp-methods" role="radiogroup" aria-label="Payment method">
-                <button type="button" role="radio" aria-checked={method === 'card'} className={method === 'card' ? 'on' : ''} onClick={() => setMethod('card')}><b>USD · {money(PRICE.card, 'card')}</b><small>Card, any country</small></button>
-                <button type="button" role="radio" aria-checked={method === 'upi'} className={method === 'upi' ? 'on' : ''} onClick={() => setMethod('upi')}><b>INR · {money(PRICE.upi, 'upi')}</b><small>UPI or QR, India</small></button>
+                <button type="button" role="radio" aria-checked={method === 'card'} className={method === 'card' ? 'on' : ''} onClick={() => switchTo('card')}><b>USD</b><small>Card, any country</small></button>
+                <button type="button" role="radio" aria-checked={method === 'upi'} className={method === 'upi' ? 'on' : ''} onClick={() => switchTo('upi')}><b>INR</b><small>UPI or QR, India</small></button>
               </div>
+              <div className="sp-amounts" role="radiogroup" aria-label="Amount">
+                {PRESETS[method].map((a) => <button type="button" role="radio" aria-checked={pick === a} key={a} className={pick === a ? 'on' : ''} onClick={() => setPick(a)}>{money(a, method)}</button>)}
+                <button type="button" role="radio" aria-checked={pick === 'other'} className={pick === 'other' ? 'on' : ''} onClick={() => setPick('other')}>Other</button>
+              </div>
+              {pick === 'other' && (
+                <label className={`sp-other${other && !valid ? ' bad' : ''}`}>
+                  <span>{method === 'card' ? '$' : '₹'}</span>
+                  <input autoFocus inputMode="decimal" value={other} onChange={(e) => setOther(e.target.value.replace(/[^0-9.]/g, '').slice(0, 9))} placeholder={method === 'card' ? '25' : '2,000'} aria-label="Your amount" />
+                  <small>{money(lo, method)} to {money(hi, method)}</small>
+                </label>
+              )}
               {qr ? (
                 <div className="sp-qr"><img src={qr.image} alt="UPI QR code" /><p>Scan with any UPI app. This page updates by itself when the payment arrives.</p></div>
               ) : (
-                <button type="button" className="sp-go" disabled={busy} onClick={method === 'card' ? () => payCard() : payUpi}>
-                  {busy ? 'Starting…' : method === 'card' ? `Pay ${money(amount, 'card')}` : `Pay ${money(amount, 'upi')} by UPI`}
+                <button type="button" className="sp-go" disabled={busy || !valid} onClick={method === 'card' ? () => payCard() : payUpi}>
+                  {busy ? 'Starting…' : !valid ? 'Enter an amount' : method === 'card' ? `Pay ${money(amount, 'card')}` : `Pay ${money(amount, 'upi')} by UPI`}
                 </button>
               )}
               {error && <p className="sp-error">{error}</p>}

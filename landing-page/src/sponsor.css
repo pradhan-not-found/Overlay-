@@ -284,3 +284,27 @@ html:has(.sps), html:has(.sps) body, html:has(.sps) #root { --bg: #fff; backgrou
 .sps-card { background: none; border: 0; box-shadow: none; border-radius: 0; padding: 56px 0; }
 @media (max-width: 860px) { .sps-card { padding: 28px 0; } }
 html:has(.sps) .top { background: #fff; }
+
+/* amount: three quick picks and Other */
+.sp-pay .sp-amounts { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin: 12px 0 0; }
+.sp-pay .sp-amounts button { height: 44px; border-radius: 12px; border: 1px solid #e3e5ec; background: #fff; color: #0d0f16; font: inherit; font-size: 14px; font-weight: 600; cursor: pointer; font-variant-numeric: tabular-nums; transition: border-color 0.15s ease, background 0.15s ease; }
+.sp-pay .sp-amounts button:hover { border-color: #0d0f16; }
+.sp-pay .sp-amounts button.on { background: #0d0f16; color: #fff; border-color: #0d0f16; }
+.sp-other { display: flex; align-items: center; gap: 8px; height: 52px; margin-top: 10px; padding: 0 16px; border-radius: 12px; border: 1.5px solid #0d0f16; background: #fff; animation: sp-other-in 0.2s ease both; }
+.sp-other.bad { border-color: #e5484d; }
+.sp-other span { font-size: 20px; font-weight: 600; color: #6b7080; }
+.sp-other input { flex: 1; min-width: 0; height: 100%; border: 0; outline: 0; background: transparent; font: inherit; font-size: 20px; font-weight: 600; color: #0d0f16; font-variant-numeric: tabular-nums; }
+.sp-other small { font-size: 12px; color: #8a8f9c; white-space: nowrap; }
+@keyframes sp-other-in { from { opacity: 0; transform: translateY(-3px); } to { opacity: 1; transform: none; } }
+.sp-pay .sp-go { margin-top: 12px; }
+.sp-pay .sp-go:disabled { opacity: 0.45; cursor: not-allowed; }
+@media (max-width: 480px) { .sp-pay .sp-amounts { grid-template-columns: repeat(2, 1fr); } }
+
+/* phones: the payment column fits the screen */
+@media (max-width: 900px) {
+  main.co { grid-template-columns: minmax(0, 1fr) !important; }
+  main.co .co-pay, main.co .co-panel, main.co .sp-pay { min-width: 0; max-width: 100%; width: 100%; box-sizing: border-box; }
+  main.co .co-order { min-width: 0; }
+  main.co .co-line b { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+}
+@media (max-width: 480px) { main.co .co-pay { padding-left: 20px; padding-right: 20px; } .sp-methods button { min-width: 0; } }
