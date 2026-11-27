@@ -109,7 +109,7 @@ function nestedRing(session: number, week: number, size = 34): string {
     return `<circle cx="${size / 2}" cy="${size / 2}" r="${r}" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="${w}"/>
       <circle cx="${size / 2}" cy="${size / 2}" r="${r}" fill="none" stroke="${color}" stroke-width="${w}" stroke-linecap="round" stroke-dasharray="${c}" stroke-dashoffset="${c * (1 - Math.min(100, pct) / 100)}" class="ring-value"/>`;
   };
-  return `<svg class="ring" width="${size}" height="${size}">${ring(size / 2 - 2, week, '#8fa8ff', 3)}${ring(size / 2 - 7, session, 'var(--amber)', 3)}</svg>`;
+  return `<svg class="ring" width="${size}" height="${size}">${ring(size / 2 - 2, week, 'var(--accent)', 3)}${ring(size / 2 - 7, session, 'var(--amber)', 3)}</svg>`;
 }
 
 function renderOverviewChip(s: Snapshot) {

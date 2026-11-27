@@ -1196,7 +1196,8 @@ document.getElementById('qbtn-settings')?.addEventListener('click', e => {
 
 document.getElementById('qbtn-screenshot')?.addEventListener('click', e => {
   e.stopPropagation();
-  send('take-screenshot');
+  // the snip is saved to Pictures › Overlay as soon as it lands on the clipboard
+  void invoke('desk:snip');
 });
 
 // ─── File drop hint ──────────────────────────────────────────────────────────

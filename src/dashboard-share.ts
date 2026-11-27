@@ -100,8 +100,9 @@ async function draw(r: Report): Promise<HTMLCanvasElement> {
 
   // Footer
   g.strokeStyle = LINE; g.lineWidth = 2; g.beginPath(); g.moveTo(P, H - 120); g.lineTo(W - P, H - 120); g.stroke();
-  text('Made with Overlay for Windows', P, H - 70, font(500, 24), MUTED);
-  text('overlay', W - P, H - 70, font(600, 26), INK, 'right', -0.5);
+  // one quiet line: what made it, and where to get it
+  text('Tracked with Overlay for Windows', P, H - 70, font(500, 24), MUTED);
+  text('getoverlay.vercel.app', W - P, H - 70, font(600, 24), INK, 'right');
   return c;
 }
 
@@ -124,12 +125,7 @@ export async function openShare(stats: any, streak: number) {
     <div class="ds-share-side">
       <button type="button" class="ds-share-x" data-share="close" title="Close">${X}</button>
       <h2>Share your day</h2>
-      <p>A card with today's focus, your week and your streak. Download it as a picture or copy it straight into a post or chat.</p>
-      <dl class="ds-share-facts">
-        <div><dt>Focus today</dt><dd>${r.today ? hm(r.today) : 'None yet'}</dd></div>
-        <div><dt>This week</dt><dd>${r.week ? hm(r.week) : 'None yet'}</dd></div>
-        <div><dt>Streak</dt><dd>${r.streak} ${r.streak === 1 ? 'day' : 'days'}</dd></div>
-      </dl>
+      <p>Today's focus, your week and your streak, as a picture. Download it, or copy it straight into a post or chat.</p>
       <div class="ds-share-actions">
         <button type="button" class="ds-share-btn primary" data-share="save">${DOWN}<span>Download PNG</span></button>
         <button type="button" class="ds-share-btn" data-share="copy">${COPY}<span>Copy image</span></button>

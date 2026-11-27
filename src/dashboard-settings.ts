@@ -183,10 +183,27 @@ async function paintGeneral(el: HTMLElement) {
   </div>`;
 }
 
-const ACCENTS = ['#3d6bff', '#0027c4', '#8b5cf6', '#ec4899', '#ff5a4e', '#ff9f43', '#facc15', '#32d27a', '#14b8a6', '#e5e5e5'];
+const ACCENTS: [string, string][] = [['#3d6bff', 'Blue'], ['#0027c4', 'Royal'], ['#8b5cf6', 'Violet'], ['#ec4899', 'Pink'], ['#ff5a4e', 'Red'], ['#ff9f43', 'Orange'], ['#facc15', 'Yellow'], ['#32d27a', 'Green'], ['#14b8a6', 'Teal'], ['#e5e5e5', 'White']];
+const DEFAULT_ACCENT = '#3d6bff';
+const validHex = (v: unknown) => typeof v === 'string' && /^#[0-9a-f]{6}$/i.test(v);
+/** The colour card: swatches with a tick, a custom colour, and a live preview of the notch. */
+function colourCard(accent: string) {
+  const preset = ACCENTS.find(([c]) => c.toLowerCase() === accent.toLowerCase());
+  const tick = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg>';
+  return `<div class="ds-colour" style="--pick:${esc(accent)}">
+    <div class="ds-preview" aria-hidden="true">
+      <div class="ds-prev-notch"><span class="ds-prev-glass"></span><b>18:04</b><em>Focus</em><i class="ds-prev-bar"><i></i></i><span class="ds-prev-dot"></span></div>
+      <div class="ds-prev-meta"><b data-accent-name>${esc(preset ? preset[1] : 'Custom')}</b><span data-accent-hex>${esc(accent.toUpperCase())}</span>${accent.toLowerCase() !== DEFAULT_ACCENT ? '<button type="button" class="ds-link" data-accent-reset>Reset</button>' : ''}</div>
+    </div>
+    <div class="ds-swatches" role="radiogroup" aria-label="Accent colour">
+      ${ACCENTS.map(([c, name]) => `<button type="button" role="radio" aria-checked="${c === preset?.[0]}" class="ds-swatch${c === preset?.[0] ? ' on' : ''}${c === '#e5e5e5' ? ' light' : ''}" data-accent="${c}" style="--c:${c}" title="${name}">${tick}</button>`).join('')}
+      <label class="ds-swatch custom${preset ? '' : ' on'}" title="Custom colour" style="--c:${esc(accent)}">${preset ? '' : tick}<input type="color" value="${esc(accent)}" data-accent-pick aria-label="Custom colour"/></label>
+    </div>
+  </div>`;
+}
 function paintNotch(el: HTMLElement) {
   const on = (k: string, d = true) => (config[k] === undefined ? d : config[k] !== false);
-  const accent = config.accent || '#3d6bff';
+  const accent = validHex(config.accent) ? config.accent : DEFAULT_ACCENT;
   const water = Number(config.waterEvery ?? 30);
   el.innerHTML = `<div class="ds-page">${head('Notch', 'Choose what the notch shows, what it reminds you of and its colour.')}
     ${card('Closed notch', [
@@ -204,7 +221,7 @@ function paintNotch(el: HTMLElement) {
       row('Battery', 'Charge and the charging state.', sw(on('showBattery'), 'data-cfg="showBattery"')),
     ].join(''))}
     ${card('Reminders', row('Drink water', 'A gentle line in the notch and a quiet notification.', `<select class="ds-select" data-cfg-num="waterEvery">${[[0, 'Off'], [30, 'Every 30 min'], [45, 'Every 45 min'], [60, 'Every hour'], [90, 'Every 90 min']].map(([v, l]) => `<option value="${v}"${water === v ? ' selected' : ''}>${l}</option>`).join('')}</select>`))}
-    ${card('Colour', `<div class="ds-swatches">${ACCENTS.map((c) => `<button type="button" class="ds-swatch${c === accent ? ' on' : ''}" data-accent="${c}" style="--c:${c}" title="${c}"></button>`).join('')}<label class="ds-swatch custom" title="Custom colour" style="--c:${esc(accent)}"><input type="color" value="${esc(accent)}" data-accent-pick/></label></div>`, 'Used for the notch highlights, progress and the line in the middle.')}
+    ${card('Colour', colourCard(accent), 'Used across the notch and the Dashboard: highlights, progress bars, Lock In and switches.')}
   </div>`;
 }
 
@@ -320,10 +337,35 @@ const repaintActive = () => {
 };
 const saveConfig = () => send('save-config', config);
 
+// The chosen colour: saved, sent to the notch, and used by the Dashboard itself.
+function applyAccentHere(c: string) {
+  document.documentElement.style.setProperty('--blue', c);
+  document.documentElement.style.setProperty('--pick', c);
+}
+function setAccent(c: string) {
+  if (!validHex(c)) return;
+  config.accent = c;
+  applyAccentHere(c);
+  saveConfig();
+  repaintActive();
+}
+// while the custom picker is open, preview without saving on every move
+document.addEventListener('input', (e) => {
+  const t = e.target as HTMLInputElement;
+  if (!t.matches?.('[data-accent-pick]')) return;
+  const box = t.closest<HTMLElement>('.ds-colour');
+  box?.style.setProperty('--pick', t.value);
+  (t.closest('.ds-swatch') as HTMLElement | null)?.style.setProperty('--c', t.value);
+  const hex = box?.querySelector('[data-accent-hex]'); if (hex) hex.textContent = t.value.toUpperCase();
+  const name = box?.querySelector('[data-accent-name]'); if (name) name.textContent = 'Custom';
+  send('save-config', { accent: t.value });
+});
+
 export async function mountSettings() {
   // Outside the app (a plain browser preview) there is no account to check.
   auth = (await invoke('auth:state')) || (ipc ? auth : { hasAccount: !location.hash.includes('gate=create'), signedIn: !location.hash.includes('gate='), name: 'Souradeep', since: Date.now() });
   config = (await invoke('get-config')) || {};
+  if (validHex(config.accent)) applyAccentHere(config.accent);
   await paintGate();
   paintProfile();
   ipc?.on('auth-changed', (_e: unknown, s: Auth) => { auth = s; void paintGate(); paintProfile(); });
@@ -342,7 +384,8 @@ export async function mountSettings() {
     const cfgSw = t.closest<HTMLElement>('.ds-switch[data-cfg]');
     if (cfgSw) { const k = cfgSw.dataset.cfg!; const cur = config[k] === undefined ? cfgSw.dataset.cfgDef !== '0' : config[k] !== false; config[k] = !cur; saveConfig(); repaintActive(); return; }
     const acc = t.closest<HTMLElement>('[data-accent]');
-    if (acc) { config.accent = acc.dataset.accent; saveConfig(); repaintActive(); return; }
+    if (acc) { setAccent(acc.dataset.accent!); return; }
+    if (t.closest('[data-accent-reset]')) { setAccent(DEFAULT_ACCENT); return; }
     if (t.closest('.ds-switch[data-login]')) { await invoke('login-item:set', !t.closest('.ds-switch')!.classList.contains('on')); repaintActive(); return; }
     const del = t.closest<HTMLElement>('[data-sc-del]');
     if (del) { const list = [...(config.shortcuts || [])]; list.splice(Number(del.dataset.scDel), 1); config.shortcuts = list; send('save-shortcuts', list); saveConfig(); repaintActive(); return; }
@@ -364,7 +407,7 @@ export async function mountSettings() {
     const t = e.target as HTMLSelectElement;
     if (t.matches('[data-cfg-num]')) { const k = t.dataset.cfgNum!; config[k] = Number(t.value); saveConfig(); if (k === 'pomodoroDuration') send('set-setting', 'pomodoro-duration', t.value); }
     if (t.matches('[data-cfg-str]')) { config[t.dataset.cfgStr!] = t.value; saveConfig(); }
-    if (t.matches('[data-accent-pick]')) { config.accent = t.value; saveConfig(); repaintActive(); }
+    if (t.matches('[data-accent-pick]')) setAccent(t.value);
   });
   document.addEventListener('submit', async (e) => {
     const form = e.target as HTMLFormElement;

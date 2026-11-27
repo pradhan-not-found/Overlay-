@@ -362,13 +362,14 @@ export function mountDesk(opts: { invoke: Invoke; send: Send }) {
     }
   });
 
-  const shoot = () => invoke('desk:shot').then((file) => loadCapture(file ? 'Saved to Pictures › Overlay.' : '')).catch(() => loadCapture('Could not capture the screen.'));
+  const shoot = () => invoke('desk:shot').then((file) => loadCapture(file ? 'Saved to Pictures › Overlay and copied.' : '')).catch(() => loadCapture('Could not capture the screen.'));
+  const snip = () => { loadCapture('Draw a box or pick a window. It saves here by itself.'); void invoke('desk:snip').then((file) => loadCapture(file ? 'Saved to Pictures › Overlay and copied.' : 'No capture was taken.')); };
   capture.addEventListener('click', (e) => {
     const t = e.target as HTMLElement;
     const mode = t.closest<HTMLElement>('[data-cap]')?.dataset.cap;
     if (mode) e.stopPropagation();
     if (mode === 'screen') void shoot();
-    if (mode === 'area' || mode === 'window') send('take-screenshot');
+    if (mode === 'area' || mode === 'window') snip();
     if (mode === 'timer') {
       let n = 3;
       const tick = () => { paintCapture([], `Capturing in ${n}…`); if (n-- <= 0) { void shoot(); return; } setTimeout(tick, 1000); };

@@ -1,6 +1,7 @@
 'use strict';
 
-const { app, ipcMain, desktopCapturer, dialog, shell, safeStorage, session, nativeImage } = require('electron');
+const { app, ipcMain, desktopCapturer, dialog, shell, safeStorage, session, nativeImage, clipboard, screen, BrowserWindow } = require('electron');
+const { exec } = require('child_process');
 const { execFile } = require('child_process');
 const fs = require('fs');
 const os = require('os');
@@ -20,9 +21,9 @@ function ps(script) {
   });
 }
 
+// Windows' own Pictures folder (it may live in OneDrive), not just <home>\Pictures
 function pictures() {
-  const home = os.homedir();
-  return path.join(home, 'Pictures');
+  try { return app.getPath('pictures'); } catch { return path.join(os.homedir(), 'Pictures'); }
 }
 
 function shotDir() {
@@ -124,6 +125,17 @@ function open(blob) {
   return safeStorage.decryptString(Buffer.from(blob, 'base64'));
 }
 
+function saveShot(img) {
+  const d = new Date();
+  const stamp = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')} at ${String(d.getHours()).padStart(2, '0')}.${String(d.getMinutes()).padStart(2, '0')}.${String(d.getSeconds()).padStart(2, '0')}`;
+  const file = path.join(shotDir(), `Screenshot ${stamp}.png`);
+  fs.writeFileSync(file, img.toPNG());
+  // the newest shot is also on the clipboard, ready to paste
+  try { clipboard.writeImage(img); } catch {}
+  BrowserWindow.getAllWindows().forEach((w) => { if (!w.isDestroyed()) w.webContents.send('desk:shot-saved', file); });
+  return file;
+}
+
 function init() {
   try {
     session.defaultSession.setPermissionRequestHandler((_wc, permission, allow) => {
@@ -149,14 +161,38 @@ function init() {
     return { ...data, meta };
   });
 
+  // Full screen at the display's real resolution, with Overlay's own windows out of the picture.
   ipcMain.handle('desk:shot', async () => {
-    const sources = await desktopCapturer.getSources({ types: ['screen'], thumbnailSize: { width: 1920, height: 1080 } });
-    const source = sources[0];
-    if (!source) throw new Error('No screen.');
-    const file = path.join(shotDir(), `shot-${Date.now()}.png`);
-    fs.writeFileSync(file, source.thumbnail.toPNG());
-    return file;
+    const d = screen.getPrimaryDisplay();
+    const size = { width: Math.round(d.size.width * d.scaleFactor), height: Math.round(d.size.height * d.scaleFactor) };
+    const wins = BrowserWindow.getAllWindows().filter((w) => !w.isDestroyed() && w.isVisible());
+    wins.forEach((w) => w.setOpacity(0));
+    await new Promise((r) => setTimeout(r, 180));
+    try {
+      const sources = await desktopCapturer.getSources({ types: ['screen'], thumbnailSize: size });
+      const source = sources.find((s) => String(s.display_id) === String(d.id)) || sources[0];
+      if (!source || source.thumbnail.isEmpty()) throw new Error('No screen.');
+      return saveShot(source.thumbnail);
+    } finally {
+      wins.forEach((w) => { if (!w.isDestroyed()) w.setOpacity(1); });
+    }
   });
+
+  // Area or window: Windows' snipping tool puts the picture on the clipboard; we save it as soon as it lands.
+  let snipping = 0;
+  const mark = (img) => { if (!img || img.isEmpty()) return ''; const s = img.getSize(); return `${s.width}x${s.height}:${img.resize({ width: 12, height: 12 }).toBitmap().toString('base64')}`; };
+  ipcMain.handle('desk:snip', () => new Promise((resolve) => {
+    clearInterval(snipping);
+    const before = mark(clipboard.readImage());
+    exec('explorer ms-screenclip:');
+    const started = Date.now();
+    snipping = setInterval(() => {
+      const img = clipboard.readImage();
+      const now = mark(img);
+      if (now && now !== before) { clearInterval(snipping); resolve(saveShot(img)); return; }
+      if (Date.now() - started > 90_000) { clearInterval(snipping); resolve(''); }
+    }, 400);
+  }));
 
   // Small previews, so the notch never loads a full-size picture.
   const thumb = (file, width) => {
