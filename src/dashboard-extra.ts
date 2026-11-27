@@ -1,18 +1,21 @@
 // Dashboard pages for AI usage, to-dos and notes. All data comes from the main
 // process database, and every change is broadcast so the notch stays in step.
-import { aiMark } from './assets/ai-logos';
+// Each page uses the same header and cards as the settings pages.
+import { aiMark, aiName } from './assets/ai-logos';
+import { head } from './dashboard-settings';
 
 type Kind = 'claude-code' | 'codex' | 'cursor' | 'gemini-cli' | 'opencode' | 'copilot' | 'antigravity';
 const NAMES: Record<Kind, string> = { 'claude-code': 'Claude Code', codex: 'Codex', cursor: 'Cursor', 'gemini-cli': 'Gemini CLI', opencode: 'OpenCode', copilot: 'Copilot CLI', antigravity: 'Antigravity' };
+const toolName = (k: string) => NAMES[k as Kind] || aiName(k);
 
 const ipc: any = (() => { try { return (window as any).require('electron').ipcRenderer; } catch { return null; } })();
 const invoke = (ch: string, ...a: any[]) => (ipc ? ipc.invoke(ch, ...a) : Promise.resolve(null));
 const send = (ch: string, ...a: any[]) => ipc?.send(ch, ...a);
 
 const esc = (v: string) => String(v).replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
-const logo = (k: Kind, size = 18) => `<span class="dx-logo">${aiMark(k, size)}</span>`;
+const logo = (k: string, size = 18) => `<span class="dx-logo">${aiMark(k, size)}</span>`;
 const ico = (d: string, size = 16) => `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${d}</svg>`;
-function tokens(n: number): string {
+export function tokens(n: number): string {
   if (n < 1000) return String(Math.round(n));
   if (n < 1e6) return `${(n / 1e3).toFixed(n < 1e4 ? 1 : 0).replace(/\.0$/, '')}K`;
   if (n < 1e9) return `${(n / 1e6).toFixed(n < 1e7 ? 2 : 1).replace(/\.?0+$/, '')}M`;
@@ -22,15 +25,24 @@ const money = (v: number) => v.toLocaleString(undefined, { style: 'currency', cu
 function until(ts: number | null): string {
   if (!ts) return '';
   const m = Math.max(0, Math.floor((ts - Date.now()) / 60000)); const h = Math.floor(m / 60); const d = Math.floor(h / 24);
-  return d > 0 ? `resets in ${d}d ${h % 24}h` : h > 0 ? `resets in ${h}h ${m % 60}m` : `resets in ${m}m`;
+  return d > 0 ? `Resets in ${d}d ${h % 24}h` : h > 0 ? `Resets in ${h}h ${m % 60}m` : `Resets in ${m}m`;
 }
+const orList = (xs: string[]) => (xs.length > 1 ? `${xs.slice(0, -1).join(', ')} or ${xs[xs.length - 1]}` : xs[0] || '');
 const clean = (e: unknown) => String(e instanceof Error ? e.message : e).replace(/^Error invoking remote method '[^']+': (Error: )?/, '');
+
+/** A stat tile: a label, a big value and one muted line under it. */
+export const tile = (label: string, value: string, sub = '', muted = false) =>
+  `<div class="dp-tile"><span class="dp-tile-lbl">${label}</span><b class="dp-tile-val${muted ? ' muted' : ''}">${value}</b>${sub ? `<small>${sub}</small>` : ''}</div>`;
+/** A card with an optional title and something on the right of the title. */
+export const section = (title: string, body: string, side = '', note = '') =>
+  `<section class="ds-card dp-card">${title || side ? `<div class="dp-card-head"><h3>${title}</h3>${side}</div>` : ''}<div class="ds-card-body">${body}</div>${note ? `<p class="ds-note">${note}</p>` : ''}</section>`;
 
 export const DASH_ICONS = {
   ai: `<svg width="20" height="20" viewBox="0 0 100 100" fill="currentColor"><path d="M50 8 58 40 90 50 58 60 50 92 42 60 10 50 42 40Z"/></svg>`,
   todos: ico('<circle cx="12" cy="12" r="8.5"/><path d="m8.5 12.25 2.4 2.4 4.6-4.9"/>', 20),
   notes: ico('<path d="M14.5 4.5H7A2.5 2.5 0 0 0 4.5 7v10A2.5 2.5 0 0 0 7 19.5h10a2.5 2.5 0 0 0 2.5-2.5V9.5"/><path d="m18 3.5 2.5 2.5-7.5 7.5-3.25.75.75-3.25Z"/>', 20),
 };
+const REFRESH = ico('<path d="M20 12a8 8 0 1 1-2.34-5.66M20 4v4.5h-4.5"/>', 15);
 
 // ── AI Usage ────────────────────────────────────────────────────────────────
 let snap: any = null;
@@ -41,95 +53,106 @@ let note = '';
 
 async function loadAI() {
   [snap, hist] = await Promise.all([invoke('count:snapshot'), invoke('count:history', range)]);
+  // Outside the app there is nothing to read: show the empty page, not a spinner.
+  if (!ipc) { snap = snap || { limits: [], sources: [], settings: {} }; hist = hist || { kinds: [], daily: [] }; }
   paintAI();
 }
+
+const LIMIT_NAME: Record<string, string> = { Session: 'Session limit used', Weekly: 'Weekly limit used' };
 
 function paintAI() {
   const el = document.getElementById('panel-ai');
   if (!el) return;
+  const refresh = `<button type="button" class="ds-btn" data-refresh>${REFRESH}<span>Refresh</span></button>`;
+  const top = head('AI usage', 'How much your AI coding tools did, and how close each one is to its plan limit.', refresh);
   if (!snap || !hist) {
-    el.innerHTML = `<div class="panel-inner"><div class="panel-hdr"><div class="panel-label">AI USAGE</div><div class="panel-sub">Reading your AI tools…</div></div></div>`;
+    el.innerHTML = `<div class="ds-page">${top}${section('', '<p class="ds-empty">Reading your AI tools…</p>')}</div>`;
     return;
   }
-  const at = snap.settings.switchAt;
-  const total = hist.kinds.reduce((a: number, k: any) => a + k.tokens, 0);
-  // Every figure reads the stored history, so the cards always agree.
-  const dayTotal = (d: any) => Object.values(d.parts).reduce((x: number, y: any) => x + y, 0) as number;
-  const todayTokens = hist.daily.length ? dayTotal(hist.daily[hist.daily.length - 1]) : 0;
-  const weekTokens = hist.daily.slice(-7).reduce((x: number, d: any) => x + dayTotal(d), 0);
-  const usd = hist.kinds.reduce((a: number, k: any) => a + k.usd, 0);
+  const at = snap.settings?.switchAt ?? 90;
+  const dayTotal = (d: any) => Object.values(d.parts || {}).reduce((x: number, y: any) => x + y, 0) as number;
+  const daily: any[] = hist.daily || [];
+  const total = (hist.kinds || []).reduce((a: number, k: any) => a + k.tokens, 0);
+  const todayTokens = daily.length ? dayTotal(daily[daily.length - 1]) : 0;
+  const weekTokens = daily.slice(-7).reduce((x: number, d: any) => x + dayTotal(d), 0);
+  const usd = (hist.kinds || []).reduce((a: number, k: any) => a + k.usd, 0);
+  const limits: any[] = snap.limits || [];
 
-  // The chart keeps the Stats page look: one bar a day, today in white.
-  // Ninety days fold into weeks so the bars stay readable.
-  const days = hist.daily.map((d: any) => ({ day: d.day, t: Object.values(d.parts).reduce((a: number, b: any) => a + b, 0) as number }));
+  // Nothing used yet, and no plan limits to show: one clear card instead of zeros.
+  if (!total && !limits.length) {
+    const found: string[] = [...new Set<string>((snap.sources || []).map((x: any) => x.kind))];
+    el.innerHTML = `<div class="ds-page">${top}
+      <section class="ds-card dp-empty">
+        <div class="dp-empty-logos">${(found.length ? found : ['claude-code', 'codex', 'cursor', 'gemini-cli']).map((k) => logo(k, 22)).join('')}</div>
+        <b>No AI use yet</b>
+        <p>When you use ${found.length ? orList(found.map(toolName)) : 'Claude Code, Codex, Cursor or another AI coding tool'} on this PC, how much it did shows up here. Nothing leaves this PC.</p>
+      </section>
+    </div>`;
+    return;
+  }
+
+  // One bar a day, today in white. Ninety days fold into weeks so the bars stay readable.
+  const days = daily.map((d: any) => ({ day: d.day, t: dayTotal(d) }));
   const bars = range > 30
     ? Array.from({ length: Math.ceil(days.length / 7) }, (_, w) => {
         const chunk = days.slice(w * 7, w * 7 + 7);
         return { label: new Date(`${chunk[0].day}T12:00`).toLocaleDateString([], { day: 'numeric', month: 'short' }), t: chunk.reduce((a: number, c: any) => a + c.t, 0), today: w === Math.ceil(days.length / 7) - 1 };
       })
     : days.map((d: any, k: number) => ({
-        label: range === 7 ? ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'][new Date(`${d.day}T12:00`).getDay()] : (k % 5 === 4 || k === days.length - 1 ? String(new Date(`${d.day}T12:00`).getDate()) : ''),
+        label: range === 7 ? new Date(`${d.day}T12:00`).toLocaleDateString('en-US', { weekday: 'short' }) : (k % 5 === 4 || k === days.length - 1 ? String(new Date(`${d.day}T12:00`).getDate()) : ''),
         t: d.t, today: k === days.length - 1,
       }));
   const max = Math.max(1, ...bars.map((b: any) => b.t));
   const chart = bars.map((b: any) => `<div class="bar-col">
-      <div class="bar-track" title="${tokens(b.t)}"><div class="bar-fill${b.today ? ' today' : ''}" style="height:${Math.max((b.t / max) * 100, b.t > 0 ? 4 : 0)}%"></div><div class="bar-tip">${tokens(b.t)}</div></div>
+      <div class="bar-track" title="${tokens(b.t)} tokens"><div class="bar-fill${b.today ? ' today' : ''}" style="height:${Math.max((b.t / max) * 100, b.t > 0 ? 4 : 0)}%"></div><div class="bar-tip">${b.t ? `${tokens(b.t)} tokens` : 'None'}</div></div>
       <div class="bar-lbl">${b.label}</div>
     </div>`).join('');
+  const seg = `<div class="dp-seg">${[7, 30, 90].map((d) => `<button type="button" class="${d === range ? 'on' : ''}" data-range="${d}">${d} days</button>`).join('')}</div>`;
 
-  const groups = new Map<Kind, any[]>();
-  for (const l of snap.limits) groups.set(l.kind, [...(groups.get(l.kind) || []), l]);
+  const groups = new Map<string, any[]>();
+  for (const l of limits) groups.set(l.kind, [...(groups.get(l.kind) || []), l]);
   const meter = (l: any) => {
     const pct = Math.round(l.usedPercent);
-    const color = pct >= at ? '#ff453a' : pct >= at - 20 ? '#ffd60a' : '#ffffff';
-    return `<div class="ai-meter"><span>${l.label === 'Weekly' ? 'Week' : l.label}</span><div class="ai-track"><i style="width:${Math.min(100, pct)}%;background:${color}"></i></div><b>${pct}%</b></div>`;
+    const tone = pct >= at ? 'bad' : pct >= at - 20 ? 'warn' : '';
+    return `<div class="dp-meter">
+      <div class="dp-meter-top"><span>${LIMIT_NAME[l.label] || `${esc(l.label)} limit used`}</span><b class="${tone}">${pct}%</b></div>
+      <div class="dp-track"><i class="${tone}" style="width:${Math.min(100, pct)}%"></i></div>
+      ${l.resetsAt ? `<small>${until(l.resetsAt)}</small>` : ''}
+    </div>`;
   };
   const limitRows = [...groups.entries()].map(([kind, items]) => `
-    <div class="lap-row ai-limit-row">
-      <span class="ai-tool">${logo(kind, 16)}${NAMES[kind]}</span>
-      <div class="ai-meters">${items.map(meter).join('')}</div>
-      <span class="lap-total">${until(items.find((i: any) => i.label === 'Session')?.resetsAt ?? items[0].resetsAt)}</span>
+    <div class="dp-limit">
+      <div class="dp-tool">${logo(kind, 20)}<b>${toolName(kind)}</b></div>
+      <div class="dp-meters">${items.map(meter).join('')}</div>
     </div>`).join('');
 
-  const toolRows = hist.kinds.map((k: any) => `
-    <div class="lap-row ai-tool-row">
-      <span class="ai-tool">${logo(k.kind, 16)}${NAMES[k.kind as Kind] || k.kind}${k.estimated ? '<em>est.</em>' : ''}</span>
-      <span class="lap-split">${tokens(k.tokens)}</span>
-      <span class="lap-total">${money(k.usd)}</span>
+  const toolRows = (hist.kinds || []).map((k: any) => `
+    <div class="dp-tool-row">
+      <div class="dp-tool">${logo(k.kind, 20)}<b>${toolName(k.kind)}</b>${k.estimated ? '<em title="This tool does not report exact numbers, so Overlay estimates them.">Estimated</em>' : ''}</div>
+      <div class="dp-share"><i style="width:${total ? Math.max(2, (k.tokens / total) * 100) : 0}%"></i></div>
+      <span class="dp-num">${tokens(k.tokens)} <small>tokens</small></span>
+      <span class="dp-num dim">${money(k.usd)}</span>
     </div>`).join('');
 
-  el.innerHTML = `<div class="panel-inner">
-    <div class="panel-hdr"><div class="panel-label">AI USAGE</div><div class="panel-sub">Stored on this PC · synced with the notch</div></div>
+  const cont = snap.current && snap.next
+    ? section('', `<div class="ds-row"><div class="ds-row-text"><b>Continue in ${toolName(snap.next)}</b><span>Opens ${toolName(snap.next)} with what you were doing in ${toolName(snap.current)}, so you can pick up where you left off.</span></div>
+        <button type="button" class="ds-btn primary dp-btn-logo" data-continue ${busy ? 'disabled' : ''}>${busy ? 'Preparing…' : `${aiMark(snap.next, 15, { onLight: true })}<span>Continue</span>`}</button></div>`, '', esc(note))
+    : (note ? `<p class="ds-note">${esc(note)}</p>` : '');
 
-    <div class="dur-row">${[7, 30, 90].map((d) => `<button class="dur-btn${d === range ? ' active' : ''}" data-range="${d}">${d}d</button>`).join('')}</div>
-
-    <div class="stats-grid">
-      <div class="stat-card"><div class="stat-lbl">Today</div><div class="stat-val">${tokens(todayTokens)}</div></div>
-      <div class="stat-card"><div class="stat-lbl">Last 7 days</div><div class="stat-val">${tokens(weekTokens)}</div></div>
-      <div class="stat-card"><div class="stat-lbl">Last ${range} days</div><div class="stat-val">${tokens(total)}</div></div>
-      <div class="stat-card"><div class="stat-lbl">Est. cost</div><div class="stat-val">${money(usd)}</div></div>
+  el.innerHTML = `<div class="ds-page">${top}
+    <div class="dp-tiles three">
+      ${tile('Tokens today', todayTokens ? tokens(todayTokens) : 'None yet', todayTokens ? 'Across all your AI tools' : 'No AI use yet today', !todayTokens)}
+      ${tile('Tokens this week', weekTokens ? tokens(weekTokens) : 'None yet', 'The last 7 days', !weekTokens)}
+      ${tile('Estimated cost', usd ? money(usd) : 'Nothing yet', `Last ${range} days, at API prices`, !usd)}
     </div>
 
-    <div class="graph-section">
-      <div class="graph-lbl">Tokens per ${range > 30 ? 'week' : 'day'}</div>
-      <div class="bar-chart${bars.length > 14 ? ' dense' : ''}">${chart}</div>
-    </div>
+    ${groups.size ? section('Plan limits', limitRows, '', `Session limits reset every few hours, weekly limits once a week. ${snap.settings?.autoSwitch ? `At ${at}% Overlay offers to move you to your next tool.` : 'Switching to your next tool at the limit is off.'}`) : ''}
 
-    ${groups.size ? `<div class="graph-section">
-      <div class="graph-lbl">Plan limits · auto-switch ${snap.settings.autoSwitch ? `at ${at}%` : 'off'}</div>
-      <div class="laps-list ai-list">${limitRows}</div>
-    </div>` : ''}
+    ${cont}
 
-    ${hist.kinds.length ? `<div class="graph-section">
-      <div class="laps-hdr ai-hdr"><span>Tool</span><span>Tokens</span><span>Cost</span></div>
-      <div class="laps-list ai-list">${toolRows}</div>
-    </div>` : ''}
+    ${section(range > 30 ? 'Tokens per week' : 'Tokens per day', `<div class="bar-chart dp-chart${bars.length > 14 ? ' dense' : ''}">${chart}</div>`, seg)}
 
-    <div class="ctrl-row">
-      ${snap.current && snap.next ? `<button class="ctrl-btn primary" data-continue ${busy ? 'disabled' : ''}>${busy ? '<span>Preparing…</span>' : `${logo(snap.next, 16)}<span>Continue in ${NAMES[snap.next as Kind]}</span>`}</button>` : ''}
-      <button class="ctrl-btn secondary" data-refresh>${ico('<path d="M20 12a8 8 0 1 1-2.34-5.66M20 4v4.5h-4.5"/>')}<span>Sync</span></button>
-    </div>
-    ${note ? `<div class="panel-sub">${esc(note)}</div>` : ''}
+    ${(hist.kinds || []).length ? section(`By tool, last ${range} days`, toolRows, '', 'A token is a small piece of text, about three quarters of a word. Costs are estimates at public API prices; on a subscription you are not billed per token.') : ''}
   </div>`;
 }
 
@@ -138,49 +161,68 @@ async function continueIn() {
   busy = true; note = ''; paintAI();
   try {
     const r = await invoke('count:continue', snap.current, snap.next);
-    note = `Opened ${NAMES[r.to as Kind]} with your context${r.file ? `. Also saved in ${r.file}` : ''}.`;
+    note = `Opened ${toolName(r.to)} with your context${r.file ? `. Also saved in ${r.file}` : ''}.`;
   } catch (e) { note = clean(e); } finally { busy = false; await loadAI(); }
 }
+
+/** Today's tokens per tool, for the Overview. */
+export async function aiToday(): Promise<{ total: number; tools: { kind: string; tokens: number }[] } | null> {
+  const s: any = await invoke('count:snapshot').catch(() => null);
+  if (!s) return null;
+  const tools = (s.sources || []).filter((x: any) => x.today > 0).map((x: any) => ({ kind: x.kind, tokens: x.today })).sort((a: any, b: any) => b.tokens - a.tokens);
+  return { total: s.today || 0, tools };
+}
+export { logo as aiLogo, toolName };
 
 // ── To-Dos ──────────────────────────────────────────────────────────────────
 interface Todo { id: number; text: string; done: boolean }
 let todos: Todo[] = [];
 let filter: 'all' | 'open' | 'done' = 'open';
 const saveTodos = () => send('set-setting', 'todos', JSON.stringify(todos));
+const CHECK = ico('<path d="m5 12.5 4.5 4.5L19 7.5"/>', 12);
+const TRASH = ico('<path d="M4.5 7h15M9.5 7V5h5v2M6.5 7l1 12.5h9l1-12.5"/>', 15);
 
 function paintTodos() {
   const el = document.getElementById('panel-todos');
   if (!el) return;
   const open = todos.filter((t) => !t.done).length;
+  const done = todos.length - open;
   const shown = todos.filter((t) => (filter === 'all' ? true : filter === 'open' ? !t.done : t.done));
-  el.innerHTML = `<div class="panel-inner">
-    <div class="panel-hdr"><div class="panel-label">TO-DOS</div><div class="panel-sub">${open} open · synced with the notch</div></div>
-    <div class="dur-row">${(['open', 'done', 'all'] as const).map((f) => `<button class="dur-btn${f === filter ? ' active' : ''}" data-filter="${f}">${f[0].toUpperCase() + f.slice(1)}</button>`).join('')}</div>
-    <form class="todo-add-row" data-todo-form>
-      <input class="cal-inp" data-todo-input placeholder="Add a to-do…" maxlength="200" />
-      <button class="ctrl-btn primary" type="submit">${ico('<path d="M12 5.5v13M5.5 12h13"/>')}<span>Add</span></button>
-    </form>
-    <div class="cal-evs-list todo-list">${shown.map((t) => `
-      <div class="cal-ev-item dx-todo${t.done ? ' done' : ''}" data-id="${t.id}">
-        <button class="todo-tick" data-toggle title="${t.done ? 'Mark as open' : 'Mark as done'}">${t.done ? ico('<path d="m5 12.5 4.5 4.5L19 7.5"/>', 11) : ''}</button>
-        <span class="cal-ev-title">${esc(t.text)}</span>
-        <button class="ev-del" data-del title="Delete">${ico('<path d="M4.5 7h15M9.5 7V5h5v2M6.5 7l1 12.5h9l1-12.5"/>', 14)}</button>
-      </div>`).join('') || `<div class="cal-empty-msg">${filter === 'done' ? 'Nothing finished yet' : 'Nothing to do'}</div>`}</div>
-    ${todos.some((t) => t.done) ? '<button class="ctrl-btn secondary" data-clear><span>Clear completed</span></button>' : ''}
+  const count = { open, done, all: todos.length };
+  const label = { open: 'Open', done: 'Done', all: 'All' };
+  const seg = `<div class="dp-seg">${(['open', 'done', 'all'] as const).map((f) => `<button type="button" class="${f === filter ? 'on' : ''}" data-filter="${f}">${label[f]}<span>${count[f]}</span></button>`).join('')}</div>`;
+  const empty = filter === 'done' ? 'Nothing finished yet.' : todos.length ? 'All done. Nice work.' : 'Nothing here yet. Add your first to-do above.';
+  const list = shown.map((t) => `
+    <div class="dp-todo${t.done ? ' done' : ''}" data-id="${t.id}">
+      <button type="button" class="todo-tick" data-toggle title="${t.done ? 'Mark as not done' : 'Mark as done'}">${t.done ? CHECK : ''}</button>
+      <span>${esc(t.text)}</span>
+      <button type="button" class="dp-icon-btn" data-del title="Delete">${TRASH}</button>
+    </div>`).join('') || `<p class="ds-empty">${empty}</p>`;
+  el.innerHTML = `<div class="ds-page">${head('To-dos', 'Things to get done today. They show in the notch too.')}
+    <section class="ds-card"><form class="ds-inline" data-todo-form>
+      <input data-todo-input placeholder="Add a to-do and press Enter" maxlength="200" autocomplete="off"/>
+      <button class="ds-btn primary" type="submit">Add</button>
+    </form></section>
+    ${section(filter === 'open' ? 'To do' : filter === 'done' ? 'Done' : 'Everything', `<div class="dp-todos">${list}</div>`, seg)}
+    ${done ? '<div class="dp-foot"><button type="button" class="ds-btn ghost" data-clear>Clear done</button></div>' : ''}
   </div>`;
 }
 
 // ── Notes ───────────────────────────────────────────────────────────────────
 let noteText = '';
 let noteTimer: number | undefined;
+const wordsIn = (s: string) => (s.trim() ? s.trim().split(/\s+/).length : 0);
+const metaText = (saving: boolean) => { const w = wordsIn(noteText); return `${w} word${w === 1 ? '' : 's'} · ${saving ? 'Saving…' : 'Saved'}`; };
 function paintNotes() {
   const el = document.getElementById('panel-notes');
   if (!el) return;
-  const words = noteText.trim() ? noteText.trim().split(/\s+/).length : 0;
-  el.innerHTML = `<div class="panel-inner">
-    <div class="panel-hdr"><div class="panel-label">NOTE</div><div class="panel-sub" data-note-meta>${words} word${words === 1 ? '' : 's'} · synced with the notch</div></div>
-    <textarea class="cal-inp note-area" data-note placeholder="Write anything. It saves as you type.">${esc(noteText)}</textarea>
-    <div class="ctrl-row"><button class="ctrl-btn secondary" data-note-copy>${ico('<rect x="8.5" y="8.5" width="11" height="11" rx="2.5"/><path d="M15.5 8.5V6a1.5 1.5 0 0 0-1.5-1.5H6A1.5 1.5 0 0 0 4.5 6v8A1.5 1.5 0 0 0 6 15.5h2.5"/>')}<span>Copy</span></button></div>
+  el.innerHTML = `<div class="ds-page">${head('Notes', 'One scratchpad that saves as you type. It shows in the notch too.')}
+    <section class="ds-card dp-note">
+      <textarea data-note placeholder="Write anything: an idea, a link, what to do next.">${esc(noteText)}</textarea>
+      <div class="dp-note-foot"><span data-note-meta>${metaText(false)}</span>
+        <button type="button" class="ds-btn ghost" data-note-copy>${ico('<rect x="8.5" y="8.5" width="11" height="11" rx="2.5"/><path d="M15.5 8.5V6a1.5 1.5 0 0 0-1.5-1.5H6A1.5 1.5 0 0 0 4.5 6v8A1.5 1.5 0 0 0 6 15.5h2.5"/>', 14)}<span>Copy</span></button>
+      </div>
+    </section>
   </div>`;
 }
 
@@ -200,7 +242,7 @@ export function mountDashExtras() {
       if (t.closest('[data-continue]')) void continueIn();
     }
     if (t.closest('#panel-todos')) {
-      const row = t.closest<HTMLElement>('.dx-todo');
+      const row = t.closest<HTMLElement>('.dp-todo');
       const id = row ? Number(row.dataset.id) : 0;
       const f = t.closest<HTMLElement>('[data-filter]');
       if (f) { filter = f.dataset.filter as any; paintTodos(); return; }
@@ -210,7 +252,12 @@ export function mountDashExtras() {
       else return;
       saveTodos(); paintTodos();
     }
-    if (t.closest('[data-note-copy]')) void navigator.clipboard.writeText(noteText);
+    const copy = t.closest<HTMLElement>('[data-note-copy]');
+    if (copy) {
+      void navigator.clipboard.writeText(noteText).then(() => {
+        const s = copy.querySelector('span'); if (s) { s.textContent = 'Copied'; setTimeout(() => { s.textContent = 'Copy'; }, 1400); }
+      });
+    }
   });
   document.addEventListener('submit', (e) => {
     const form = (e.target as HTMLElement).closest('[data-todo-form]');
@@ -220,6 +267,7 @@ export function mountDashExtras() {
     const text = input.value.trim();
     if (!text) return;
     todos.unshift({ id: Date.now(), text, done: false });
+    if (filter === 'done') filter = 'open';
     saveTodos(); paintTodos();
     document.querySelector<HTMLInputElement>('#panel-todos [data-todo-input]')?.focus();
   });
@@ -227,12 +275,12 @@ export function mountDashExtras() {
     const area = (e.target as HTMLElement).closest<HTMLTextAreaElement>('[data-note]');
     if (!area) return;
     noteText = area.value;
-    const words = noteText.trim() ? noteText.trim().split(/\s+/).length : 0;
     const meta = document.querySelector('[data-note-meta]');
-    if (meta) meta.textContent = `${words} word${words === 1 ? '' : 's'} · saving`;
+    if (meta) meta.textContent = metaText(true);
     clearTimeout(noteTimer);
-    noteTimer = window.setTimeout(() => { send('set-setting', 'note', noteText); if (meta) meta.textContent = `${words} word${words === 1 ? '' : 's'} · synced with the notch`; }, 400);
+    noteTimer = window.setTimeout(() => { send('set-setting', 'note', noteText); if (meta) meta.textContent = metaText(false); }, 400);
   });
+
 
   // Live sync from the notch and the background scanner.
   ipc?.on('count:update', () => void loadAI());

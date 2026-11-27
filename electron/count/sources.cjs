@@ -65,7 +65,14 @@ function listFiles(kind) {
   for (const root of roots(kind)) {
     if (!exists(root)) continue;
     if (kind === 'cursor') {
-      try { const st = fs.statSync(root); out.push({ file: root, mtime: st.mtimeMs, size: st.size }); } catch {}
+      // Cursor keeps its database in WAL mode: new chats land in the -wal and -shm files first,
+      // so the newest of the three is when Cursor last did something.
+      try {
+        const st = fs.statSync(root);
+        let mtime = st.mtimeMs;
+        for (const side of ['-wal', '-shm']) { try { mtime = Math.max(mtime, fs.statSync(root + side).mtimeMs); } catch {} }
+        out.push({ file: root, mtime, size: st.size });
+      } catch {}
       continue;
     }
     const match = kind === 'antigravity' ? (n) => n.endsWith('.db')

@@ -35,7 +35,8 @@ let config: any = {};
 const sw = (on: boolean, attrs: string) => `<button type="button" class="ds-switch${on ? ' on' : ''}" ${attrs} role="switch" aria-checked="${on}"><i></i></button>`;
 const row = (title: string, sub: string, control: string) => `<div class="ds-row"><div class="ds-row-text"><b>${title}</b>${sub ? `<span>${sub}</span>` : ''}</div>${control}</div>`;
 const card = (title: string, body: string, note = '') => `<section class="ds-card">${title ? `<h3>${title}</h3>` : ''}<div class="ds-card-body">${body}</div>${note ? `<p class="ds-note">${note}</p>` : ''}</section>`;
-const head = (title: string, sub: string) => `<header class="ds-head"><h2>${title}</h2><p>${sub}</p></header>`;
+/** The page header every Dashboard page uses: a title, one plain line, and an optional action on the right. */
+export const head = (title: string, sub: string, action = '') => `<header class="ds-head${action ? ' has-action' : ''}"><div><h2>${title}</h2><p>${sub}</p></div>${action}</header>`;
 
 // ── Account gate: brand panel on the left, the form on the right ────────────
 // Shrinks a picked photo to a 192 px square so it stays small in the database.
@@ -230,15 +231,17 @@ function updateBody() {
   const e = upd.event;
   const status: [string, string, string] =
     e === 'checking' ? ['Checking for updates…', '', 'wait']
-    : e === 'available' ? [`Overlay ${esc(upd.version)} is available`, 'Downloading in the background.', 'wait']
+    : e === 'available' ? [`Overlay ${esc(upd.version)} is available`, upd.feature ? 'New features. Download it in the background, then restart once.' : 'A small fix, downloading in the background.', upd.feature ? 'ok' : 'wait']
     : e === 'downloading' ? [`Downloading ${esc(upd.version || 'the update')}`, `${upd.percent ?? 0}% · ${upd.total ? `${(upd.transferred / 1048576).toFixed(1)} of ${(upd.total / 1048576).toFixed(1)} MB` : ''}`, 'wait']
     : e === 'downloaded' ? [`Overlay ${esc(upd.version)} is ready`, 'Restart to finish. It also installs the next time Overlay quits.', 'ok']
     : e === 'error' ? ['Could not check for updates', 'Check your connection and try again.', 'bad']
     : upd.dev ? ['Running from source', 'Updates install in the downloaded app, not in a development copy.', '']
-    : ['You are up to date', upd.lastChecked ? `Checked ${ago(upd.lastChecked)}` : 'Overlay checks by itself every few hours.', 'ok'];
+    : ['You are up to date', upd.lastChecked ? `Checked ${ago(upd.lastChecked)}` : 'Overlay checks by itself every 15 minutes.', 'ok'];
   const bar = e === 'downloading' ? `<div class="ds-upd-bar"><i style="width:${upd.percent ?? 0}%"></i></div>` : '';
   const action = e === 'downloaded'
     ? `<button type="button" class="ds-btn primary" data-install>Restart and update</button>`
+    : e === 'available' && upd.feature
+    ? `<button type="button" class="ds-btn primary" data-download>Download</button>`
     : `<button type="button" class="ds-btn" data-update ${e === 'checking' || e === 'downloading' || e === 'available' ? 'disabled' : ''}>Check for updates</button>`;
   return `<div class="ds-upd"><span class="ds-upd-dot ${status[2]}"></span><div class="ds-row-text"><b>${status[0]}</b><span>${status[1]}</span></div>${action}</div>${bar}`;
 }
@@ -247,8 +250,8 @@ async function paintAbout(el: HTMLElement) {
   const st = await invoke('update:state');
   if (st) upd = { ...upd, ...st };
   el.innerHTML = `<div class="ds-page">${head('About', 'Overlay for Windows.')}
-    ${card('', `<div class="ds-about"><img src="${overlayMark}" alt=""/><div><b>Overlay</b><span>Version ${esc(version)}</span></div></div>`)}
-    ${card('Updates', `<div data-upd>${updateBody()}</div>`, 'New versions download in the background and never interrupt you.')}
+    ${card('', `<div class="ds-about"><img src="${overlayMark}" alt=""/><div><b>Overlay</b><span>Version ${esc(version)}</span></div><button type="button" class="ds-btn" data-whatsnew>What's new</button></div>`)}
+    ${card('Updates', `<div data-upd>${updateBody()}</div>`, 'Small fixes download and install by themselves. New features ask first, then download in the background.')}
   </div>`;
 }
 
@@ -344,6 +347,8 @@ export async function mountSettings() {
     if (del) { const list = [...(config.shortcuts || [])]; list.splice(Number(del.dataset.scDel), 1); config.shortcuts = list; send('save-shortcuts', list); saveConfig(); repaintActive(); return; }
     if (t.closest('[data-update]')) { upd = { ...upd, event: 'checking' }; const box = $('[data-upd]'); if (box) box.innerHTML = updateBody(); send('check-for-updates'); return; }
     if (t.closest('[data-install]')) { send('install-update'); return; }
+    if (t.closest('[data-download]')) { send('download-update'); return; }
+    if (t.closest('[data-whatsnew]')) { send('open-whats-new'); return; }
     if (t.closest('[data-dc-connect]')) { void invoke('discord:connect'); return; }
     if (t.closest('[data-dc-retry]')) { void invoke('discord:retry'); return; }
     if (t.closest('[data-dc-forget]')) { dc = await invoke('discord:forget').then(() => invoke('discord:state')); repaintActive(); return; }

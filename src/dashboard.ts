@@ -1,7 +1,7 @@
 import '@fontsource-variable/instrument-sans';
 import './dashboard.css';
-import { DASH_ICONS, mountDashExtras } from './dashboard-extra';
-import { SET_ICONS, SETTINGS_PAGES, mountSettings, paintSettings, profileHtml } from './dashboard-settings';
+import { DASH_ICONS, mountDashExtras, aiToday, aiLogo, toolName, tokens as aiTokens } from './dashboard-extra';
+import { SET_ICONS, SETTINGS_PAGES, head, mountSettings, paintSettings, profileHtml } from './dashboard-settings';
 import overlayMark from './assets/overlay-mark.png';
 import { countMark } from './count/mark';
 import { openShare } from './dashboard-share';
@@ -50,12 +50,6 @@ function streakColor(n: number) {
   if (n <= 13) return '#ff6b35';
   return '#ff3b30';
 }
-function streakGlow(n: number) {
-  if (n >= 14) return '0 0 20px rgba(255,59,48,0.5)';
-  if (n >= 7)  return '0 0 16px rgba(255,107,53,0.4)';
-  if (n >= 3)  return '0 0 12px rgba(255,149,0,0.3)';
-  return 'none';
-}
 
 // ─── State ──────────────────────────────────────────────────────────────────
 let activeNav = 'stats';
@@ -79,7 +73,6 @@ let tickInterval: any = null;
 let totalAllTimeSecs = 0;
 let streak = 0;
 let todaySecs = 0;
-let level = 1;
 
 // ─── Boot ────────────────────────────────────────────────────────────────────
 async function boot() {
@@ -139,7 +132,6 @@ function computeStats() {
     }
     streak = ts;
   }
-  level = Math.floor(totalAllTimeSecs / 18000) + 1;
 }
 
 // ─── Render ──────────────────────────────────────────────────────────────────
@@ -152,9 +144,9 @@ function render() {
           <div class="nav-group">Track</div>
           ${navItem('stats',     SET_ICONS.overview,  'Overview')}
           ${navItem('calendar',  icons.calendar,      'Calendar')}
-          ${navItem('ai',        countMark(18),       'AI Usage')}
-          ${navItem('todos',     DASH_ICONS.todos,    'To-Dos')}
-          ${navItem('notes',     DASH_ICONS.notes,    'Note')}
+          ${navItem('ai',        countMark(18),       'AI usage')}
+          ${navItem('todos',     DASH_ICONS.todos,    'To-dos')}
+          ${navItem('notes',     DASH_ICONS.notes,    'Notes')}
           <div class="nav-group">Settings</div>
           ${navItem('connections', SET_ICONS.connections, 'Connections')}
           ${navItem('general',   SET_ICONS.general,   'General')}
@@ -247,53 +239,65 @@ function renderStopwatch() {
   </div>`;
 }
 
+// Focus time as people say it: 2h 37m, 45m.
+function hm(s: number) {
+  const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60);
+  return h ? `${h}h ${m}m` : `${m}m`;
+}
+
 function renderStats() {
   const today = new Date();
   const weekData = Array.from({length:7}, (_,i) => {
     const d = new Date(today); d.setDate(today.getDate()-(6-i));
     const k = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
-    return { secs: stats[k]?.totalSecs||0, day: ['Su','Mo','Tu','We','Th','Fr','Sa'][d.getDay()], isToday: i===6 };
+    return { secs: stats[k]?.totalSecs||0, day: d.toLocaleDateString('en-US', { weekday: 'short' }), isToday: i===6 };
   });
+  const weekSecs = weekData.reduce((n, w) => n + w.secs, 0);
   const maxS = Math.max(...weekData.map(w=>w.secs), 1);
   const bars = weekData.map(w => {
     const pct = Math.max(w.secs/maxS*100, w.secs>0?4:0);
     return `<div class="bar-col">
-      <div class="bar-track" title="${Math.round(w.secs/60)}m">
+      <div class="bar-track" title="${w.secs ? hm(w.secs) : 'No focus'}">
         <div class="bar-fill${w.isToday?' today':''}" style="height:${pct}%"></div>
-        <div class="bar-tip">${Math.round(w.secs/60)}m</div>
+        <div class="bar-tip">${w.secs ? hm(w.secs) : 'None'}</div>
       </div>
-      <div class="bar-lbl">${w.day}</div>
+      <div class="bar-lbl">${w.isToday ? 'Today' : w.day}</div>
     </div>`;
   }).join('');
+  const share = `<button type="button" class="ds-btn" id="btn-share">${icons.share}<span>Share report</span></button>`;
+  const tile = (label: string, value: string, sub: string, muted = false, style = '') =>
+    `<div class="dp-tile"><span class="dp-tile-lbl">${label}</span><b class="dp-tile-val${muted ? ' muted' : ''}"${style ? ` style="${style}"` : ''}>${value}</b><small>${sub}</small></div>`;
 
-  return `<div class="panel-inner">
-    <div class="panel-hdr" style="flex-direction:row;align-items:center;justify-content:space-between;">
-      <div><div class="panel-label">OVERVIEW</div><div class="panel-sub">Your focus, from Lock In in the notch</div></div>
-      <button class="ctrl-btn secondary" id="btn-share" style="width:auto;padding:8px 14px;">${icons.share}<span>Share report</span></button>
+  return `<div class="ds-page">
+    ${head('Overview', 'Your focus time from Lock In in the notch, and what your AI tools did today.', share)}
+    <div class="dp-tiles">
+      ${tile('Focus today', todaySecs ? hm(todaySecs) : 'None yet', todaySecs ? 'Time locked in today' : 'Start Lock In from the notch', !todaySecs)}
+      ${tile('Streak', `${streak} ${streak === 1 ? 'day' : 'days'}`, streak ? 'Days in a row with focus' : 'Focus today to start one', !streak, streak ? `color:${streakColor(streak)}` : '')}
+      ${tile('This week', weekSecs ? hm(weekSecs) : 'None yet', 'The last 7 days', !weekSecs)}
+      ${tile('All time', totalAllTimeSecs ? hm(totalAllTimeSecs) : 'None yet', 'Since you installed Overlay', !totalAllTimeSecs)}
     </div>
-    <div class="stats-grid">
-      <div class="stat-card"><div class="stat-lbl">Today</div><div class="stat-val">${fmtHMS(todaySecs)}</div></div>
-      <div class="stat-card"><div class="stat-lbl">Streak</div><div class="stat-val" style="color:${streakColor(streak)};text-shadow:${streakGlow(streak)};">${streak} days</div></div>
-      <div class="stat-card"><div class="stat-lbl">Level</div><div class="stat-val">${level}</div></div>
-      <div class="stat-card"><div class="stat-lbl">All Time</div><div class="stat-val">${Math.floor(totalAllTimeSecs/3600)}h ${Math.floor((totalAllTimeSecs%3600)/60)}m</div></div>
-    </div>
-    <div class="graph-section">
-      <div class="graph-lbl">Last 7 Days</div>
-      <div class="bar-chart">${bars}</div>
-    </div>
-    <div class="share-overlay hidden" id="share-card">
-      <div class="share-inner">
-        <div class="share-title">Focus Report</div>
-        <div class="share-date">${new Date().toLocaleDateString('en-US',{weekday:'long',year:'numeric',month:'long',day:'numeric'})}</div>
-        <div class="share-row">
-          <div class="share-stat"><span>${fmtHMS(todaySecs)}</span><small>Today</small></div>
-          <div class="share-stat"><span style="color:${streakColor(streak)}">${streak}d</span><small>Streak</small></div>
-          <div class="share-stat"><span>Lvl ${level}</span><small>Rank</small></div>
-        </div>
-      </div>
-      <button class="ctrl-btn secondary" id="btn-share-close" style="width:auto;margin-top:12px;">Close</button>
-    </div>
+    <section class="ds-card dp-card">
+      <div class="dp-card-head"><h3>Focus, last 7 days</h3></div>
+      <div class="ds-card-body"><div class="bar-chart dp-chart">${bars}</div></div>
+    </section>
+    <section class="ds-card dp-card" id="ov-ai">
+      <div class="dp-card-head"><h3>AI usage today</h3><button type="button" class="dp-link" data-nav-go="ai">See details</button></div>
+      <div class="ds-card-body" data-ov-ai><p class="ds-empty">Reading your AI tools…</p></div>
+    </section>
   </div>`;
+}
+
+// The AI card on the Overview: tokens today, per tool, in plain words.
+async function paintOverviewAI() {
+  const box = document.querySelector<HTMLElement>('[data-ov-ai]');
+  if (!box) return;
+  const ai = await aiToday();
+  if (!ai || !ai.total) {
+    box.innerHTML = `<div class="ds-row"><div class="ds-row-text"><b>No AI use yet today</b><span>When you use Claude Code, Codex, Cursor or another AI tool, it shows up here.</span></div></div>`;
+    return;
+  }
+  box.innerHTML = `<div class="ds-row"><div class="ds-row-text"><b>${aiTokens(ai.total)} tokens</b><span>How much text your AI tools read and wrote today.</span></div></div>
+    ${ai.tools.map((t) => `<div class="ds-row dp-ov-tool"><div class="dp-tool">${aiLogo(t.kind, 20)}<b>${toolName(t.kind)}</b></div><span class="dp-num">${aiTokens(t.tokens)} <small>tokens</small></span></div>`).join('')}`;
 }
 
 function renderCalendar() {
@@ -381,11 +385,15 @@ function bindEvents() {
   bindSwEvents();
 
   // Stats
-  document.getElementById('btn-share')?.addEventListener('click', () => void openShare(stats, streak));
-  document.getElementById('btn-share-close')?.addEventListener('click', () => document.getElementById('share-card')?.classList.add('hidden'));
+  bindStatsEvents();
 
   // Calendar
   bindCalendarEvents();
+}
+
+function bindStatsEvents() {
+  document.getElementById('btn-share')?.addEventListener('click', () => void openShare(stats, streak));
+  void paintOverviewAI();
 }
 
 function bindCdEvents() {
@@ -507,12 +515,13 @@ function bindIPC() {
     computeStats();
     render();
   });
+  ipc.on('count:update', () => void paintOverviewAI());
   // Focus time added from the notch shows up here straight away.
   ipc.on('stats-changed', async () => {
     stats = await ipc.invoke('get-stats') || {};
     computeStats();
     const el = document.getElementById('panel-stats');
-    if (el && activeNav !== 'stats') el.innerHTML = renderStats();
+    if (el) { el.innerHTML = renderStats(); bindStatsEvents(); }
   });
   ipc.on('toggle-dashboard-timer', () => {
     if(pomoActive||pomoLeft<pomoDuration*60)      { pomoActive=!pomoActive; refreshPomodoro(); }

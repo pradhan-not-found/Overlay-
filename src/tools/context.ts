@@ -89,7 +89,9 @@ export function mountContext(opts: { invoke: Invoke; send: Send; on: On; openSpa
         const top = lim.reduce((m, l) => Math.max(m, l.usedPercent), 0);
         const tip = [NAMES[k] || k, ...lim.map((l) => `${l.label} ${Math.round(l.usedPercent)}%`)].join(' · ');
         void tip;
-        html = `<span class="ctx-chip${top >= 80 ? ' hot' : ''}" data-pop="agent" data-hover="agent" role="button" tabindex="0" aria-label="${esc(NAMES[k] || k)} limits">${logo(k, 15)}${lim.length ? `<span>${Math.round(top)}%</span>` : ''}</span>`;
+        // a second agent working at the same time sits beside the first as a small logo
+        const also = Object.entries(activity).filter(([o, t]) => o !== k && Date.now() - t < 120000).sort((x, y) => y[1] - x[1]).map(([o]) => o)[0];
+        html = `<span class="ctx-chip${top >= 80 ? ' hot' : ''}" data-pop="agent" data-hover="agent" role="button" tabindex="0" aria-label="${esc(NAMES[k] || k)} limits">${logo(k, 15)}${lim.length ? `<span>${Math.round(top)}%</span>` : ''}${also ? `<i class="ctx-also" title="${esc(NAMES[also] || also)} is working too">${logo(also, 13)}</i>` : ''}</span>`;
       } else if (ctx.kind === 'browser') {
         html = `<span class="ctx-chip" data-pop="browser" role="button" tabindex="0" aria-label="Browser tools">${I.browser}</span>`;
       }
@@ -220,6 +222,8 @@ export function mountContext(opts: { invoke: Invoke; send: Send; on: On; openSpa
     const act = msg.dataset.act;
     if (act === 'unlock') send('open-dashboard', {});
     if (act === 'update') send('open-dashboard', { nav: 'about' });
+    if (act === 'download') { send('download-update'); window.setTimeout(() => say('Downloading in the background', I.update, 6, 'update'), 0); }
+    if (act === 'install') send('install-update');
     if (act === 'whatsnew') send('open-whats-new', whatsNewVersion);
     if (act !== 'unlock') { message = null; paintMsg(); }
   });
@@ -281,7 +285,12 @@ export function mountContext(opts: { invoke: Invoke; send: Send; on: On; openSpa
     say(`Updated to Overlay ${whatsNewVersion} · See what's new`, I.update, 120, 'update', 'whatsnew');
   });
   on('update-status', (_e: unknown, s: any) => {
-    if (s?.event === 'available' || s?.event === 'downloaded') say(s.event === 'downloaded' ? `Update ${s.version || ''} is ready`.replace('  ', ' ') : `Overlay ${s.version || ''} is on its way`, I.update, 3600, 'update', 'update');
+    // a short note; the update badge keeps showing the progress after it fades
+    // fixes stay silent; a feature release asks once, with a Download button
+    if (!s?.feature) return;
+    const v = s.version ? ` ${s.version}` : '';
+    if (s.event === 'available') say(`Overlay${v} has new features · Download`, I.update, 900, 'update', 'download');
+    else if (s.event === 'downloaded') say(`Overlay${v} is ready · Restart to update`, I.update, 900, 'update', 'install');
   });
   setInterval(loadSnap, 60000);
   const loadActivity = () => invoke('count:active').then((a) => {

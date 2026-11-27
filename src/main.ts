@@ -343,7 +343,14 @@ document.getElementById('app')!.innerHTML = `
 
       <section class="space p-timer" data-space="focus">
         <div class="t-main">
-          <p class="p-label" id="t-label">Lock In</p>
+          <div class="t-top">
+            <p class="p-label" id="t-label">Lock In</p>
+            <div class="t-len" id="t-len" role="radiogroup" aria-label="Session length">
+              <button type="button" class="t-step" data-step="-5" title="5 minutes less" aria-label="5 minutes less">&minus;</button>
+              ${[15, 25, 45, 60].map((m) => `<button type="button" role="radio" data-min="${m}">${m}m</button>`).join('')}
+              <button type="button" class="t-step" data-step="5" title="5 minutes more" aria-label="5 minutes more">+</button>
+            </div>
+          </div>
           <span class="ring-time" id="ring-time">25:00</span>
           <div class="t-stats">
             <span class="chip" id="stat-sessions">0 sessions today</span>
@@ -839,6 +846,8 @@ mountCount({
 // ─── Dashboard Timer Sync (IPC) ────────────────────────────────────────────────
 if (ipc) {
   ipc.on('sync-timer', (_e: any, state: { type: string, time: number, active: boolean }) => {
+    // Lock In is run by the notch itself; a timer from elsewhere never overrides one in progress.
+    if (state.type === 'pomodoro' || timerPhase !== 'off') return;
     if (state.type === 'none') {
       if (timerPhase !== 'off') resetTimer();
       return;
@@ -900,6 +909,7 @@ if (ipc) {
       startTick();
     }
     updateIdleView();
+    paintLen();
   });
 }
 
@@ -929,6 +939,7 @@ function startTick() {
         sessionCountToday++;
         addSessionStats(1, FOCUS_SECS % 5);
         updateStats();
+        { const k = todayKey(); globalStats[k] = { count: sessionCountToday, totalSecs: totalFocusSecsToday }; renderHeatmap(); }
 
         // Transition to break
         timerPhase = 'break';
@@ -955,6 +966,7 @@ function resetTimer() {
   btnLockin.textContent = 'Lock In';
   updateRing();
   ringTime.textContent  = fmt(FOCUS_SECS);
+  paintLen();
   idleTimerHint.classList.add('hidden');
   tickClock();
   updateIdleView();
@@ -962,10 +974,7 @@ function resetTimer() {
 
 btnLockin.addEventListener('click', e => {
   e.stopPropagation();
-  if (ipc) {
-    ipc.send('toggle-dashboard-timer');
-  } else {
-    // Fallback if no IPC (e.g., browser preview)
+  {
     if (timerPhase === 'off') {
       timerPhase = 'focus';
       tLabel.textContent    = 'Focusing';
@@ -988,8 +997,38 @@ btnLockin.addEventListener('click', e => {
       startTick();
     }
     updateIdleView();
+    paintLen();
   }
 });
+
+// ── Session length: 5 to 120 minutes, remembered ──
+const lenBox = document.getElementById('t-len')!;
+function paintLen() {
+  const m = Math.round(FOCUS_SECS / 60);
+  lenBox.classList.toggle('locked', timerPhase !== 'off');
+  lenBox.querySelectorAll<HTMLButtonElement>('[data-min]').forEach((b) => b.setAttribute('aria-checked', String(Number(b.dataset.min) === m)));
+  const custom = ![15, 25, 45, 60].includes(m);
+  lenBox.dataset.custom = custom ? `${m}m` : '';
+}
+function setLength(min: number) {
+  if (timerPhase !== 'off') return; // never mid-session
+  FOCUS_SECS = Math.min(120, Math.max(5, Math.round(min))) * 60;
+  timeLeft = FOCUS_SECS;
+  ringTime.textContent = fmt(FOCUS_SECS);
+  ringTime.classList.remove('bump'); void ringTime.offsetWidth; ringTime.classList.add('bump');
+  send('set-setting', 'focusMinutes', String(FOCUS_SECS / 60));
+  paintLen();
+}
+lenBox.addEventListener('click', (e) => {
+  e.stopPropagation();
+  const b = (e.target as HTMLElement).closest<HTMLButtonElement>('button');
+  if (!b) return;
+  if (b.dataset.min) setLength(Number(b.dataset.min));
+  else if (b.dataset.step) setLength(FOCUS_SECS / 60 + Number(b.dataset.step));
+});
+// scroll on the time to nudge it a minute at a time
+ringTime.addEventListener('wheel', (e) => { if (timerPhase !== 'off') return; e.preventDefault(); setLength(FOCUS_SECS / 60 + ((e as WheelEvent).deltaY < 0 ? 1 : -1)); }, { passive: false });
+invoke('get-setting', 'focusMinutes', null).then((v: any) => { const m = Number(v); if (m >= 5 && m <= 120 && timerPhase === 'off') { FOCUS_SECS = m * 60; timeLeft = FOCUS_SECS; ringTime.textContent = fmt(FOCUS_SECS); } paintLen(); }).catch(() => paintLen());
 
 document.getElementById('btn-idle-timer-toggle')?.addEventListener('click', (e) => {
   e.stopPropagation();
@@ -1123,18 +1162,20 @@ if (ipc) {
   const paintUpdate = (status: any) => {
     if (!updateChip || !status) return;
     const ev = status.event;
-    const show = ev === 'available' || ev === 'downloading' || ev === 'downloaded';
+    // only feature releases show the badge; fixes come in without a sign
+    const show = !!status.feature && (ev === 'available' || ev === 'downloading' || ev === 'downloaded');
     updateChip.classList.toggle('show', show);
     updateChip.classList.toggle('ready', ev === 'downloaded');
     updateChip.style.setProperty('--p', String(ev === 'downloaded' ? 100 : ev === 'downloading' ? status.percent ?? 0 : 6));
-    updateChip.dataset.action = ev === 'downloaded' ? 'install' : 'open';
-    updateChip.title = ev === 'downloaded' ? `Overlay ${status.version || ''} is ready. Click to restart and update.` : ev === 'downloading' ? `Downloading the update · ${status.percent ?? 0}%` : `Overlay ${status.version || ''} is available`;
+    updateChip.dataset.action = ev === 'downloaded' ? 'install' : ev === 'available' ? 'download' : 'open';
+    updateChip.title = ev === 'downloaded' ? `Overlay ${status.version || ''} is ready. Click to restart and update.` : ev === 'downloading' ? `Downloading in the background · ${status.percent ?? 0}%` : `Overlay ${status.version || ''} has new features. Click to download.`;
   };
   ipc.on('update-status', (_: any, status: any) => paintUpdate(status));
   void invoke('update:state').then(paintUpdate);
   updateChip?.addEventListener('click', (e) => {
     e.stopPropagation();
     if (updateChip.dataset.action === 'install') send('install-update');
+    else if (updateChip.dataset.action === 'download') send('download-update');
     else send('open-dashboard', { nav: 'about' });
   });
 

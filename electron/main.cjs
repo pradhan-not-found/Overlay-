@@ -22,7 +22,8 @@ const context = require('./context.cjs');
 let autoUpdater = null;
 try {
   autoUpdater = require('electron-updater').autoUpdater;
-  autoUpdater.autoDownload = true;         // Download automatically in background
+  // Small fixes download by themselves; a feature release waits for a click on Download (see update-available).
+  autoUpdater.autoDownload = false;
   autoUpdater.autoInstallOnAppQuit = true;  // Install on next quit
   autoUpdater.allowDowngrade = false;
   autoUpdater.channel = 'latest';           // Use 'latest' release channel
@@ -83,6 +84,20 @@ function sendUpdateStatus(event, data) {
 }
 
 let idleInstall = 0;
+// major.minor changed = new features; only the last number changed = a fix
+function isFeatureRelease(v) {
+  const [a, b] = String(v || '').split('.').map(Number);
+  const [c, d] = app.getVersion().split('.').map(Number);
+  return a > c || (a === c && b > d);
+}
+let downloading = false;
+function startDownload() {
+  if (!autoUpdater || downloading || lastUpdate.event === 'downloaded') return;
+  downloading = true;
+  sendUpdateStatus('downloading', { percent: 0, version: lastUpdate.version, feature: lastUpdate.feature });
+  autoUpdater.downloadUpdate().catch((e) => reportUpdateError(e)).finally(() => { downloading = false; });
+}
+ipcMain.on('download-update', () => startDownload());
 function initAutoUpdater() {
   if (!autoUpdater) return;
   
@@ -93,12 +108,15 @@ function initAutoUpdater() {
 
   autoUpdater.on('update-available', (info) => {
     console.log('[Updater] Update available:', info.version);
-    sendUpdateStatus('available', { version: info.version, releaseNotes: info.releaseNotes || '' });
-    // One quiet note per new version; the download runs in the background and the notch shows its progress.
+    // A fix (same major.minor) downloads and installs quietly. A feature release (major or minor
+    // changed) is offered with a Download button; the download then runs in the background.
+    const feature = isFeatureRelease(info.version);
+    sendUpdateStatus('available', { version: info.version, feature, releaseNotes: info.releaseNotes || '' });
+    if (!feature) { startDownload(); return; }
     try {
       if (db.getSetting('updateToldFor', '') !== info.version) {
         db.setSetting('updateToldFor', info.version);
-        notify(`Overlay ${info.version} is available`, 'Downloading in the background. Nothing to do: it installs by itself.', () => createDashWindow({ nav: 'about' }));
+        notify(`Overlay ${info.version} has new features`, 'Click to download it in the background.', () => startDownload());
       }
     } catch {}
   });
@@ -110,14 +128,15 @@ function initAutoUpdater() {
 
   autoUpdater.on('download-progress', (progress) => {
     const pct = Math.round(progress.percent);
-    sendUpdateStatus('downloading', { percent: pct, bytesPerSecond: progress.bytesPerSecond, transferred: progress.transferred, total: progress.total });
+    sendUpdateStatus('downloading', { percent: pct, version: lastUpdate.version, feature: lastUpdate.feature, bytesPerSecond: progress.bytesPerSecond, transferred: progress.transferred, total: progress.total });
   });
 
   autoUpdater.on('update-downloaded', (info) => {
     console.log('[Updater] Update downloaded:', info.version);
-    sendUpdateStatus('downloaded', { version: info.version });
-    
-    notify(`Overlay ${info.version} is ready`, 'It installs quietly the next time you step away, or click to update now.', () => installUpdate());
+    const feature = isFeatureRelease(info.version);
+    sendUpdateStatus('downloaded', { version: info.version, feature });
+    // fixes install without a word; a feature release says it is ready
+    if (feature) notify(`Overlay ${info.version} is ready`, 'It installs quietly the next time you step away, or click to update now.', () => installUpdate());
     // Install on its own once the PC has been idle for five minutes: silent, and Overlay opens again by itself.
     clearInterval(idleInstall);
     idleInstall = setInterval(() => {
@@ -306,16 +325,9 @@ ipcMain.on('sync-timer', (event, state) => {
   }
 });
 
+// Lock In lives in the notch: it runs there whether or not the Dashboard is open.
 ipcMain.on('toggle-dashboard-timer', () => {
-  if (dashWindow && !dashWindow.isDestroyed()) {
-    // Dashboard is open — let it handle the toggle and sync back
-    dashWindow.webContents.send('toggle-dashboard-timer');
-  } else {
-    // Dashboard is closed — tell the notch to run its own local timer
-    if (mainWindow && !mainWindow.isDestroyed()) {
-      mainWindow.webContents.send('start-local-timer');
-    }
-  }
+  if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send('start-local-timer');
 });
 
 // Media key IPC handlers
@@ -860,9 +872,8 @@ ipcMain.on('check-for-updates', () => {
 });
 
 // The notes for a version: its release page on the public downloads repository.
-ipcMain.on('open-whats-new', (_e, version) => {
-  const v = String(version || app.getVersion()).replace(/[^0-9.]/g, '');
-  shell.openExternal(`https://github.com/pradhan-not-found/overlay-releases/releases/tag/v${v}`);
+ipcMain.on('open-whats-new', () => {
+  shell.openExternal('https://getoverlay.vercel.app/changelog');
 });
 ipcMain.handle('update:state', () => ({ ...lastUpdate, current: app.getVersion(), lastChecked, packaged: app.isPackaged }));
 
